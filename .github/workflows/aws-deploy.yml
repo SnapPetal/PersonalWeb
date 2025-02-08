@@ -41,5 +41,6 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/p0w8z2j2          docker tag endurance:latest public.ecr.aws/p0w8z2j2/endurance:latest
+          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/p0w8z2j2
+          docker tag personal:latest public.ecr.aws/p0w8z2j2/personal:latest
           docker push public.ecr.aws/p0w8z2j2/personal:latest
