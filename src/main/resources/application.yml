@@ -1,3 +1,10 @@
 spring:
   application:
     name: "personal"
+
+bible:
+  verse:
+    api:
+      url: https://bibleverse.thonbecker.com/
+    cache:
+      duration: 24

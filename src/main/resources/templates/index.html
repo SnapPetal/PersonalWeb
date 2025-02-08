@@ -10,6 +10,7 @@
     <link th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}" rel="stylesheet">
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <script src="/js/bible-verse.js"></script>
 
     <style>
         .social-icon {
@@ -21,6 +22,23 @@
         .social-icon:hover {
             color: #0d6efd;
         }
+
+        .card {
+            border: none;
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+
+        #bible-verse {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #2c3e50;
+        }
+
+        .card-title {
+            color: #1a237e;
+            font-size: 1.5rem;
+        }
+
     </style>
 </head>
 <body>
@@ -54,6 +72,26 @@
         <div class="container">
             <h1 class="display-4 fw-bold">Software Engineer</h1>
             <p class="lead text-muted">Building elegant solutions to complex problems</p>
+
+            <!-- Bible Verse Section -->
+            <div class="mt-4">
+                <div class="card mx-auto shadow-sm" style="max-width: 600px;">
+                    <div class="card-body">
+                        <h5 class="card-title text-center mb-3 fw-bold">Daily Bible Verse</h5>
+                        <div id="bible-verse"
+                             hx-get="/api/bible/verse-of-day"
+                             hx-trigger="load"
+                             hx-swap="innerHTML"
+                             class="text-start px-3">
+                            <div class="d-flex justify-content-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -64,7 +102,12 @@
             <div class="row justify-content-center">
                 <div class="col-md-8">
                     <p class="lead text-muted">
-                        [Your professional introduction here]
+                        I am a dedicated Software Engineer with expertise in Java Enterprise technologies,
+                        including Jakarta EE and Spring MVC. With a passion for building robust and scalable
+                        applications, I specialize in developing elegant solutions to complex technical challenges.
+                        My technical stack includes Java 21, modern frameworks, and web technologies, allowing me
+                        to create efficient and maintainable software solutions. I am committed to continuous learning
+                        and staying current with industry best practices to deliver high-quality results.
                     </p>
                 </div>
             </div>
@@ -80,11 +123,15 @@
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
                         <div class="card-body">
-                            <h5 class="card-title">Project Name</h5>
-                            <p class="card-text">Brief project description</p>
+                            <h5 class="card-title">Bible Verse Spring Boot Cloud Function</h5>
+                            <p class="card-text">A serverless application that delivers daily Bible verses using Spring Cloud Function.
+                                Built with Maven and modern Java practices, featuring REST endpoints, caching, and automated testing.
+                                The project demonstrates clean architecture principles and cloud-native development patterns.</p>
                             <div class="d-flex gap-2">
                                 <span class="badge bg-primary">Java</span>
                                 <span class="badge bg-secondary">Spring</span>
+                                <span class="badge bg-info">Spring Cloud</span>
+                                <span class="badge bg-success">Maven</span>
                             </div>
                         </div>
                         <div class="card-footer bg-transparent border-top-0">
@@ -123,7 +170,7 @@
 <!-- Footer -->
 <footer class="py-4 bg-light">
     <div class="container text-center">
-        <p class="mb-0 text-muted">© 2024 Your Name. All rights reserved.</p>
+        <p class="mb-0 text-muted">© 2025 Thon Becker. All rights reserved.</p>
     </div>
 </footer>
 </body>
