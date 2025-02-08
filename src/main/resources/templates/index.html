@@ -41,21 +41,34 @@
         }
 
         .experience-counter {
-            min-height: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 2rem;
+            font-weight: 500;
+            color: #212529;
+            text-align: center;
             margin: 1rem 0;
-            transition: opacity 0.3s ease;
-            font-size: 1.25rem;
-            font-weight: 300;
-            color: #6c757d;
         }
 
         .counter-spinner {
             margin: 0 0.5rem;
         }
 
+        .list-unstyled li {
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .profile-image {
+            max-width: 250px;
+            transition: transform 0.3s ease;
+        }
+
+        .profile-image:hover {
+            transform: scale(1.02);
+        }
+
+        .badge {
+            padding: 0.5rem 0.8rem;
+        }
 
     </style>
 </head>
@@ -118,16 +131,14 @@
             <h2 class="text-center mb-4">About Me</h2>
 
             <!-- Experience Counter -->
-            <div class="row justify-content-center align-items-center">
-                <div class="col-md-4 text-center ">
-                    <div class="experience-counter"
-                         hx-get="/api/experience/count"
-                         hx-trigger="load"
-                         hx-swap="innerHTML"
-                         hx-indicator=".counter-spinner">
-                        <div class="counter-spinner spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
+            <div class="text-center mb-5">
+                <div class="experience-counter"
+                     hx-get="/api/experience/count"
+                     hx-trigger="load"
+                     hx-swap="innerHTML"
+                     hx-indicator=".counter-spinner">
+                    <div class="counter-spinner spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
             </div>
@@ -135,28 +146,28 @@
             <!-- Profile Photo and Description -->
             <div class="row justify-content-center align-items-center">
                 <div class="col-md-4 text-center mb-4">
-                    <img src="/images/profile-photo.jpg" alt="Professional headshot"
-                         class="img-fluid rounded-circle shadow-sm" style="max-width: 250px;">
+                    <img src="/images/profile-photo.jpg"
+                         alt="Professional headshot"
+                         class="img-fluid rounded-circle shadow-sm profile-image"
+                         style="max-width: 250px;">
                 </div>
                 <div class="col-md-8">
-                    <p class="lead text-muted">
+                    <p class="lead">
                         I am a seasoned Software Engineer specializing in enterprise-level solutions and cloud
-                        architecture. My expertise spans Java Enterprise technologies (Jakarta EE, Spring MVC) and AWS
-                        cloud services
-                        (EventBridge, Cognito, Lambda, State Machines). With a passion for building robust and scalable
-                        applications, I specialize in developing elegant solutions to complex technical challenges.
+                        architecture.
+                        With expertise in Java Enterprise technologies and AWS cloud services, I build robust and
+                        scalable
+                        applications that solve complex technical challenges.
                     </p>
-                    <p class="lead text-muted">
-                        My technical foundation includes Java 21, modern frameworks, and web technologies, complemented
-                        by
-                        extensive experience in event-driven architectures and infrastructure as code (Pulumi, AWS CDK).
-                        I excel at
-                        designing cloud-native solutions that emphasize scalability, maintainability, and business
-                        value.
-                        Throughout my career, I've demonstrated success in mentoring teams and implementing best
-                        practices for continuous
-                        integration and deployment.
+                    <p>
+                        My technical foundation includes:
                     </p>
+                    <ul class="list-unstyled tech-list">
+                        <li class="tech-item">✦ Java 21 and modern frameworks (Jakarta EE, Spring MVC)</li>
+                        <li class="tech-item">✦ AWS cloud services (EventBridge, Cognito, Lambda)</li>
+                        <li class="tech-item">✦ Infrastructure as code (Pulumi, AWS CDK)</li>
+                        <li class="tech-item">✦ Event-driven architectures and cloud-native solutions</li>
+                    </ul>
                 </div>
             </div>
         </div>
