@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +43,7 @@ public class BibleVerseController {
     }
 
     @GetMapping(value = "/verse-of-day", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Retryable(backoff = @Backoff(delay = 1000))
     public ResponseEntity<BibleVerse> getVerseOfTheDay() {
         LocalDate today = LocalDate.now();
         BibleVerse verse = verseCache.get(today, key -> fetchDailyBibleVerse());

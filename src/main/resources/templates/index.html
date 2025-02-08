@@ -11,6 +11,7 @@
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script src="/js/bible-verse.js"></script>
+    <script src="/js/experience-counter.js"></script>
 
     <style>
         .social-icon {
@@ -38,6 +39,23 @@
             color: #1a237e;
             font-size: 1.5rem;
         }
+
+        .experience-counter {
+            min-height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1rem 0;
+            transition: opacity 0.3s ease;
+            font-size: 1.25rem;
+            font-weight: 300;
+            color: #6c757d;
+        }
+
+        .counter-spinner {
+            margin: 0 0.5rem;
+        }
+
 
     </style>
 </head>
@@ -72,7 +90,6 @@
         <div class="container">
             <h1 class="display-4 fw-bold">Software Engineer</h1>
             <p class="lead text-muted">Building elegant solutions to complex problems</p>
-
             <!-- Bible Verse Section -->
             <div class="mt-4">
                 <div class="card mx-auto shadow-sm" style="max-width: 600px;">
@@ -99,15 +116,46 @@
     <section id="about" class="py-5">
         <div class="container">
             <h2 class="text-center mb-4">About Me</h2>
-            <div class="row justify-content-center">
+
+            <!-- Experience Counter -->
+            <div class="row justify-content-center align-items-center">
+                <div class="col-md-4 text-center ">
+                    <div class="experience-counter"
+                         hx-get="/api/experience/count"
+                         hx-trigger="load"
+                         hx-swap="innerHTML"
+                         hx-indicator=".counter-spinner">
+                        <div class="counter-spinner spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Photo and Description -->
+            <div class="row justify-content-center align-items-center">
+                <div class="col-md-4 text-center mb-4">
+                    <img src="/images/profile-photo.jpg" alt="Professional headshot"
+                         class="img-fluid rounded-circle shadow-sm" style="max-width: 250px;">
+                </div>
                 <div class="col-md-8">
                     <p class="lead text-muted">
-                        I am a dedicated Software Engineer with expertise in Java Enterprise technologies,
-                        including Jakarta EE and Spring MVC. With a passion for building robust and scalable
+                        I am a seasoned Software Engineer specializing in enterprise-level solutions and cloud
+                        architecture. My expertise spans Java Enterprise technologies (Jakarta EE, Spring MVC) and AWS
+                        cloud services
+                        (EventBridge, Cognito, Lambda, State Machines). With a passion for building robust and scalable
                         applications, I specialize in developing elegant solutions to complex technical challenges.
-                        My technical stack includes Java 21, modern frameworks, and web technologies, allowing me
-                        to create efficient and maintainable software solutions. I am committed to continuous learning
-                        and staying current with industry best practices to deliver high-quality results.
+                    </p>
+                    <p class="lead text-muted">
+                        My technical foundation includes Java 21, modern frameworks, and web technologies, complemented
+                        by
+                        extensive experience in event-driven architectures and infrastructure as code (Pulumi, AWS CDK).
+                        I excel at
+                        designing cloud-native solutions that emphasize scalability, maintainability, and business
+                        value.
+                        Throughout my career, I've demonstrated success in mentoring teams and implementing best
+                        practices for continuous
+                        integration and deployment.
                     </p>
                 </div>
             </div>
@@ -124,9 +172,12 @@
                     <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title">Bible Verse Spring Boot Cloud Function</h5>
-                            <p class="card-text">A serverless application that delivers daily Bible verses using Spring Cloud Function.
-                                Built with Maven and modern Java practices, featuring REST endpoints, caching, and automated testing.
-                                The project demonstrates clean architecture principles and cloud-native development patterns.</p>
+                            <p class="card-text">A serverless application that delivers daily Bible verses using Spring
+                                Cloud Function.
+                                Built with Maven and modern Java practices, featuring REST endpoints, caching, and
+                                automated testing.
+                                The project demonstrates clean architecture principles and cloud-native development
+                                patterns.</p>
                             <div class="d-flex gap-2">
                                 <span class="badge bg-primary">Java</span>
                                 <span class="badge bg-secondary">Spring</span>
