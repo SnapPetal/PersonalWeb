@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class HttpsRedirectFilter implements Filter {
 
+    private static final String HEALTH_CHECK_PATH = "/actuator/health";
+
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
             throws IOException, ServletException {
@@ -20,7 +22,13 @@ public class HttpsRedirectFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
 
-        if (!request.isSecure() && !"localhost".equals(request.getServerName())) {
+        // Skip redirect for health checks and localhost
+        if (request.getRequestURI().equals(HEALTH_CHECK_PATH) || "localhost".equals(request.getServerName())) {
+            chain.doFilter(req, res);
+            return;
+        }
+
+        if (!request.isSecure()) {
             String redirectUrl = "https://" + request.getServerName()
                     + (request.getServerPort() != 80 ? ":" + request.getServerPort() : "")
                     + request.getRequestURI()
