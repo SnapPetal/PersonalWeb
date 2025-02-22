@@ -31,64 +31,19 @@
     <script src="/js/bible-verse.js"></script>
     <script src="/js/experience-counter.js"></script>
 
-    <style>
-        .social-icon {
-            font-size: 1.5rem;
-            color: #212529;
-            transition: color 0.3s ease;
-        }
+    <!-- CSS Dependencies -->
+    <link th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}" rel="stylesheet">
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/bible-verse.css">
+    <link rel="stylesheet" href="/css/htmx-indicators.css">
 
-        .social-icon:hover {
-            color: #0d6efd;
-        }
+    <!-- JavaScript Dependencies -->
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <script src="/js/bible-verse.js"></script>
+    <script src="/js/experience-counter.js"></script>
 
-        .card {
-            border: none;
-            background-color: rgba(255, 255, 255, 0.95);
-        }
-
-        #bible-verse {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            color: #2c3e50;
-        }
-
-        .card-title {
-            color: #1a237e;
-            font-size: 1.5rem;
-        }
-
-        .experience-counter {
-            font-size: 2rem;
-            font-weight: 500;
-            color: #212529;
-            text-align: center;
-            margin: 1rem 0;
-        }
-
-        .counter-spinner {
-            margin: 0 0.5rem;
-        }
-
-        .list-unstyled li {
-            margin-bottom: 0.5rem;
-            color: #495057;
-        }
-
-        .profile-image {
-            max-width: 250px;
-            transition: transform 0.3s ease;
-        }
-
-        .profile-image:hover {
-            transform: scale(1.02);
-        }
-
-        .badge {
-            padding: 0.5rem 0.8rem;
-        }
-
-    </style>
     <script type="application/ld+json">
         {
             "@context": "https://schema.org",
@@ -123,6 +78,11 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#contact">Contact</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="https://calendly.com/me--ap1n" target="_blank" rel="noopener">
+                        <i class="bi bi-calendar"></i> Book Meeting
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
@@ -144,7 +104,7 @@
                              hx-get="/api/bible/verse-of-day"
                              hx-trigger="load"
                              hx-swap="innerHTML"
-                             class="text-start px-3">
+                             class="text-center px-3">
                             <div class="d-flex justify-content-center py-4">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
@@ -162,19 +122,6 @@
         <div class="container">
             <h2 class="text-center mb-4">About Me</h2>
 
-            <!-- Experience Counter -->
-            <div class="text-center mb-5">
-                <div class="experience-counter"
-                     hx-get="/api/experience/count"
-                     hx-trigger="load"
-                     hx-swap="innerHTML"
-                     hx-indicator=".counter-spinner">
-                    <div class="counter-spinner spinner-border spinner-border-sm" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- Profile Photo and Description -->
             <div class="row justify-content-center align-items-center">
                 <div class="col-md-4 text-center mb-4">
@@ -185,11 +132,22 @@
                 </div>
                 <div class="col-md-8">
                     <p class="lead">
-                        I am a seasoned Software Engineer specializing in enterprise-level solutions and cloud
-                        architecture.
-                        With expertise in Java Enterprise technologies and AWS cloud services, I build robust and
-                        scalable
-                        applications that solve complex technical challenges.
+                        With <span class="experience-counter"
+                                   style="font-size: inherit; color: inherit; font-weight: 500;"
+                                   hx-get="/api/experience/count"
+                                   hx-trigger="load"
+                                   hx-swap="innerHTML"
+                                   hx-indicator=".counter-spinner">
+                        <span class="counter-spinner spinner-border spinner-border-sm text-secondary"
+                              style="width: 1rem; height: 1rem;"
+                              role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                    </span> as a Software Engineer, I specialize in enterprise-level solutions and
+                        cloud
+                        architecture. With expertise in Java Enterprise technologies and AWS cloud services, I build
+                        robust and
+                        scalable applications that solve complex technical challenges.
                     </p>
                     <p>
                         My technical foundation includes:

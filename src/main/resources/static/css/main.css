@@ -1,0 +1,28 @@
+/* main.css */
+:root {
+    --primary: #0d6efd;
+    --secondary: #6c757d;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --transition-speed: 200ms;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    color: var(--dark);
+}
+
+.social-icon {
+    font-size: 1.5rem;
+    color: var(--dark);
+    transition: color var(--transition-speed) ease;
+}
+
+.social-icon:hover {
+    color: var(--primary);
+}
+
+.calendly-link:hover {
+    cursor: pointer;
+}
