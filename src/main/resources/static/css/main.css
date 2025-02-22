@@ -1,4 +1,3 @@
-/* main.css */
 :root {
     --primary: #0d6efd;
     --secondary: #6c757d;
@@ -7,12 +6,14 @@
     --transition-speed: 200ms;
 }
 
+/* Base styles */
 body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     line-height: 1.5;
     color: var(--dark);
 }
 
+/* Social icons */
 .social-icon {
     font-size: 1.5rem;
     color: var(--dark);
@@ -25,4 +26,56 @@ body {
 
 .calendly-link:hover {
     cursor: pointer;
+}
+
+/* Dark mode styles */
+[data-bs-theme="dark"] {
+    --bs-body-color: #e9ecef;
+    --bs-body-bg: #212529;
+    --dark-section-bg: #2b3035;
+    --dark-border: #373b3e;
+    --text-color: #e9ecef;
+}
+
+[data-bs-theme="dark"] {
+    background-color: var(--bs-body-bg);
+    color: var(--text-color);
+}
+
+/* Consolidated text color rules */
+[data-bs-theme="dark"] p,
+[data-bs-theme="dark"] h1,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3,
+[data-bs-theme="dark"] h4,
+[data-bs-theme="dark"] h5,
+[data-bs-theme="dark"] h6,
+[data-bs-theme="dark"] span,
+[data-bs-theme="dark"] li,
+[data-bs-theme="dark"] .card-body {
+    color: var(--text-color) !important;
+}
+
+/* Consolidated background color rules */
+[data-bs-theme="dark"] .bg-light,
+[data-bs-theme="dark"] .bg-white,
+[data-bs-theme="dark"] #about,
+[data-bs-theme="dark"] .profile-section,
+[data-bs-theme="dark"] .card {
+    background-color: var(--dark-section-bg) !important;
+}
+
+/* Social icons dark mode adjustment */
+[data-bs-theme="dark"] .social-icon {
+    color: var(--text-color);
+}
+
+[data-bs-theme="dark"] .social-icon:hover {
+    color: var(--primary);
+}
+
+/* Toggle switch */
+.form-check-input:checked {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
 }

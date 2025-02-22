@@ -32,6 +32,7 @@
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script src="/js/bible-verse.js"></script>
     <script src="/js/experience-counter.js"></script>
+    <script src="/js/dark-mode.js"></script>
 
     <!-- CSS Dependencies -->
     <link th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
@@ -81,13 +82,16 @@
                     <a class="nav-link" href="#contact">Contact</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link"
-                       href="https://calendly.com/me--ap1n"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       aria-label="Schedule a meeting via Calendly (opens in new tab)">
-                        <i class="bi bi-calendar" aria-hidden="true"></i> Book Meeting
-                    </a>
+                    <a class="nav-link" href="https://calendly.com/me--ap1n" target="_blank">Book a Meeting</a>
+                </li>
+                <!-- Add the dark mode toggle here -->
+                <li class="nav-item d-flex align-items-center ms-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                        <label class="form-check-label" for="darkModeToggle">
+                            <i class="bi bi-moon-stars toggle-icon"></i>
+                        </label>
+                    </div>
                 </li>
             </ul>
         </div>
