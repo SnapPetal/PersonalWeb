@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-US">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; img-src 'self' https://ik.imagekit.io; script-src 'self' 'unsafe-inline';">
+    <meta http-equiv="x-ua-compatible" content="DENY">
+    <meta http-equiv="content-type" content="nosniff">
 
     <!-- SEO Meta Tags -->
     <meta name="description"
@@ -23,9 +27,7 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://www.thonbecker.biz">
 
-    <!-- WebJars dependencies -->
-    <link th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
-    <link th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}" rel="stylesheet">
+    <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script src="/js/bible-verse.js"></script>
@@ -79,8 +81,12 @@
                     <a class="nav-link" href="#contact">Contact</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="https://calendly.com/me--ap1n" target="_blank" rel="noopener">
-                        <i class="bi bi-calendar"></i> Book Meeting
+                    <a class="nav-link"
+                       href="https://calendly.com/me--ap1n"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       aria-label="Schedule a meeting via Calendly (opens in new tab)">
+                        <i class="bi bi-calendar" aria-hidden="true"></i> Book Meeting
                     </a>
                 </li>
             </ul>
