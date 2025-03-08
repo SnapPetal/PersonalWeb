@@ -205,38 +205,144 @@ a:focus, button:focus {
    Dark Mode Styles
 ----------------------------- */
 [data-bs-theme="dark"] {
-    /* Set dark mode variables */
-    --bs-body-color: var(--dark-body-color);
-    --bs-body-bg: var(--dark-body-bg);
-    --text-color: var(--dark-body-color);
-
-    /* Apply base dark theme */
-    background-color: var(--bs-body-bg);
-    color: var(--text-color);
+    /* Body and general text */
+    background-color: var(--dark-body-bg);
+    color: var(--dark-body-color);
 }
 
+/* Navbar dark mode */
 [data-bs-theme="dark"] .navbar {
-    background-color: var(--dark-section-bg) !important;
-}
-
-[data-bs-theme="dark"] .navbar-light .navbar-brand,
-[data-bs-theme="dark"] .navbar-light .nav-link {
-    color: var(--text-color);
-}
-
-[data-bs-theme="dark"] .card,
-[data-bs-theme="dark"] .bg-light {
     background-color: var(--dark-section-bg) !important;
     border-color: var(--dark-border);
 }
 
-[data-bs-theme="dark"] .border {
-    border-color: var(--dark-border) !important;
+[data-bs-theme="dark"] .navbar-light .navbar-brand,
+[data-bs-theme="dark"] .navbar-light .nav-link,
+[data-bs-theme="dark"] .nav-link {
+    color: var(--dark-body-color);
 }
 
+[data-bs-theme="dark"] .navbar-light .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+/* Cards, sections, and containers */
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .section-bg {
+    background-color: var(--dark-section-bg);
+    border-color: var(--dark-border);
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--dark-section-bg) !important;
+}
+
+/* Headings */
+[data-bs-theme="dark"] h1,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3,
+[data-bs-theme="dark"] h4,
+[data-bs-theme="dark"] h5,
+[data-bs-theme="dark"] h6 {
+    color: var(--dark-body-color);
+}
+
+/* Links and icons */
+[data-bs-theme="dark"] a:not(.btn),
+[data-bs-theme="dark"] .nav-link {
+    color: #8bb9fe;
+}
+
+[data-bs-theme="dark"] a:hover:not(.btn),
+[data-bs-theme="dark"] .nav-link:hover {
+    color: var(--primary);
+}
+
+/* Social icons specifically */
 [data-bs-theme="dark"] .social-icon {
     color: var(--dark-body-color);
 }
+
+[data-bs-theme="dark"] .social-icon:hover {
+    color: var(--primary);
+}
+
+/* Buttons */
+[data-bs-theme="dark"] .btn-outline-dark {
+    color: var(--dark-body-color);
+    border-color: var(--dark-body-color);
+}
+
+[data-bs-theme="dark"] .btn-outline-dark:hover {
+    background-color: var(--dark-body-color);
+    color: var(--dark-body-bg);
+}
+
+/* Forms */
+[data-bs-theme="dark"] .form-control {
+    background-color: var(--dark-section-bg);
+    border-color: var(--dark-border);
+    color: var(--dark-body-color);
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+    background-color: var(--dark-section-bg);
+    color: var(--dark-body-color);
+}
+
+/* Bible verse component */
+[data-bs-theme="dark"] #bible-verse {
+    color: var(--dark-body-color);
+}
+
+[data-bs-theme="dark"] .bible-verse-section .card {
+    background-color: var(--dark-section-bg);
+}
+
+[data-bs-theme="dark"] .verse-text,
+[data-bs-theme="dark"] .verse-translation {
+    color: var(--dark-body-color);
+}
+
+/* Footer */
+[data-bs-theme="dark"] footer {
+    background-color: var(--dark-section-bg);
+    color: var(--dark-body-color);
+    border-top: 1px solid var(--dark-border);
+}
+
+/* Tables */
+[data-bs-theme="dark"] table {
+    color: var(--dark-body-color);
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-color: var(--dark-body-color);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--dark-border);
+}
+
+/* List groups */
+[data-bs-theme="dark"] .list-group-item {
+    background-color: var(--dark-section-bg);
+    color: var(--dark-body-color);
+    border-color: var(--dark-border);
+}
+
+/* Inputs and labels */
+[data-bs-theme="dark"] label {
+    color: var(--dark-body-color);
+}
+
+/* Additional dark mode text fixes - targets specific sections */
+[data-bs-theme="dark"] #about,
+[data-bs-theme="dark"] #about p,
+[data-bs-theme="dark"] #about div,
+[data-bs-theme="dark"] .about-content p,
+[data-bs-theme="dark"] .about-content div {
+    color: var(--dark-body-color) !important;
+}
+
 
 /* -----------------------------
    Print Styles
