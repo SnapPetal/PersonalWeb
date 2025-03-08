@@ -2,26 +2,26 @@
 <html lang="en-US">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
     <!-- SEO Meta Tags -->
-    <meta name="description"
-          content="Thon Becker - Software Engineer specializing in elegant solutions to complex problems. Experienced in web development, software architecture, and problem-solving.">
-    <meta name="keywords"
-          content="Thon Becker, Software Engineer, Web Development, Java Development, Software Architecture">
-    <meta name="author" content="Thon Becker">
+    <meta content="Thon Becker - Software Engineer specializing in elegant solutions to complex problems. Experienced in web development, software architecture, and problem-solving."
+          name="description">
+    <meta content="Thon Becker, Software Engineer, Web Development, Java Development, Software Architecture"
+          name="keywords">
+    <meta content="Thon Becker" name="author">
 
     <!-- Open Graph Meta Tags for social sharing -->
-    <meta property="og:title" content="Thon Becker - Software Engineer">
-    <meta property="og:description" content="Software Engineer specializing in elegant solutions to complex problems">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.thonbecker.biz">
-    <meta property="og:image" content="https://ik.imagekit.io/rtteemwtx/profile-photo_Ao6hlHU0d.jpg">
+    <meta content="Thon Becker - Software Engineer" property="og:title">
+    <meta content="Software Engineer specializing in elegant solutions to complex problems" property="og:description">
+    <meta content="website" property="og:type">
+    <meta content="https://www.thonbecker.biz" property="og:url">
+    <meta content="https://ik.imagekit.io/rtteemwtx/profile-photo_Ao6hlHU0d.jpg" property="og:image">
 
     <title>Thon Becker - Software Engineer | Web Development Expert</title>
 
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://www.thonbecker.biz">
+    <link href="https://www.thonbecker.biz" rel="canonical">
 
     <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
@@ -29,13 +29,14 @@
     <script src="/js/bible-verse.js"></script>
     <script src="/js/experience-counter.js"></script>
     <script src="/js/dark-mode.js"></script>
+    <script src="/js/joke-player.js"></script>
 
     <!-- CSS Dependencies -->
-    <link th:href="@{/webjars/bootstrap/css/bootstrap.min.css}" rel="stylesheet">
-    <link th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}" rel="stylesheet">
-    <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/bible-verse.css">
-    <link rel="stylesheet" href="/css/htmx-indicators.css">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link href="/css/main.css" rel="stylesheet">
+    <link href="/css/bible-verse.css" rel="stylesheet">
+    <link href="/css/htmx-indicators.css" rel="stylesheet">
 
     <script type="application/ld+json">
         {
@@ -57,7 +58,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
     <div class="container">
         <a class="navbar-brand fw-bold" href="#">Thon Becker</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
@@ -74,10 +75,27 @@
                 <li class="nav-item">
                     <a class="nav-link" href="https://calendly.com/me--ap1n" target="_blank">Book a Meeting</a>
                 </li>
-                <!-- Add the dark mode toggle here -->
+                <li class="nav-item">
+                    <audio class="d-none" id="navJokeAudio">
+                        <source src="" type="audio/ogg">
+                    </audio>
+                    <button class="btn btn-link nav-link border-0"
+                            hx-get="/api/joke"
+                            hx-indicator="#navJokeIndicator"
+                            hx-swap="none"
+                            id="navJokeButton">
+                        <i aria-hidden="true" class="bi bi-emoji-laughing"></i>
+                        <span class="visually-hidden">Play random dad joke</span>
+                    </button>
+                    <span class="htmx-indicator ms-2" id="navJokeIndicator">
+            <span class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </span>
+        </span>
+                </li>
                 <li class="nav-item d-flex align-items-center ms-2">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                        <input class="form-check-input" id="darkModeToggle" type="checkbox">
                         <label class="form-check-label" for="darkModeToggle">
                             <i class="bi bi-moon-stars toggle-icon"></i>
                         </label>
@@ -100,11 +118,11 @@
                 <div class="card mx-auto shadow-sm" style="max-width: 600px;">
                     <div class="card-body">
                         <h5 class="card-title text-center mb-3 fw-bold">Daily Bible Verse</h5>
-                        <div id="bible-verse"
+                        <div class="text-center px-3"
                              hx-get="/api/bible/verse-of-day"
-                             hx-trigger="load"
                              hx-swap="innerHTML"
-                             class="text-center px-3">
+                             hx-trigger="load"
+                             id="bible-verse">
                             <div class="d-flex justify-content-center py-4">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
@@ -118,29 +136,29 @@
     </section>
 
     <!-- About Section -->
-    <section id="about" class="py-5">
+    <section class="py-5" id="about">
         <div class="container">
             <h2 class="text-center mb-4">About Me</h2>
 
             <!-- Profile Photo and Description -->
             <div class="row justify-content-center align-items-center">
                 <div class="col-md-4 text-center mb-4">
-                    <img src="https://ik.imagekit.io/rtteemwtx/profile-photo_Ao6hlHU0d.jpg?tr=w-250,h-250,c-maintain_ratio,q-85,f-auto"
+                    <img alt="Profile Photo"
+                         class="profile-image rounded-circle shadow-sm"
                          loading="lazy"
-                         alt="Profile Photo"
-                         class="profile-image rounded-circle shadow-sm">
+                         src="https://ik.imagekit.io/rtteemwtx/profile-photo_Ao6hlHU0d.jpg?tr=w-250,h-250,c-maintain_ratio,q-85,f-auto">
                 </div>
                 <div class="col-md-8">
                     <p class="lead">
                         With <span class="experience-counter"
-                                   style="font-size: inherit; color: inherit; font-weight: 500;"
                                    hx-get="/api/experience/count"
-                                   hx-trigger="load"
+                                   hx-indicator=".counter-spinner"
                                    hx-swap="innerHTML"
-                                   hx-indicator=".counter-spinner">
+                                   hx-trigger="load"
+                                   style="font-size: inherit; color: inherit; font-weight: 500;">
                         <span class="counter-spinner spinner-border spinner-border-sm text-secondary"
-                              style="width: 1rem; height: 1rem;"
-                              role="status">
+                              role="status"
+                              style="width: 1rem; height: 1rem;">
                             <span class="visually-hidden">Loading...</span>
                         </span>
                     </span> as a Software Engineer, I specialize in enterprise-level solutions and
@@ -164,7 +182,7 @@
     </section>
 
     <!-- Projects Section -->
-    <section id="projects" class="py-5 bg-light">
+    <section class="py-5 bg-light" id="projects">
         <div class="container">
             <h2 class="text-center mb-4">Featured Projects</h2>
             <div class="row g-4">
@@ -187,31 +205,57 @@
                             </div>
                         </div>
                         <div class="card-footer bg-transparent border-top-0">
-                            <a href="https://github.com/SnapPetal/BibleVerse" class="btn btn-outline-primary"
+                            <a class="btn btn-outline-primary" href="https://github.com/SnapPetal/BibleVerse"
                                target="_blank">
                                 <i class="bi bi-github"></i> View on GitHub
                             </a>
                         </div>
                     </div>
                 </div>
-                <!-- Add more project cards as needed -->
+                <!-- Project Card -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Endurance - Real-time WebSocket Trivia</h5>
+                            <p class="card-text">A real-time multiplayer trivia application powered by Spring WebSocket
+                                technology.
+                                Built with Spring Boot and modern Java, featuring live player interactions, instant
+                                scoring, and
+                                seamless game state management. The project showcases WebSocket implementation for
+                                real-time
+                                communication, session handling, and robust game mechanics.</p>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-primary">Java</span>
+                                <span class="badge bg-secondary">Spring</span>
+                                <span class="badge bg-info">Spring Cloud</span>
+                                <span class="badge bg-success">Maven</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <a class="btn btn-outline-primary" href="https://github.com/SnapPetal/Endurance"
+                               target="_blank">
+                                <i class="bi bi-github"></i> View on GitHub
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Contact Section -->
-    <section id="contact" class="py-5">
+    <section class="py-5" id="contact">
         <div class="container text-center">
             <h2 class="mb-4">Let's Connect</h2>
             <div class="d-flex justify-content-center gap-4">
-                <a href="https://www.linkedin.com/in/thon-becker-66600947/" target="_blank"
-                   class="text-decoration-none">
+                <a class="text-decoration-none" href="https://www.linkedin.com/in/thon-becker-66600947/"
+                   target="_blank">
                     <i class="bi bi-linkedin social-icon"></i>
                 </a>
-                <a href="https://github.com/SnapPetal" target="_blank" class="text-decoration-none">
+                <a class="text-decoration-none" href="https://github.com/SnapPetal" target="_blank">
                     <i class="bi bi-github social-icon"></i>
                 </a>
-                <a href="mailto:me@thonbecker.com" class="text-decoration-none">
+                <a class="text-decoration-none" href="mailto:me@thonbecker.com">
                     <i class="bi bi-envelope-fill social-icon"></i>
                 </a>
             </div>

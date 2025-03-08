@@ -79,3 +79,26 @@ body {
     background-color: var(--secondary);
     border-color: var(--secondary);
 }
+
+#navJokeButton {
+    padding: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+#navJokeButton:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+#navJokeButton i {
+    font-size: 1.2rem;
+}
+
+#navJokeButton:hover:not(:disabled) {
+    transform: scale(1.1);
+}
+
+.htmx-request .htmx-indicator {
+    display: inline-block !important;
+}
+
