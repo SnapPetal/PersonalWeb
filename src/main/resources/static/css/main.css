@@ -98,7 +98,15 @@ body {
     transform: scale(1.1);
 }
 
-.htmx-request .htmx-indicator {
-    display: inline-block !important;
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
+
+.htmx-request .bi-emoji-laughing {
+    animation: spin 1s linear;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+}
+
 
