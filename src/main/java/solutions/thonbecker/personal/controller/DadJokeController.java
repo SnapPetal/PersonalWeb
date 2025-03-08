@@ -1,7 +1,5 @@
 package solutions.thonbecker.personal.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -10,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import solutions.thonbecker.personal.types.JokeRequest;
 import solutions.thonbecker.personal.types.JokeResponse;
 
 @RestController
@@ -18,13 +15,12 @@ import solutions.thonbecker.personal.types.JokeResponse;
 @Slf4j
 @RequiredArgsConstructor
 public class DadJokeController {
-    private final ObjectMapper objectMapper;
     private static final String JOKE_API_URL = "https://ondxpdql18.execute-api.us-east-1.amazonaws.com/joke";
     private static final String DAD_JOKE_API_URL = "https://icanhazdadjoke.com/";
     private static final String CDN_DOMAIN_NAME = "https://cdn.thonbecker.com";
 
     @GetMapping
-    public ResponseEntity<String> getJoke() throws JsonProcessingException {
+    public ResponseEntity<String> getJoke() {
         RestTemplate restTemplate = new RestTemplate();
 
         // First, get the joke text
@@ -50,13 +46,9 @@ public class DadJokeController {
 
         // Create headers with JSON content type
         HttpHeaders voiceHeaders = new HttpHeaders();
-        voiceHeaders.setContentType(MediaType.APPLICATION_JSON);
+        voiceHeaders.setContentType(MediaType.TEXT_PLAIN);
 
-        // Create the request object
-        JokeRequest jokeRequest = new JokeRequest(jokeText);
-
-        // Create HttpEntity with the correct generic type
-        HttpEntity<JokeRequest> voiceRequestEntity = new HttpEntity<>(jokeRequest, voiceHeaders);
+        HttpEntity<String> voiceRequestEntity = new HttpEntity<>(jokeText, voiceHeaders);
 
         try {
             ResponseEntity<JokeResponse> voiceResponse =
