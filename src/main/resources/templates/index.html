@@ -82,6 +82,7 @@
                     <button class="btn btn-link nav-link border-0"
                             hx-get="/api/joke"
                             hx-indicator=".bi-emoji-laughing"
+                            hx-on:click="this.classList.add('rotate'); setTimeout(() => this.classList.remove('rotate'), 500)"
                             hx-swap="none"
                             id="navJokeButton">
                         <i aria-hidden="true" class="bi bi-emoji-laughing"></i>
