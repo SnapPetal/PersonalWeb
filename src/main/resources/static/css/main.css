@@ -1,23 +1,174 @@
+/* -----------------------------
+   CSS Variables
+----------------------------- */
 :root {
+    /* Colors */
     --primary: #0d6efd;
     --secondary: #6c757d;
     --light: #f8f9fa;
     --dark: #212529;
-    --transition-speed: 200ms;
+
+    /* Dark mode colors */
+    --dark-body-color: #e9ecef;
+    --dark-body-bg: #212529;
+    --dark-section-bg: #2b3035;
+    --dark-border: #373b3e;
+
+    /* Typography */
+    --base-font-size: 1rem;
+    --icon-font-size: 1.5rem;
+    --button-icon-size: 1.2rem;
+
+    /* Other */
+    --disabled-opacity: 0.6;
 }
 
-/* Base styles */
+/* -----------------------------
+   Base Styles
+----------------------------- */
 body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     line-height: 1.5;
     color: var(--dark);
 }
 
-/* Social icons */
+/* -----------------------------
+   Profile & About Section Base Styles
+----------------------------- */
+/* Base profile section styling */
+.profile-section {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.profile-image-container img {
+    border-radius: 50%;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#about {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+}
+
+/* -----------------------------
+   Responsive Design Fixes
+----------------------------- */
+/* Fix About Me and photo overlap in mobile */
+@media (max-width: 768px) {
+    /* Profile section adjustments */
+    .profile-section {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* Profile image container */
+    .profile-image-container {
+        margin-bottom: 2rem;
+        width: 100%;
+        max-width: 250px;  /* Control max size on mobile */
+    }
+
+    /* About content container */
+    .about-content {
+        width: 100%;
+        clear: both;
+        padding: 0 1rem;
+    }
+
+    /* Add more space between sections */
+    .section {
+        margin-bottom: 3rem;
+        padding-top: 1rem;
+    }
+
+    /* Targeted override - only affect rows we need to modify */
+    #about .row:not(.no-column-override) {
+        display: block;
+        flex-direction: column;
+    }
+
+    /* Proper spacing for profile elements */
+    #about .row > div {
+        margin-bottom: 1.5rem;
+        width: 100%;
+        float: none;
+    }
+
+    /* Ensure images don't overflow */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Add specific padding to separate sections */
+    #about h2 {
+        margin-top: 1rem;
+        clear: both;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 576px) {
+    .profile-image-container {
+        max-width: 200px;
+    }
+
+    /* Additional padding for better spacing */
+    .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    #about {
+        padding-top: 2rem;
+    }
+
+    /* Additional spacing for better content flow */
+    .section {
+        margin-bottom: 2rem;
+    }
+}
+
+/* -----------------------------
+   Accessibility Improvements
+----------------------------- */
+/* Improve keyboard navigation */
+a:focus, button:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Skip-to-content for accessibility */
+.skip-to-content {
+    position: absolute;
+    left: -9999px;
+    top: 1em;
+    z-index: 999;
+}
+
+.skip-to-content:focus {
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5em 1em;
+    background: var(--dark);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+/* -----------------------------
+   Interaction Elements
+----------------------------- */
+/* Social links */
 .social-icon {
-    font-size: 1.5rem;
+    font-size: var(--icon-font-size);
     color: var(--dark);
-    transition: color var(--transition-speed) ease;
 }
 
 .social-icon:hover {
@@ -28,85 +179,95 @@ body {
     cursor: pointer;
 }
 
-/* Dark mode styles */
-[data-bs-theme="dark"] {
-    --bs-body-color: #e9ecef;
-    --bs-body-bg: #212529;
-    --dark-section-bg: #2b3035;
-    --dark-border: #373b3e;
-    --text-color: #e9ecef;
-}
-
-[data-bs-theme="dark"] {
-    background-color: var(--bs-body-bg);
-    color: var(--text-color);
-}
-
-/* Consolidated text color rules */
-[data-bs-theme="dark"] p,
-[data-bs-theme="dark"] h1,
-[data-bs-theme="dark"] h2,
-[data-bs-theme="dark"] h3,
-[data-bs-theme="dark"] h4,
-[data-bs-theme="dark"] h5,
-[data-bs-theme="dark"] h6,
-[data-bs-theme="dark"] span,
-[data-bs-theme="dark"] li,
-[data-bs-theme="dark"] .card-body {
-    color: var(--text-color) !important;
-}
-
-/* Consolidated background color rules */
-[data-bs-theme="dark"] .bg-light,
-[data-bs-theme="dark"] .bg-white,
-[data-bs-theme="dark"] #about,
-[data-bs-theme="dark"] .profile-section,
-[data-bs-theme="dark"] .card {
-    background-color: var(--dark-section-bg) !important;
-}
-
-/* Social icons dark mode adjustment */
-[data-bs-theme="dark"] .social-icon {
-    color: var(--text-color);
-}
-
-[data-bs-theme="dark"] .social-icon:hover {
-    color: var(--primary);
-}
-
-/* Toggle switch */
+/* Form elements */
 .form-check-input:checked {
     background-color: var(--secondary);
     border-color: var(--secondary);
 }
 
+/* -----------------------------
+   Joke Button Styles
+----------------------------- */
 #navJokeButton {
     padding: 0.5rem;
-    transition: all 0.2s ease;
 }
 
 #navJokeButton:disabled {
-    opacity: 0.6;
+    opacity: var(--disabled-opacity);
     cursor: wait;
 }
 
 #navJokeButton i {
-    font-size: 1.2rem;
+    font-size: var(--button-icon-size);
 }
 
-#navJokeButton:hover:not(:disabled) {
-    transform: scale(1.1);
+/* -----------------------------
+   Dark Mode Styles
+----------------------------- */
+[data-bs-theme="dark"] {
+    /* Set dark mode variables */
+    --bs-body-color: var(--dark-body-color);
+    --bs-body-bg: var(--dark-body-bg);
+    --text-color: var(--dark-body-color);
+
+    /* Apply base dark theme */
+    background-color: var(--bs-body-bg);
+    color: var(--text-color);
 }
 
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+[data-bs-theme="dark"] .navbar {
+    background-color: var(--dark-section-bg) !important;
 }
 
-.htmx-request .bi-emoji-laughing {
-    animation: spin 1s linear;
-    animation-iteration-count: 1;
-    animation-fill-mode: forwards;
+[data-bs-theme="dark"] .navbar-light .navbar-brand,
+[data-bs-theme="dark"] .navbar-light .nav-link {
+    color: var(--text-color);
 }
 
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--dark-section-bg) !important;
+    border-color: var(--dark-border);
+}
 
+[data-bs-theme="dark"] .border {
+    border-color: var(--dark-border) !important;
+}
+
+[data-bs-theme="dark"] .social-icon {
+    color: var(--dark-body-color);
+}
+
+/* -----------------------------
+   Print Styles
+----------------------------- */
+@media print {
+    /* Hide non-essential elements when printing */
+    nav, footer, #contact form, button, .no-print {
+        display: none !important;
+    }
+
+    /* Ensure text is black for better printing */
+    body, p, h1, h2, h3, h4, h5, h6 {
+        color: black !important;
+        background: white !important;
+    }
+
+    /* No page breaks inside important sections */
+    .profile-section, #projects .card {
+        page-break-inside: avoid;
+    }
+
+    /* Add URL after links for print */
+    a[href]:after {
+        content: " (" attr(href) ")";
+        font-size: 0.8em;
+    }
+
+    /* Don't add URL after image links or internal anchors */
+    a[href^="#"]:after,
+    a[href^="javascript:"]:after,
+    a.no-print-url:after {
+        content: "";
+    }
+}

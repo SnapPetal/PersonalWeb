@@ -1,71 +1,79 @@
-// joke-player.js
-document.addEventListener('DOMContentLoaded', function() {
-    initJokePlayer();
-});
+(() => {
+    const ELEMENTS = {
+        JOKE_BUTTON: 'navJokeButton', JOKE_AUDIO: 'navJokeAudio'
+    };
 
-function initJokePlayer() {
-    // Handle successful joke retrieval
-    document.addEventListener('htmx:afterRequest', function(evt) {
-        if (evt.detail.successful && evt.detail.elt.id === 'navJokeButton') {
-            handleJokeResponse(evt.detail.xhr.response);
+    const CLASSES = {
+        SPINNING: 'spinning', LAUGH_ICON: 'bi-emoji-laughing', VOLUME_ICON: 'bi-volume-up'
+    };
+
+    // DOM utility functions
+    const getElement = id => document.getElementById(id);
+
+    const toggleButtonState = (button, disabled) => {
+        if (!button) return;
+        button.disabled = disabled;
+    };
+
+    const updateButtonIcon = (button, addClass, removeClass) => {
+        const icon = button?.querySelector('i');
+        if (icon) {
+            icon.classList.remove(removeClass);
+            icon.classList.add(addClass);
         }
-    });
+    };
 
-    // Handle audio completion
-    const audioElement = document.getElementById('navJokeAudio');
-    if (audioElement) {
-        audioElement.addEventListener('ended', handleAudioEnd);
-    }
+    // Core functionality
+    const resetJokeButton = () => {
+        const button = getElement(ELEMENTS.JOKE_BUTTON);
+        toggleButtonState(button, false);
+        updateButtonIcon(button, CLASSES.LAUGH_ICON, CLASSES.VOLUME_ICON);
+        button?.querySelector('i')?.classList.remove(CLASSES.SPINNING);
+    };
 
-    // Handle errors
-    document.addEventListener('htmx:error', function(evt) {
-        if (evt.detail.elt.id === 'navJokeButton') {
-            resetJokeButton();
-        }
-    });
-}
+    const handleJokeResponse = (response) => {
+        const audioElement = getElement(ELEMENTS.JOKE_AUDIO);
+        const button = getElement(ELEMENTS.JOKE_BUTTON);
 
-function handleJokeResponse(response) {
-    const audioElement = document.getElementById('navJokeAudio');
-    const button = document.getElementById('navJokeButton');
+        if (!audioElement || !button) return;
 
-    if (!audioElement || !button) return;
+        toggleButtonState(button, true);
+        button.querySelector('i')?.classList.add(CLASSES.SPINNING);
 
-    // Update button state
-    button.disabled = true;
+        audioElement.src = response;
+        audioElement.load();
 
-    audioElement.src = response;
-    audioElement.load();
+        // Play audio with slight delay to ensure loading
+        setTimeout(() => {
+            audioElement.play()
+                .catch(error => {
+                    console.error('Error playing audio:', error);
+                    resetJokeButton();
+                });
+        }, 100);
+    };
 
-    // Play the audio with slight delay to ensure loading
-    setTimeout(() => {
-        audioElement.play()
-            .then(() => {
-                updateButtonIcon(button, 'bi-volume-up', 'bi-emoji-laughing');
-            })
-            .catch(error => {
-                console.error('Error playing audio:', error);
+    // Event handlers
+    const initJokePlayer = () => {
+        // Handle successful joke retrieval
+        document.addEventListener('htmx:afterRequest', evt => {
+            if (evt.detail.successful && evt.detail.elt.id === ELEMENTS.JOKE_BUTTON) {
+                handleJokeResponse(evt.detail.xhr.response);
+            }
+        });
+
+        // Handle audio completion
+        const audioElement = getElement(ELEMENTS.JOKE_AUDIO);
+        audioElement?.addEventListener('ended', resetJokeButton);
+
+        // Handle errors
+        document.addEventListener('htmx:error', evt => {
+            if (evt.detail.elt.id === ELEMENTS.JOKE_BUTTON) {
                 resetJokeButton();
-            });
-    }, 100);
-}
+            }
+        });
+    };
 
-function handleAudioEnd() {
-    resetJokeButton();
-}
-
-function resetJokeButton() {
-    const button = document.getElementById('navJokeButton');
-    if (button) {
-        button.disabled = false;
-        updateButtonIcon(button, 'bi-emoji-laughing', 'bi-volume-up');
-    }
-}
-
-function updateButtonIcon(button, addClassName, removeClassName) {
-    const icon = button.querySelector('i');
-    if (icon) {
-        icon.classList.remove(removeClassName);
-        icon.classList.add(addClassName);
-    }
-}
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initJokePlayer);
+})();

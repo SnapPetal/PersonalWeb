@@ -18,52 +18,64 @@ public class DadJokeController {
     private static final String JOKE_API_URL = "https://ondxpdql18.execute-api.us-east-1.amazonaws.com/joke";
     private static final String DAD_JOKE_API_URL = "https://icanhazdadjoke.com/";
     private static final String CDN_DOMAIN_NAME = "https://cdn.thonbecker.com";
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @GetMapping
     public ResponseEntity<String> getJoke() {
-        RestTemplate restTemplate = new RestTemplate();
-
-        // First, get the joke text
-        HttpHeaders jokeHeaders = new HttpHeaders();
-        jokeHeaders.set("Accept", "text/plain");
-        HttpEntity<String> jokeEntity = new HttpEntity<>(jokeHeaders);
-
-        ResponseEntity<String> jokeResponse =
-                restTemplate.exchange(DAD_JOKE_API_URL, HttpMethod.GET, jokeEntity, String.class);
-
-        if (!jokeResponse.getStatusCode().is2xxSuccessful() || jokeResponse.getBody() == null) {
+        String jokeText = fetchDadJoke();
+        if (jokeText == null) {
             return ResponseEntity.notFound().build();
         }
 
+        String audioLocation = convertJokeToAudio(jokeText);
+        if (audioLocation != null) {
+            return ResponseEntity.ok(audioLocation);
+        }
+
+        return ResponseEntity.notFound().build();
+    }
+
+    private String fetchDadJoke() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept", "text/plain");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<String> response =
+                    restTemplate.exchange(DAD_JOKE_API_URL, HttpMethod.GET, entity, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (Exception e) {
+            log.error("Error fetching dad joke: {}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    private String convertJokeToAudio(String jokeText) {
         String url = UriComponentsBuilder.fromUriString(JOKE_API_URL)
                 .queryParam("voice", "Matthew")
                 .queryParam("translateFrom", "en")
                 .queryParam("translateTo", "en")
                 .toUriString();
 
-        // Create the request entity with the joke text as the raw body
-        String jokeText = jokeResponse.getBody();
-
-        // Create headers with JSON content type
-        HttpHeaders voiceHeaders = new HttpHeaders();
-        voiceHeaders.setContentType(MediaType.TEXT_PLAIN);
-
-        HttpEntity<String> voiceRequestEntity = new HttpEntity<>(jokeText, voiceHeaders);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_PLAIN);
+        HttpEntity<String> requestEntity = new HttpEntity<>(jokeText, headers);
 
         try {
-            ResponseEntity<JokeResponse> voiceResponse =
-                    restTemplate.exchange(url, HttpMethod.POST, voiceRequestEntity, JokeResponse.class);
+            ResponseEntity<JokeResponse> response =
+                    restTemplate.exchange(url, HttpMethod.POST, requestEntity, JokeResponse.class);
 
-            if (voiceResponse.getBody() != null && voiceResponse.getBody().Location() != null) {
-                String location = voiceResponse.getBody().Location().replaceFirst("https://[^/]+", CDN_DOMAIN_NAME);
-                return ResponseEntity.ok(location);
+            if (response.getBody() != null && response.getBody().Location() != null) {
+                return response.getBody().Location().replaceFirst("https://[^/]+", CDN_DOMAIN_NAME);
             }
         } catch (Exception e) {
-            log.error("Error calling voice API: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error processing joke: " + e.getMessage());
+            log.error("Error converting joke to audio: {}", e.getMessage());
         }
 
-        return ResponseEntity.notFound().build();
+        return null;
     }
 }
