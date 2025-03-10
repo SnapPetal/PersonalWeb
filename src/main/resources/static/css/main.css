@@ -35,6 +35,7 @@ body {
 /* -----------------------------
    Profile & About Section Base Styles
 ----------------------------- */
+
 /* Base profile section styling */
 .profile-section {
     display: flex;
@@ -43,27 +44,55 @@ body {
     margin-bottom: 2rem;
 }
 
+.profile-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 250px; /* Set a consistent base max-width */
+    margin: 0 auto; /* Center the container itself */
+}
+
 .profile-image-container img {
     border-radius: 50%;
     max-width: 100%;
     height: auto;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: block; /* Ensures the image behaves as a block element */
+    object-fit: contain; /* Maintains aspect ratio while fitting in container */
+    margin: 0 auto; /* Center the image within container */
 }
 
-.profile-image-container {
-    max-width: 250px;
-}
-
+/* Responsive design adjustments - updated */
 @media (max-width: 768px) {
+    .profile-section {
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        padding: 0 1rem;
+        text-align: center; /* Center all content */
+    }
+
     .profile-image-container {
+        margin: 0 auto 1rem auto; /* Center with bottom margin */
+        width: 100%;
         max-width: 200px;
-        margin: 0 auto;
     }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 480px) {
     .profile-image-container {
-        max-width: 150px;
+        max-width: 150px; /* Reduced max-width for very small screens */
+        margin: 0 auto; /* Ensure centering */
+    }
+
+    .profile-image-container img {
+        max-width: 100%;
+    }
+
+    /* Prevent overflow issues */
+    img {
+        max-width: 100%;
+        height: auto;
     }
 }
 
