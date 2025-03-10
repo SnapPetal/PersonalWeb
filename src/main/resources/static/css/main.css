@@ -50,6 +50,23 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.profile-image-container {
+    max-width: 250px;
+}
+
+@media (max-width: 768px) {
+    .profile-image-container {
+        max-width: 250px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 576px) {
+    .profile-image-container {
+        max-width: 150px;
+    }
+}
+
 #about {
     padding-top: 3rem;
     padding-bottom: 3rem;
