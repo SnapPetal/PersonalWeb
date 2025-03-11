@@ -48,51 +48,30 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    max-width: 250px; /* Set a consistent base max-width */
-    margin: 0 auto; /* Center the container itself */
+    width: 250px; /* Use fixed width instead of max-width */
+    margin: 0 auto;
 }
 
 .profile-image-container img {
     border-radius: 50%;
-    max-width: 100%;
-    height: auto;
+    width: 100%;
+    aspect-ratio: 1/1; /* Force a 1:1 aspect ratio */
+    height: auto; /* Let height be determined by width and aspect ratio */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    display: block; /* Ensures the image behaves as a block element */
-    object-fit: contain; /* Maintains aspect ratio while fitting in container */
-    margin: 0 auto; /* Center the image within container */
+    object-fit: cover; /* Keep cover for proper filling of the circle */
 }
 
-/* Responsive design adjustments - updated */
 @media (max-width: 768px) {
-    .profile-section {
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        padding: 0 1rem;
-        text-align: center; /* Center all content */
-    }
-
     .profile-image-container {
-        margin: 0 auto 1rem auto; /* Center with bottom margin */
-        width: 100%;
-        max-width: 200px;
+        width: 200px;
+        height: 200px;
     }
 }
 
 @media (max-width: 480px) {
     .profile-image-container {
-        max-width: 150px; /* Reduced max-width for very small screens */
-        margin: 0 auto; /* Ensure centering */
-    }
-
-    .profile-image-container img {
-        max-width: 100%;
-    }
-
-    /* Prevent overflow issues */
-    img {
-        max-width: 100%;
-        height: auto;
+        width: 150px;
+        height: 150px;
     }
 }
 
