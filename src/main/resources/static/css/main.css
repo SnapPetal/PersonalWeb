@@ -48,7 +48,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 250px; /* Use fixed width instead of max-width */
+    width: 25%; /* Relative width based on parent container */
+    max-width: 250px; /* Maximum size cap */
+    min-width: 150px; /* Minimum size */
     margin: 0 auto;
 }
 
@@ -63,15 +65,15 @@ body {
 
 @media (max-width: 768px) {
     .profile-image-container {
-        width: 200px;
-        height: 200px;
+        width: 30%; /* Relative width for medium screens */
+        max-width: 200px;
     }
 }
 
 @media (max-width: 480px) {
     .profile-image-container {
-        width: 150px;
-        height: 150px;
+        width: 40%; /* Wider relative width for small screens */
+        max-width: 150px;
     }
 }
 
