@@ -36,15 +36,15 @@
 </div>
 
 <script>
+    // WebSocket connection variables
+    let stompClient = null;
+    let isConnected = false;
+
     // DOM elements
     const connectBtn = document.getElementById('connect-btn');
     const disconnectBtn = document.getElementById('disconnect-btn');
     const connectionStatus = document.getElementById('connection-status');
     const logElement = document.getElementById('log');
-
-    // WebSocket variables
-    let socket = null;
-    let stompClient = null;
 
     // Log function
     function log(message, type = 'info') {
@@ -56,91 +56,127 @@
         logElement.scrollTop = logElement.scrollHeight;
     }
 
+    // Update UI based on connection state
+    function updateConnectionUI(state, statusText, statusClass) {
+        connectionStatus.textContent = statusText;
+        connectionStatus.className = `badge ${statusClass}`;
+
+        if (state === 'connected') {
+            connectBtn.classList.add('d-none');
+            disconnectBtn.classList.remove('d-none');
+        } else {
+            connectBtn.classList.remove('d-none');
+            disconnectBtn.classList.add('d-none');
+        }
+    }
+
     // Connect to WebSocket
-    connectBtn.addEventListener('click', function() {
+    function connect() {
         // Update UI
-        connectionStatus.textContent = 'Connecting...';
-        connectionStatus.className = 'badge bg-warning';
+        updateConnectionUI('connecting', 'Connecting...', 'bg-warning');
         log('Attempting to connect to endurance.thonbecker.biz...');
 
         try {
-            // Create a raw WebSocket connection
-            const rawSocket = new WebSocket('wss://endurance.thonbecker.biz/quiz-websocket');
+            // Create WebSocket connection
+            const socket = new WebSocket('wss://endurance.thonbecker.biz/quiz-websocket');
 
-            rawSocket.onopen = function() {
-                log('Raw WebSocket connection established!', 'success');
-                log('Initializing STOMP protocol...', 'info');
+            // Initialize STOMP client
+            stompClient = Stomp.over(socket);
 
-                // Initialize STOMP client over the raw WebSocket
-                stompClient = Stomp.over(rawSocket);
+            // Optional: Disable debug logs from STOMP
+            stompClient.debug = null;
 
-                // Connect with the STOMP protocol
-                stompClient.connect(
-                    {},
-                    function(frame) {
-                        log('STOMP connection successful!', 'success');
-                        log('Connected with frame: ' + frame);
+            // Connect with STOMP protocol
+            stompClient.connect(
+                {}, // Headers (empty in this case)
+                function onConnect(frame) {
+                    isConnected = true;
+                    log('Connection established successfully!', 'success');
+                    log('Connected with frame: ' + frame);
+                    updateConnectionUI('connected', 'Connected', 'bg-success');
 
-                        // Update UI
-                        connectionStatus.textContent = 'Connected';
-                        connectionStatus.className = 'badge bg-success';
-                        connectBtn.classList.add('d-none');
-                        disconnectBtn.classList.remove('d-none');
-
-                        // Example subscription
-                        stompClient.subscribe('/topic/public', function(message) {
-                            log('Received message: ' + message.body);
-                        });
-                    },
-                    function(error) {
-                        log('STOMP connection error: ' + error, 'danger');
-                        connectionStatus.textContent = 'Failed';
-                        connectionStatus.className = 'badge bg-danger';
-                    }
-                );
-            };
-
-            rawSocket.onclose = function(event) {
-                log(`WebSocket closed: ${event.code} ${event.reason}`, 'warning');
-                connectionStatus.textContent = 'Disconnected';
-                connectionStatus.className = 'badge bg-secondary';
-                connectBtn.classList.remove('d-none');
-                disconnectBtn.classList.add('d-none');
-            };
-
-            rawSocket.onerror = function(error) {
-                log('WebSocket error: ' + JSON.stringify(error), 'danger');
-                connectionStatus.textContent = 'Error';
-                connectionStatus.className = 'badge bg-danger';
-            };
-
-            socket = rawSocket;
+                    // Subscribe to topics
+                    subscribeToTopics();
+                },
+                function onError(error) {
+                    log('Connection error: ' + error, 'danger');
+                    updateConnectionUI('disconnected', 'Failed', 'bg-danger');
+                    isConnected = false;
+                }
+            );
         } catch (e) {
-            log('Error creating WebSocket: ' + e.message, 'danger');
-            connectionStatus.textContent = 'Error';
-            connectionStatus.className = 'badge bg-danger';
+            log('Error creating connection: ' + e.message, 'danger');
+            updateConnectionUI('disconnected', 'Error', 'bg-danger');
         }
-    });
+    }
+
+    // Subscribe to all required topics
+    function subscribeToTopics() {
+        // Subscribe to the public topic
+        stompClient.subscribe('/topic/public', function(message) {
+            handleIncomingMessage(message);
+        });
+
+        // Add more subscriptions as needed
+        // stompClient.subscribe('/topic/another-topic', function(message) {...});
+    }
+
+    // Handle incoming messages
+    function handleIncomingMessage(message) {
+        try {
+            log('Received message: ' + message.body);
+
+            // If the message is JSON, you can parse it
+            // const data = JSON.parse(message.body);
+            // process the data...
+
+        } catch (e) {
+            log('Error processing message: ' + e.message, 'warning');
+        }
+    }
+
+    // Send a message to the server
+    function sendMessage(destination, body) {
+        if (!isConnected || !stompClient) {
+            log('Cannot send message: Not connected', 'warning');
+            return false;
+        }
+
+        try {
+            stompClient.publish({
+                destination: destination,
+                body: typeof body === 'string' ? body : JSON.stringify(body)
+            });
+            log(`Message sent to ${destination}`, 'info');
+            return true;
+        } catch (e) {
+            log('Error sending message: ' + e.message, 'danger');
+            return false;
+        }
+    }
 
     // Disconnect from WebSocket
-    disconnectBtn.addEventListener('click', function() {
+    function disconnect() {
         if (stompClient) {
-            stompClient.disconnect(function() {
-                log('Disconnected from STOMP', 'warning');
-            });
+            if (isConnected) {
+                stompClient.disconnect(function() {
+                    log('Disconnected from server', 'warning');
+                });
+            }
             stompClient = null;
         }
 
-        if (socket) {
-            socket.close();
-            socket = null;
-        }
+        isConnected = false;
+        updateConnectionUI('disconnected', 'Disconnected', 'bg-secondary');
+    }
 
-        connectionStatus.textContent = 'Disconnected';
-        connectionStatus.className = 'badge bg-secondary';
-        connectBtn.classList.remove('d-none');
-        disconnectBtn.classList.add('d-none');
-    });
+    // Set up event listeners
+    connectBtn.addEventListener('click', connect);
+    disconnectBtn.addEventListener('click', disconnect);
+
+    // Example of how to send a message (can be called from anywhere)
+    // sendMessage('/topic/public', 'Hello, everyone!');
+    // sendMessage('/app/specific-endpoint', { data: 'structured data' });
 </script>
 </body>
 </html>
