@@ -10,4 +10,9 @@ public class WebController {
     public String index() {
         return "index";
     }
+
+    @GetMapping("/trivia")
+    public String trivia() {
+        return "trivia";
+    }
 }

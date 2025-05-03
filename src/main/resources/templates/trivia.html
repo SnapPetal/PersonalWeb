@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Endurance Trivia</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}"/>
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+    <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+</head>
+<body>
+<div class="container mt-4">
+    <h1>Endurance Trivia</h1>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Connection Status
+        </div>
+        <div class="card-body">
+            <p>Status: <span id="connection-status" class="badge bg-secondary">Disconnected</span></p>
+            <button id="connect-btn" class="btn btn-primary">Connect</button>
+            <button id="disconnect-btn" class="btn btn-danger d-none">Disconnect</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Connection Log
+        </div>
+        <div class="card-body">
+            <pre id="log" style="height: 200px; overflow-y: auto;"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+    // DOM elements
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const connectionStatus = document.getElementById('connection-status');
+    const logElement = document.getElementById('log');
+
+    // WebSocket variables
+    let socket = null;
+    let stompClient = null;
+
+    // Log function
+    function log(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const logLine = document.createElement('div');
+        logLine.className = `text-${type}`;
+        logLine.textContent = `[${timestamp}] ${message}`;
+        logElement.appendChild(logLine);
+        logElement.scrollTop = logElement.scrollHeight;
+    }
+
+    // Connect to WebSocket
+    connectBtn.addEventListener('click', function() {
+        // Update UI
+        connectionStatus.textContent = 'Connecting...';
+        connectionStatus.className = 'badge bg-warning';
+        log('Attempting to connect to endurance.thonbecker.biz...');
+
+        try {
+            // Create a raw WebSocket connection
+            const rawSocket = new WebSocket('wss://endurance.thonbecker.biz/quiz-websocket');
+
+            rawSocket.onopen = function() {
+                log('Raw WebSocket connection established!', 'success');
+                log('Initializing STOMP protocol...', 'info');
+
+                // Initialize STOMP client over the raw WebSocket
+                stompClient = Stomp.over(rawSocket);
+
+                // Connect with the STOMP protocol
+                stompClient.connect(
+                    {},
+                    function(frame) {
+                        log('STOMP connection successful!', 'success');
+                        log('Connected with frame: ' + frame);
+
+                        // Update UI
+                        connectionStatus.textContent = 'Connected';
+                        connectionStatus.className = 'badge bg-success';
+                        connectBtn.classList.add('d-none');
+                        disconnectBtn.classList.remove('d-none');
+
+                        // Example subscription
+                        stompClient.subscribe('/topic/public', function(message) {
+                            log('Received message: ' + message.body);
+                        });
+                    },
+                    function(error) {
+                        log('STOMP connection error: ' + error, 'danger');
+                        connectionStatus.textContent = 'Failed';
+                        connectionStatus.className = 'badge bg-danger';
+                    }
+                );
+            };
+
+            rawSocket.onclose = function(event) {
+                log(`WebSocket closed: ${event.code} ${event.reason}`, 'warning');
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'badge bg-secondary';
+                connectBtn.classList.remove('d-none');
+                disconnectBtn.classList.add('d-none');
+            };
+
+            rawSocket.onerror = function(error) {
+                log('WebSocket error: ' + JSON.stringify(error), 'danger');
+                connectionStatus.textContent = 'Error';
+                connectionStatus.className = 'badge bg-danger';
+            };
+
+            socket = rawSocket;
+        } catch (e) {
+            log('Error creating WebSocket: ' + e.message, 'danger');
+            connectionStatus.textContent = 'Error';
+            connectionStatus.className = 'badge bg-danger';
+        }
+    });
+
+    // Disconnect from WebSocket
+    disconnectBtn.addEventListener('click', function() {
+        if (stompClient) {
+            stompClient.disconnect(function() {
+                log('Disconnected from STOMP', 'warning');
+            });
+            stompClient = null;
+        }
+
+        if (socket) {
+            socket.close();
+            socket = null;
+        }
+
+        connectionStatus.textContent = 'Disconnected';
+        connectionStatus.className = 'badge bg-secondary';
+        connectBtn.classList.remove('d-none');
+        disconnectBtn.classList.add('d-none');
+    });
+</script>
+</body>
+</html>
