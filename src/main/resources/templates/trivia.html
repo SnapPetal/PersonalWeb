@@ -1,182 +1,167 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Endurance Trivia</title>
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.css}"/>
-    <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
-    <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
-    <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia Game</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
 </head>
 <body>
 <div class="container mt-4">
-    <h1>Endurance Trivia</h1>
-
-    <div class="card mb-4">
-        <div class="card-header">
-            Connection Status
-        </div>
-        <div class="card-body">
-            <p>Status: <span id="connection-status" class="badge bg-secondary">Disconnected</span></p>
-            <button id="connect-btn" class="btn btn-primary">Connect</button>
-            <button id="disconnect-btn" class="btn btn-danger d-none">Disconnect</button>
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">Trivia Game</h1>
+            <div class="d-flex align-items-center mb-2">
+                <span class="me-2">Status:</span>
+                <span id="connection-status" class="badge bg-secondary">Disconnected</span>
+            </div>
+            <div class="mb-3">
+                <div class="form-group mb-2">
+                    <label for="server-url" class="form-label">WebSocket Server URL</label>
+                    <input type="text" id="server-url" class="form-control" placeholder="wss://endurance.thonbecker.biz/quiz-websocket" required>
+                    <small class="form-text text-muted">Example: wss://endurance.thonbecker.biz/quiz-websocket</small>
+                </div>
+                <div class="input-group">
+                    <label for="player-name" class="form-label">Player Name</label>
+                    <input type="text" id="player-name" class="form-control" placeholder="Your Name" required>
+                    <button id="connect-btn" class="btn btn-primary">Connect</button>
+                    <button id="disconnect-btn" class="btn btn-danger d-none">Disconnect</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            Connection Log
+    <!-- Quiz Creation -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    Create a Trivia Quiz
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="quiz-title" class="form-label">Quiz Title</label>
+                        <input type="text" id="quiz-title" class="form-control" placeholder="Fun Trivia!" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="question-count" class="form-label">Number of Questions</label>
+                        <input type="number" id="question-count" class="form-control" min="5" max="20" value="10">
+                    </div>
+                    <div class="mb-3">
+                        <label for="difficulty" class="form-label">Difficulty</label>
+                        <select id="difficulty" class="form-select">
+                            <option value="EASY">Easy</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HARD">Hard</option>
+                        </select>
+                    </div>
+                    <button id="create-quiz-btn" class="btn btn-success" disabled>Create Quiz</button>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <pre id="log" style="height: 200px; overflow-y: auto;"></pre>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    Players
+                </div>
+                <div class="card-body">
+                    <ul id="players-list" class="list-group">
+                        <li class="list-group-item text-center text-muted">No players yet</li>
+                    </ul>
+                    <div class="mt-3 text-center">
+                        <button id="start-quiz-btn" class="btn btn-primary" disabled>Start Quiz</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waiting Room -->
+    <div id="waiting-room" class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    Waiting for Quiz to Start
+                </div>
+                <div class="card-body text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="lead">The quiz will begin shortly...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Area (hidden initially) -->
+    <div id="quiz-area" class="row mb-4 d-none">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    Question
+                </div>
+                <div class="card-body">
+                    <h5 id="current-question" class="card-title">Question goes here?</h5>
+                    <div id="answers-container" class="d-grid gap-2 mt-3">
+                        <!-- Answer buttons will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    Scoreboard
+                </div>
+                <div class="card-body p-0">
+                    <ul id="scoreboard" class="list-group list-group-flush">
+                        <!-- Player scores will be inserted here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Area (hidden initially) -->
+    <div id="results-area" class="row mb-4 d-none">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    Quiz Results
+                </div>
+                <div class="card-body">
+                    <div id="final-results">
+                        <!-- Final results will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Area -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    Event Log
+                </div>
+                <div class="card-body">
+                    <div id="log" class="bg-dark text-light p-2" style="height: 200px; overflow-y: auto; font-family: monospace;">
+                        <!-- Log messages will be inserted here -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<script>
-    // WebSocket connection variables
-    let stompClient = null;
-    let isConnected = false;
-
-    // DOM elements
-    const connectBtn = document.getElementById('connect-btn');
-    const disconnectBtn = document.getElementById('disconnect-btn');
-    const connectionStatus = document.getElementById('connection-status');
-    const logElement = document.getElementById('log');
-
-    // Log function
-    function log(message, type = 'info') {
-        const timestamp = new Date().toLocaleTimeString();
-        const logLine = document.createElement('div');
-        logLine.className = `text-${type}`;
-        logLine.textContent = `[${timestamp}] ${message}`;
-        logElement.appendChild(logLine);
-        logElement.scrollTop = logElement.scrollHeight;
-    }
-
-    // Update UI based on connection state
-    function updateConnectionUI(state, statusText, statusClass) {
-        connectionStatus.textContent = statusText;
-        connectionStatus.className = `badge ${statusClass}`;
-
-        if (state === 'connected') {
-            connectBtn.classList.add('d-none');
-            disconnectBtn.classList.remove('d-none');
-        } else {
-            connectBtn.classList.remove('d-none');
-            disconnectBtn.classList.add('d-none');
-        }
-    }
-
-    // Connect to WebSocket
-    function connect() {
-        // Update UI
-        updateConnectionUI('connecting', 'Connecting...', 'bg-warning');
-        log('Attempting to connect to endurance.thonbecker.biz...');
-
-        try {
-            // Create WebSocket connection
-            const socket = new WebSocket('wss://endurance.thonbecker.biz/quiz-websocket');
-
-            // Initialize STOMP client
-            stompClient = Stomp.over(socket);
-
-            // Optional: Disable debug logs from STOMP
-            stompClient.debug = null;
-
-            // Connect with STOMP protocol
-            stompClient.connect(
-                {}, // Headers (empty in this case)
-                function onConnect(frame) {
-                    isConnected = true;
-                    log('Connection established successfully!', 'success');
-                    log('Connected with frame: ' + frame);
-                    updateConnectionUI('connected', 'Connected', 'bg-success');
-
-                    // Subscribe to topics
-                    subscribeToTopics();
-                },
-                function onError(error) {
-                    log('Connection error: ' + error, 'danger');
-                    updateConnectionUI('disconnected', 'Failed', 'bg-danger');
-                    isConnected = false;
-                }
-            );
-        } catch (e) {
-            log('Error creating connection: ' + e.message, 'danger');
-            updateConnectionUI('disconnected', 'Error', 'bg-danger');
-        }
-    }
-
-    // Subscribe to all required topics
-    function subscribeToTopics() {
-        // Subscribe to the public topic
-        stompClient.subscribe('/topic/public', function(message) {
-            handleIncomingMessage(message);
-        });
-
-        // Add more subscriptions as needed
-        // stompClient.subscribe('/topic/another-topic', function(message) {...});
-    }
-
-    // Handle incoming messages
-    function handleIncomingMessage(message) {
-        try {
-            log('Received message: ' + message.body);
-
-            // If the message is JSON, you can parse it
-            // const data = JSON.parse(message.body);
-            // process the data...
-
-        } catch (e) {
-            log('Error processing message: ' + e.message, 'warning');
-        }
-    }
-
-    // Send a message to the server
-    function sendMessage(destination, body) {
-        if (!isConnected || !stompClient) {
-            log('Cannot send message: Not connected', 'warning');
-            return false;
-        }
-
-        try {
-            stompClient.publish({
-                destination: destination,
-                body: typeof body === 'string' ? body : JSON.stringify(body)
-            });
-            log(`Message sent to ${destination}`, 'info');
-            return true;
-        } catch (e) {
-            log('Error sending message: ' + e.message, 'danger');
-            return false;
-        }
-    }
-
-    // Disconnect from WebSocket
-    function disconnect() {
-        if (stompClient) {
-            if (isConnected) {
-                stompClient.disconnect(function() {
-                    log('Disconnected from server', 'warning');
-                });
-            }
-            stompClient = null;
-        }
-
-        isConnected = false;
-        updateConnectionUI('disconnected', 'Disconnected', 'bg-secondary');
-    }
-
-    // Set up event listeners
-    connectBtn.addEventListener('click', connect);
-    disconnectBtn.addEventListener('click', disconnect);
-
-    // Example of how to send a message (can be called from anywhere)
-    // sendMessage('/topic/public', 'Hello, everyone!');
-    // sendMessage('/app/specific-endpoint', { data: 'structured data' });
-</script>
+<!-- Scripts -->
+<script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+<script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+<script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script src="/js/trivia-game.js"></script>
 </body>
 </html>
