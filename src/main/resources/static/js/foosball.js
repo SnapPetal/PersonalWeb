@@ -274,12 +274,34 @@ async function addGame() {
 
 // Refresh players list
 function refreshPlayers() {
-    loadPlayers();
+    const refreshBtn = document.querySelector('.foosball-refresh-btn[onclick="refreshPlayers()"]');
+    if (refreshBtn) {
+        refreshBtn.classList.add('refreshing');
+        refreshBtn.disabled = true;
+    }
+    
+    loadPlayers().finally(() => {
+        if (refreshBtn) {
+            refreshBtn.classList.remove('refreshing');
+            refreshBtn.disabled = false;
+        }
+    });
 }
 
 // Refresh games list
 function refreshGames() {
-    loadGames();
+    const refreshBtn = document.querySelector('.foosball-refresh-btn[onclick="refreshGames()"]');
+    if (refreshBtn) {
+        refreshBtn.classList.add('refreshing');
+        refreshBtn.disabled = true;
+    }
+    
+    loadGames().finally(() => {
+        if (refreshBtn) {
+            refreshBtn.classList.remove('refreshing');
+            refreshBtn.disabled = false;
+        }
+    });
 }
 
 // Show alert message

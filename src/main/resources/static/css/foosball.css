@@ -1,5 +1,24 @@
 /* Foosball Management Styles */
 
+/* Header styling */
+.foosball-header {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.foosball-header h4 {
+    color: #212529;
+    font-weight: 600;
+}
+
+.foosball-header .btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.foosball-header .btn:hover {
+    transform: translateX(-2px);
+}
+
 .foosball-stats-card {
     transition: transform 0.2s ease-in-out;
 }
@@ -46,11 +65,24 @@
 }
 
 .foosball-refresh-btn {
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.3s ease-in-out;
+}
+
+.foosball-refresh-btn:active {
+    transform: rotate(180deg);
+}
+
+.foosball-refresh-btn.refreshing {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .foosball-refresh-btn:hover {
-    transform: rotate(180deg);
+    transform: rotate(360deg);
 }
 
 .foosball-alert {
@@ -116,6 +148,16 @@
     .foosball-stats-overview .card-title {
         font-size: 2rem;
     }
+    
+    /* Mobile header adjustments */
+    .foosball-header h4 {
+        font-size: 1.25rem;
+    }
+    
+    .foosball-header .btn {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
 }
 
 /* Dark mode support */
@@ -132,5 +174,15 @@
     .foosball-table th {
         background-color: #2d3748;
         color: #e2e8f0;
+    }
+    
+    /* Dark mode header */
+    .foosball-page[data-bs-theme="dark"] .foosball-header {
+        background-color: #2b3035 !important;
+        border-color: #373b3e;
+    }
+    
+    .foosball-page[data-bs-theme="dark"] .foosball-header h4 {
+        color: #e9ecef;
     }
 }

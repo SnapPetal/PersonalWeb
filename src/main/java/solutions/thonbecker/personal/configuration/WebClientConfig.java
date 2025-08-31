@@ -18,12 +18,18 @@ public class WebClientConfig {
 
         // Add message converters
         List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-
-        // Add support for text/plain content type
-        converter.setSupportedMediaTypes(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN));
-
-        messageConverters.add(converter);
+        
+        // JSON converter for application/json responses
+        MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
+        jsonConverter.setSupportedMediaTypes(Arrays.asList(MediaType.APPLICATION_JSON));
+        messageConverters.add(jsonConverter);
+        
+        // String converter for text/plain responses
+        org.springframework.http.converter.StringHttpMessageConverter stringConverter = 
+            new org.springframework.http.converter.StringHttpMessageConverter();
+        stringConverter.setSupportedMediaTypes(Arrays.asList(MediaType.TEXT_PLAIN));
+        messageConverters.add(stringConverter);
+        
         restTemplate.setMessageConverters(messageConverters);
 
         return restTemplate;

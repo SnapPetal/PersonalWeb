@@ -66,6 +66,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update UI based on connection state
     function updateConnectionUI(isConnected) {
+        console.log('updateConnectionUI called with:', isConnected);
+        
         if (isConnected) {
             connectionStatus.textContent = 'Connected';
             connectionStatus.className = 'badge bg-success';
@@ -74,6 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
             createQuizBtn.disabled = false;
             serverUrlInput.disabled = true;
             playerNameInput.disabled = true;
+            
+            console.log('UI updated to Connected state');
         } else {
             connectionStatus.textContent = 'Disconnected';
             connectionStatus.className = 'badge bg-secondary';
@@ -83,7 +87,13 @@ document.addEventListener('DOMContentLoaded', function() {
             startQuizBtn.disabled = true;
             serverUrlInput.disabled = false;
             playerNameInput.disabled = false;
+            
+            console.log('UI updated to Disconnected state');
         }
+        
+        // Log the final state
+        console.log('Final connection status:', connectionStatus.textContent);
+        console.log('Final connection class:', connectionStatus.className);
     }
 
     // Connect to WebSocket
@@ -133,23 +143,30 @@ document.addEventListener('DOMContentLoaded', function() {
             // Disable debug logs
             stompClient.debug = null;
 
-            stompClient.connect({}, onConnected, onError);
-        
-        // Debug connection events
-        socket.onopen = function() {
-            log('WebSocket connected successfully', 'success');
-        };
-        
-        socket.onclose = function(event) {
-            log(`WebSocket closed: ${event.code} - ${event.reason}`, 'warning');
-        };
-        
-        socket.onerror = function(error) {
-            log(`WebSocket error: ${error.type}`, 'danger');
-            console.error('WebSocket error:', error);
-        };
+            // Debug connection events
+            socket.onopen = function() {
+                log('WebSocket connected successfully', 'success');
+                // Update UI to show connecting state
+                connectionStatus.textContent = 'Establishing STOMP connection...';
+                connectionStatus.className = 'badge bg-warning';
+            };
+            
+            socket.onclose = function(event) {
+                log(`WebSocket closed: ${event.code} - ${event.reason}`, 'warning');
+                updateConnectionUI(false);
+            };
+            
+            socket.onerror = function(error) {
+                log(`WebSocket error: ${error.type}`, 'danger');
+                console.error('WebSocket error:', error);
+                updateConnectionUI(false);
+            };
 
             log(`Connecting to ${serverUrl}...`, 'info');
+            
+            // Connect STOMP over WebSocket
+            stompClient.connect({}, onConnected, onError);
+            
         } catch (error) {
             log(`Connection error: ${error.message}`, 'danger');
             console.error('Connection error:', error);
@@ -160,8 +177,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Callback when connected to the WebSocket
     function onConnected() {
         isConnected = true;
-        log('Connected to the WebSocket server', 'success');
+        log('STOMP connection established successfully', 'success');
+        log('Connection status updated to: Connected', 'info');
+        
+        // Update the UI
         updateConnectionUI(true);
+        
+        // Log the current connection state
+        console.log('Connection state updated:', {
+            isConnected: isConnected,
+            connectionStatus: connectionStatus.textContent,
+            connectionClass: connectionStatus.className
+        });
 
         // Subscribe to quiz creation events
         stompClient.subscribe('/topic/quiz/created', onQuizCreated);

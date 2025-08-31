@@ -18,7 +18,7 @@ public class DadJokeController {
     private static final String JOKE_API_URL = "https://ondxpdql18.execute-api.us-east-1.amazonaws.com/joke";
     private static final String DAD_JOKE_API_URL = "https://icanhazdadjoke.com/";
     private static final String CDN_DOMAIN_NAME = "https://cdn.thonbecker.com";
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     @GetMapping
     public ResponseEntity<String> getJoke() {
