@@ -12,3 +12,9 @@ bible:
 foosball:
   api:
     base-url: https://foosball.thonbecker.biz
+
+# Debug logging for troubleshooting
+logging:
+  level:
+    solutions.thonbecker.personal.service.FoosballService: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG

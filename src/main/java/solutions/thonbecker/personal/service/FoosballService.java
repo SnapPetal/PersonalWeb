@@ -132,4 +132,20 @@ public class FoosballService {
             return false;
         }
     }
+    
+    // Debug method to get raw API response
+    public String getRawPlayersResponse() {
+        try {
+            log.info("Fetching raw response from: {}", baseUrl + "/api/foosball/players");
+            String response = restTemplate.getForObject(
+                baseUrl + "/api/foosball/players", 
+                String.class
+            );
+            log.info("Raw response: {}", response);
+            return response != null ? response : "No response";
+        } catch (Exception e) {
+            log.error("Error getting raw response: {}", e.getMessage());
+            return "Error: " + e.getMessage();
+        }
+    }
 }
