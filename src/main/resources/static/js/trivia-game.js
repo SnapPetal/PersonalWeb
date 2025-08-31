@@ -35,7 +35,16 @@ document.addEventListener('DOMContentLoaded', function() {
             serverUrlInput.value = savedServerUrl;
         } else {
             // Default to endurance.thonbecker.biz - assuming this is your WebSocket server
-            serverUrlInput.value = 'wss://endurance.thonbecker.biz/quiz-websocket';
+            serverUrlInput.value = 'ws://localhost:8080/quiz-websocket'; // Local Endurance backend on port 8080         
+            // Debug: Log available endpoints
+            console.log('Available endpoints for testing:');
+            console.log('1. wss://endurance.thonbecker.biz/quiz-websocket');
+            console.log('2. ws://localhost:8080/quiz-websocket'); // Local dev
+            console.log('3. wss://endurance.thonbecker.biz/ws'); // Alternative
+            
+            // Alternative endpoints for testing
+            // 'ws://localhost:8080/quiz' // Local development
+            // 'wss://endurance.thonbecker.biz/ws/quiz' // Alternative path
         }
 
         // Restore player name
@@ -125,10 +134,25 @@ document.addEventListener('DOMContentLoaded', function() {
             stompClient.debug = null;
 
             stompClient.connect({}, onConnected, onError);
+        
+        // Debug connection events
+        socket.onopen = function() {
+            log('WebSocket connected successfully', 'success');
+        };
+        
+        socket.onclose = function(event) {
+            log(`WebSocket closed: ${event.code} - ${event.reason}`, 'warning');
+        };
+        
+        socket.onerror = function(error) {
+            log(`WebSocket error: ${error.type}`, 'danger');
+            console.error('WebSocket error:', error);
+        };
 
             log(`Connecting to ${serverUrl}...`, 'info');
         } catch (error) {
             log(`Connection error: ${error.message}`, 'danger');
+            console.error('Connection error:', error);
             updateConnectionUI(false);
         }
     }
@@ -431,4 +455,37 @@ document.addEventListener('DOMContentLoaded', function() {
     disconnectBtn.addEventListener('click', disconnect);
     createQuizBtn.addEventListener('click', createTriviaQuiz);
     startQuizBtn.addEventListener('click', startQuiz);
+    
+    // Add connection test functionality
+    const testConnectionBtn = document.getElementById('test-connection-btn');
+    if (testConnectionBtn) {
+        testConnectionBtn.addEventListener('click', testConnection);
+    }
+    
+    // Test connection function
+    function testConnection() {
+        const serverUrl = serverUrlInput.value.trim();
+        if (!serverUrl) {
+            alert('Please enter a server URL to test');
+            return;
+        }
+        
+        log(`Testing connection to ${serverUrl}...`, 'info');
+        
+        try {
+            const testSocket = new WebSocket(serverUrl);
+            testSocket.onopen = function() {
+                log('Connection test successful!', 'success');
+                testSocket.close();
+            };
+            testSocket.onerror = function(error) {
+                log(`Connection test failed: ${error.type}`, 'danger');
+            };
+            testSocket.onclose = function(event) {
+                log(`Connection closed: ${event.code} - ${event.reason}`, 'warning');
+            };
+        } catch (error) {
+            log(`Connection test error: ${error.message}`, 'danger');
+        }
+    }
 });
