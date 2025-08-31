@@ -8,3 +8,7 @@ bible:
       url: https://bibleverse.thonbecker.com/
     cache:
       duration: 24
+
+foosball:
+  api:
+    base-url: https://foosball.thonbecker.biz

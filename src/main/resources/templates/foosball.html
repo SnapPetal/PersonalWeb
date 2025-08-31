@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en-US" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Table Soccer (Foosball) Management - Thon Becker</title>
+    
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link href="/css/main.css" rel="stylesheet">
+    <link href="/css/htmx-indicators.css" rel="stylesheet">
+    <link href="/css/foosball.css" rel="stylesheet">
+    
+    <!-- JS dependencies -->
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <script src="/js/foosball.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">Thon Becker</a>
+            <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#projects">Projects</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#contact">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://calendly.com/me--ap1n" target="_blank">Book a Meeting</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="py-5">
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h1 class="text-center mb-3">⚽ Foosball Management</h1>
+                    <p class="text-center text-muted">Track your table soccer games, players, and statistics</p>
+                </div>
+            </div>
+
+            <!-- Service Status -->
+            <div th:if="${!serviceAvailable}" class="alert alert-warning text-center" role="alert">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Foosball service is currently unavailable.</strong>
+                <br>
+                Please ensure the foosball backend service is running at the configured URL.
+                <br>
+                <a href="https://github.com/SnapPetal/foosball" target="_blank" class="btn btn-outline-warning btn-sm mt-2">
+                    <i class="bi bi-github"></i> View Foosball Repository
+                </a>
+            </div>
+
+            <!-- Main Content when service is available -->
+            <div th:if="${serviceAvailable}">
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                            </div>
+                            <div class="card-body foosball-quick-actions">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#addPlayerModal">
+                                            <i class="bi bi-person-plus"></i> Add New Player
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#addGameModal">
+                                            <i class="bi bi-plus-circle"></i> Record New Game
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Overview -->
+                <div class="row mb-4 foosball-stats-overview">
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="card-title text-primary" th:text="${#lists.size(players)}">0</h3>
+                                <p class="card-text">Total Players</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="card-title text-success" th:text="${#lists.size(games)}">0</h3>
+                                <p class="card-text">Games Played</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center">
+                            <h3 class="card-title text-info" th:text="${#lists.size(playerStats)}">0</h3>
+                            <p class="card-text">Player Stats</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Players Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-people"></i> Players</h5>
+                                <button class="btn btn-outline-primary btn-sm foosball-refresh-btn" onclick="refreshPlayers()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="playersList">
+                                    <div th:if="${#lists.isEmpty(players)}" class="text-center text-muted py-4 foosball-empty-state">
+                                        <i class="bi bi-people display-4"></i>
+                                        <p class="mt-2">No players found. Add your first player to get started!</p>
+                                    </div>
+                                    <div th:if="${!#lists.isEmpty(players)}" class="table-responsive">
+                                        <table class="table table-hover foosball-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Email</th>
+                                                    <th>Created</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="player : ${players}">
+                                                    <td th:text="${player.name}">Player Name</td>
+                                                    <td th:text="${player.email}">email@example.com</td>
+                                                    <td th:text="${player.createdAt}">2025-01-01</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Games Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-trophy"></i> Recent Games</h5>
+                                <button class="btn btn-outline-primary btn-sm foosball-refresh-btn" onclick="refreshGames()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="gamesList">
+                                    <div th:if="${#lists.isEmpty(games)}" class="text-center text-muted py-4 foosball-empty-state">
+                                        <i class="bi bi-trophy display-4"></i>
+                                        <p class="mt-2">No games recorded yet. Record your first game!</p>
+                                    </div>
+                                    <div th:if="${!#lists.isEmpty(games)}" class="table-responsive">
+                                        <table class="table table-hover foosball-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Team 1</th>
+                                                    <th>Score</th>
+                                                    <th>Team 2</th>
+                                                    <th>Winner</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="game : ${games}">
+                                                    <td th:text="${game.gameDate}">2025-01-01</td>
+                                                    <td>
+                                                        <span th:each="player, iterStat : ${game.team1Players}" 
+                                                              th:text="${player.name + (iterStat.last ? '' : ', ')}">Player</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-primary foosball-score-badge" th:text="${game.team1Score}">0</span>
+                                                        <span class="text-muted">-</span>
+                                                        <span class="badge bg-secondary foosball-score-badge" th:text="${game.team2Score}">0</span>
+                                                    </td>
+                                                    <td>
+                                                        <span th:each="player, iterStat : ${game.team2Players}" 
+                                                              th:text="${player.name + (iterStat.last ? '' : ', ')}">Player</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-success foosball-score-badge" th:text="${game.winner}">Winner</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Section -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Player Statistics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="playerStatsList">
+                                    <div th:if="${#lists.isEmpty(playerStats)}" class="text-center text-muted py-4 foosball-empty-state">
+                                        <i class="bi bi-graph-up display-4"></i>
+                                        <p class="mt-2">No player statistics available yet.</p>
+                                    </div>
+                                    <div th:if="${!#lists.isEmpty(playerStats)}" class="table-responsive">
+                                        <table class="table table-sm foosball-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Player</th>
+                                                    <th>Games</th>
+                                                    <th>Wins</th>
+                                                    <th>Win %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="stat : ${playerStats}">
+                                                    <td th:text="${stat.playerName}">Player</td>
+                                                    <td th:text="${stat.gamesPlayed}">0</td>
+                                                    <td th:text="${stat.wins}">0</td>
+                                                    <td th:text="${#numbers.formatDecimal(stat.winPercentage, 1, 1)}">0.0</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-arrow-left-right"></i> Position Statistics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="positionStatsList">
+                                    <div th:if="${#lists.isEmpty(positionStats)}" class="text-center text-muted py-4 foosball-empty-state">
+                                        <i class="bi bi-arrow-left-right display-4"></i>
+                                        <p class="mt-2">No position statistics available yet.</p>
+                                    </div>
+                                    <div th:if="${!#lists.isEmpty(positionStats)}" class="table-responsive">
+                                        <table class="table table-sm foosball-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Player</th>
+                                                    <th>Position</th>
+                                                    <th>Goals</th>
+                                                    <th>Win %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="stat : ${positionStats}">
+                                                    <td th:text="${stat.playerName}">Player</td>
+                                                    <td>
+                                                        <span class="badge foosball-score-badge" 
+                                                              th:classappend="${stat.position == 'Goalie' ? 'bg-warning' : 'bg-info'}"
+                                                              th:text="${stat.position}">Position</span>
+                                                    </td>
+                                                    <td th:text="${stat.goalsScored}">0</td>
+                                                    <td th:text="${#numbers.formatDecimal(stat.winPercentage, 1, 1)}">0.0</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Player Modal -->
+    <div class="modal fade" id="addPlayerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Player</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addPlayerForm">
+                        <div class="mb-3">
+                            <label for="playerName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="playerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="playerEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="playerEmail" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" onclick="addPlayer()">Add Player</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Game Modal -->
+    <div class="modal fade foosball-modal" id="addGameModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Record New Game</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addGameForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="foosball-team-section">
+                                    <h6>Team 1</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Player 1</label>
+                                        <select class="form-select foosball-player-select" id="team1Player1" required>
+                                            <option value="">Select Player</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Player 2</label>
+                                        <select class="form-select foosball-player-select" id="team1Player2" required>
+                                            <option value="">Select Player</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Score</label>
+                                        <input type="number" class="form-control" id="team1Score" min="0" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="foosball-team-section">
+                                    <h6>Team 2</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label">Player 1</label>
+                                        <select class="form-select foosball-player-select" id="team2Player1" required>
+                                            <option value="">Select Player</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Player 2</label>
+                                        <select class="form-select foosball-player-select" id="team2Player2" required>
+                                            <option value="">Select Player</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Score</label>
+                                        <input type="number" class="form-control" id="team2Score" min="0" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="gameNotes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="gameNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-success" onclick="addGame()">Record Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-4 bg-light">
+        <div class="container text-center">
+            <p class="mb-0 text-muted">© 2025 Thon Becker. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
