@@ -1,5 +1,6 @@
 package solutions.thonbecker.personal.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.LocalDate;
@@ -65,11 +66,23 @@ public class BibleVerseController {
 
     private BibleVerse fetchDailyBibleVerse() {
         try {
-            ResponseEntity<BibleVerseResponse> response =
-                    restTemplate.getForEntity(bibleVerseApiUrl, BibleVerseResponse.class);
+            // First try to get the response as a string since the API returns text/plain
+            ResponseEntity<String> response =
+                    restTemplate.getForEntity(bibleVerseApiUrl, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return formatBibleVerse(response.getBody());
+                String responseBody = response.getBody().trim();
+                
+                // Check if the response looks like JSON
+                if (responseBody.startsWith("{") && responseBody.endsWith("}")) {
+                    // Parse the JSON manually
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    BibleVerseResponse bibleVerseResponse = objectMapper.readValue(responseBody, BibleVerseResponse.class);
+                    return formatBibleVerse(bibleVerseResponse);
+                } else {
+                    // Not JSON, throw an error
+                    throw new BibleVerseFetchException("API returned non-JSON response");
+                }
             }
             throw new BibleVerseFetchException(FETCH_ERROR_MESSAGE);
         } catch (Exception e) {

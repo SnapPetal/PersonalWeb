@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import solutions.thonbecker.personal.types.JokeResponse;
+import solutions.thonbecker.personal.types.DadJokeApiResponse;
 
 @RestController
 @RequestMapping("/api/joke")
@@ -37,15 +38,15 @@ public class DadJokeController {
 
     private String fetchDadJoke() {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", "text/plain");
+        headers.set("Accept", "application/json");
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
-            ResponseEntity<String> response =
-                    restTemplate.exchange(DAD_JOKE_API_URL, HttpMethod.GET, entity, String.class);
+            ResponseEntity<DadJokeApiResponse> response =
+                    restTemplate.exchange(DAD_JOKE_API_URL, HttpMethod.GET, entity, DadJokeApiResponse.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                return response.getBody();
+                return response.getBody().joke();
             }
         } catch (Exception e) {
             log.error("Error fetching dad joke: {}", e.getMessage());
@@ -69,8 +70,8 @@ public class DadJokeController {
             ResponseEntity<JokeResponse> response =
                     restTemplate.exchange(url, HttpMethod.POST, requestEntity, JokeResponse.class);
 
-            if (response.getBody() != null && response.getBody().Location() != null) {
-                return response.getBody().Location().replaceFirst("https://[^/]+", CDN_DOMAIN_NAME);
+            if (response.getBody() != null && response.getBody().data() != null && response.getBody().data().Location() != null) {
+                return response.getBody().data().Location().replaceFirst("https://[^/]+", CDN_DOMAIN_NAME);
             }
         } catch (Exception e) {
             log.error("Error converting joke to audio: {}", e.getMessage());
