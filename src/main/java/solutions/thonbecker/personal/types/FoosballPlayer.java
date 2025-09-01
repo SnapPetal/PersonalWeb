@@ -9,13 +9,13 @@ import lombok.Data;
 public class FoosballPlayer {
     @JsonProperty("id")
     private Long id;
-    
+
     @JsonProperty("name")
     private String name;
-    
+
     @JsonProperty("email")
     private String email;
-    
+
     @JsonProperty("created_at")
     private String createdAt;
 }
@@ -28,10 +28,10 @@ public class FoosballPlayer {
 public class FoosballPlayerResponse {
     @JsonProperty("data")
     private List<FoosballPlayer> data;
-    
+
     @JsonProperty("status")
     private String status;
-    
+
     @JsonProperty("message")
     private String message;
 }
