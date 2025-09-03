@@ -157,31 +157,81 @@ public class FoosballService {
 
     public List<FoosballStats> getPlayerStats() {
         try {
+            // Try the API first, but if it fails, calculate stats from games
             FoosballStats[] stats =
                     restTemplate.getForObject(baseUrl + "/api/foosball/stats/players", FoosballStats[].class);
-            return stats != null ? Arrays.asList(stats) : List.of();
-        } catch (ResourceAccessException e) {
-            return List.of();
+            if (stats != null) {
+                return Arrays.asList(stats);
+            }
         } catch (RestClientException e) {
-            // Return empty list if there are parsing errors
-            log.warn("Error parsing foosball player stats response: {}", e.getMessage());
-            return List.of();
+            log.debug("Stats API not available, calculating from games: {}", e.getMessage());
         }
+        
+        // Calculate stats from games if API is not available
+        return calculatePlayerStatsFromGames();
     }
 
-    public List<FoosballStats> getPositionStats() {
-        try {
-            FoosballStats[] stats =
-                    restTemplate.getForObject(baseUrl + "/api/foosball/stats/position", FoosballStats[].class);
-            return stats != null ? Arrays.asList(stats) : List.of();
-        } catch (ResourceAccessException e) {
-            return List.of();
-        } catch (RestClientException e) {
-            // Return empty list if there are parsing errors
-            log.warn("Error parsing foosball position stats response: {}", e.getMessage());
-            return List.of();
+
+    
+    private List<FoosballStats> calculatePlayerStatsFromGames() {
+        List<FoosballPlayer> players = getAllPlayers();
+        List<FoosballGame> games = getAllGames();
+        Map<String, FoosballStats> playerStatsMap = new HashMap<>();
+        
+        // Initialize stats for all players
+        for (FoosballPlayer player : players) {
+            FoosballStats stats = new FoosballStats();
+            stats.setPlayerName(player.getName());
+            stats.setGamesPlayed(0);
+            stats.setWins(0);
+            stats.setWinPercentage(0.0);
+            playerStatsMap.put(player.getName(), stats);
         }
+        
+        // Calculate stats from games
+        for (FoosballGame game : games) {
+            // Count games and wins for each player
+            String[] players1 = {game.getWhiteTeamPlayer1(), game.getWhiteTeamPlayer2()};
+            String[] players2 = {game.getBlackTeamPlayer1(), game.getBlackTeamPlayer2()};
+            boolean team1Won = "WHITE".equals(game.getWinner());
+            
+            // Update stats for team 1 players
+            for (String playerName : players1) {
+                if (playerName != null && playerStatsMap.containsKey(playerName)) {
+                    FoosballStats stats = playerStatsMap.get(playerName);
+                    stats.setGamesPlayed(stats.getGamesPlayed() + 1);
+                    if (team1Won) {
+                        stats.setWins(stats.getWins() + 1);
+                    }
+                }
+            }
+            
+            // Update stats for team 2 players
+            for (String playerName : players2) {
+                if (playerName != null && playerStatsMap.containsKey(playerName)) {
+                    FoosballStats stats = playerStatsMap.get(playerName);
+                    stats.setGamesPlayed(stats.getGamesPlayed() + 1);
+                    if (!team1Won) {
+                        stats.setWins(stats.getWins() + 1);
+                    }
+                }
+            }
+        }
+        
+        // Calculate win percentages
+        for (FoosballStats stats : playerStatsMap.values()) {
+            if (stats.getGamesPlayed() > 0) {
+                double winPercentage = (double) stats.getWins() / stats.getGamesPlayed() * 100;
+                stats.setWinPercentage(winPercentage);
+            }
+        }
+        
+        return playerStatsMap.values().stream()
+                .filter(stats -> stats.getGamesPlayed() > 0)
+                .sorted((s1, s2) -> Double.compare(s2.getWinPercentage(), s1.getWinPercentage()))
+                .collect(Collectors.toList());
     }
+
 
     public boolean isServiceAvailable() {
         try {

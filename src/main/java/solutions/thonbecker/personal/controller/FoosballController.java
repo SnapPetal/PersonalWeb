@@ -28,12 +28,10 @@ public class FoosballController {
             List<FoosballPlayer> players = foosballService.getAllPlayers();
             List<FoosballGame> games = foosballService.getAllGames();
             List<FoosballStats> playerStats = foosballService.getPlayerStats();
-            List<FoosballStats> positionStats = foosballService.getPositionStats();
 
             model.addAttribute("players", players);
             model.addAttribute("games", games);
             model.addAttribute("playerStats", playerStats);
-            model.addAttribute("positionStats", positionStats);
         }
 
         return "foosball";
@@ -69,11 +67,7 @@ public class FoosballController {
         return foosballService.getPlayerStats();
     }
 
-    @GetMapping("/api/stats/position")
-    @ResponseBody
-    public List<FoosballStats> getPositionStats() {
-        return foosballService.getPositionStats();
-    }
+
 
 
 }
