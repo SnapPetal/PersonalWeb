@@ -75,14 +75,5 @@ public class FoosballController {
         return foosballService.getPositionStats();
     }
 
-    // Temporary debug endpoint to see raw API response
-    @GetMapping("/debug/players-raw")
-    @ResponseBody
-    public String getPlayersRawResponse() {
-        try {
-            return foosballService.getRawPlayersResponse();
-        } catch (Exception e) {
-            return "Error: " + e.getMessage();
-        }
-    }
+
 }

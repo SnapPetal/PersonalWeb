@@ -1,7 +1,10 @@
 package solutions.thonbecker.personal.service;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -53,14 +56,91 @@ public class FoosballService {
 
     public List<FoosballGame> getAllGames() {
         try {
-            FoosballGame[] games = restTemplate.getForObject(baseUrl + "/api/foosball/games", FoosballGame[].class);
-            return games != null ? Arrays.asList(games) : List.of();
+            // Get all players first
+            List<FoosballPlayer> players = getAllPlayers();
+            Map<Long, FoosballGame> gamesMap = new HashMap<>();
+            Map<Long, String> playerNames = new HashMap<>();
+            
+            // Build player names map
+            for (FoosballPlayer player : players) {
+                playerNames.put(player.getId(), player.getName());
+            }
+            
+            // Collect games from all players and build complete game objects
+            for (FoosballPlayer player : players) {
+                // Get detailed player info with games
+                FoosballPlayer detailedPlayer = restTemplate.getForObject(
+                    baseUrl + "/api/foosball/players/" + player.getId(), 
+                    FoosballPlayer.class
+                );
+                
+                if (detailedPlayer != null) {
+                    // Process games from all positions
+                    processPlayerGames(detailedPlayer, detailedPlayer.getWhiteTeamPlayer1Games(), 
+                        gamesMap, playerNames, "whiteTeamPlayer1");
+                    processPlayerGames(detailedPlayer, detailedPlayer.getWhiteTeamPlayer2Games(), 
+                        gamesMap, playerNames, "whiteTeamPlayer2");
+                    processPlayerGames(detailedPlayer, detailedPlayer.getBlackTeamPlayer1Games(), 
+                        gamesMap, playerNames, "blackTeamPlayer1");
+                    processPlayerGames(detailedPlayer, detailedPlayer.getBlackTeamPlayer2Games(), 
+                        gamesMap, playerNames, "blackTeamPlayer2");
+                }
+            }
+            
+            // Convert to list and sort by ID (most recent first)
+            return gamesMap.values().stream()
+                .sorted((g1, g2) -> Long.compare(g2.getId(), g1.getId()))
+                .collect(Collectors.toList());
+                
         } catch (ResourceAccessException e) {
             return List.of();
         } catch (RestClientException e) {
             // Return empty list if there are parsing errors
             log.warn("Error parsing foosball games response: {}", e.getMessage());
             return List.of();
+        }
+    }
+    
+    private void processPlayerGames(FoosballPlayer player, List<FoosballGame> games, 
+                                  Map<Long, FoosballGame> gamesMap, Map<Long, String> playerNames,
+                                  String position) {
+        if (games != null) {
+            for (FoosballGame game : games) {
+                FoosballGame existingGame = gamesMap.get(game.getId());
+                if (existingGame == null) {
+                    // Create new game with player names
+                    existingGame = new FoosballGame();
+                    existingGame.setId(game.getId());
+                    existingGame.setWhiteTeamScore(game.getWhiteTeamScore());
+                    existingGame.setBlackTeamScore(game.getBlackTeamScore());
+                    existingGame.setWhiteTeamGoalieScore(game.getWhiteTeamGoalieScore());
+                    existingGame.setBlackTeamGoalieScore(game.getBlackTeamGoalieScore());
+                    existingGame.setWhiteTeamForwardScore(game.getWhiteTeamForwardScore());
+                    existingGame.setBlackTeamForwardScore(game.getBlackTeamForwardScore());
+                    existingGame.setGameDate(game.getGameDate());
+                    existingGame.setPlayedAt(game.getPlayedAt());
+                    existingGame.setNotes(game.getNotes());
+                    existingGame.setWinner(game.getWinner());
+                    gamesMap.put(game.getId(), existingGame);
+                }
+                
+                // Set player name based on position
+                String playerName = playerNames.get(player.getId());
+                switch (position) {
+                    case "whiteTeamPlayer1":
+                        existingGame.setWhiteTeamPlayer1(playerName);
+                        break;
+                    case "whiteTeamPlayer2":
+                        existingGame.setWhiteTeamPlayer2(playerName);
+                        break;
+                    case "blackTeamPlayer1":
+                        existingGame.setBlackTeamPlayer1(playerName);
+                        break;
+                    case "blackTeamPlayer2":
+                        existingGame.setBlackTeamPlayer2(playerName);
+                        break;
+                }
+            }
         }
     }
 
@@ -115,16 +195,5 @@ public class FoosballService {
         }
     }
 
-    // Debug method to get raw API response
-    public String getRawPlayersResponse() {
-        try {
-            log.info("Fetching raw response from: {}", baseUrl + "/api/foosball/players");
-            String response = restTemplate.getForObject(baseUrl + "/api/foosball/players", String.class);
-            log.info("Raw response: {}", response);
-            return response != null ? response : "No response";
-        } catch (Exception e) {
-            log.error("Error getting raw response: {}", e.getMessage());
-            return "Error: " + e.getMessage();
-        }
-    }
+
 }

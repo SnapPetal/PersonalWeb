@@ -67,7 +67,7 @@ function updatePlayersList() {
                         <tr>
                             <td>${player.name || 'N/A'}</td>
                             <td>${player.email || 'N/A'}</td>
-                            <td>${player.createdAt || 'N/A'}</td>
+                            <td>${formatCreatedAt(player.createdAt)}</td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -108,7 +108,7 @@ function updateGamesList() {
                 <tbody>
                     ${games.map(game => `
                         <tr>
-                            <td>${game.gameDate || 'N/A'}</td>
+                            <td>${formatGameDate(game.gameDate)}</td>
                             <td>${formatTeamPlayers(game.team1Players)}</td>
                             <td>
                                 <span class="badge bg-primary">${game.team1Score || 0}</span>
@@ -132,7 +132,109 @@ function updateGamesList() {
 // Format team players for display
 function formatTeamPlayers(teamPlayers) {
     if (!teamPlayers || !Array.isArray(teamPlayers)) return 'N/A';
-    return teamPlayers.map(player => player.name || 'Unknown').join(', ');
+    const playerNames = teamPlayers.map(player => player.name || 'Unknown').filter(name => name !== 'Unknown');
+    if (playerNames.length === 0) {
+        return 'Player names not available';
+    }
+    return playerNames.join(', ');
+}
+
+// Format game date for display
+function formatGameDate(dateString) {
+    if (!dateString) return 'N/A';
+    
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // If it's today, show time only
+        if (date.toDateString() === now.toDateString()) {
+            return `Today at ${date.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            })}`;
+        }
+        
+        // If it's yesterday
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+            return `Yesterday at ${date.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            })}`;
+        }
+        
+        // If it's within the last 7 days, show day name
+        if (diffDays <= 7) {
+            return `${date.toLocaleDateString('en-US', { weekday: 'long' })} at ${date.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            })}`;
+        }
+        
+        // Otherwise show full date
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+        });
+    } catch (error) {
+        console.warn('Error formatting date:', dateString, error);
+        return dateString; // Fallback to original string
+    }
+}
+
+// Format user creation time for display
+function formatCreatedAt(dateString) {
+    if (!dateString) return 'N/A';
+    
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // If it's today, show "Today"
+        if (date.toDateString() === now.toDateString()) {
+            return 'Today';
+        }
+        
+        // If it's yesterday, show "Yesterday"
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        }
+        
+        // If it's within the last 7 days, show day name
+        if (diffDays <= 7) {
+            return date.toLocaleDateString('en-US', { weekday: 'long' });
+        }
+        
+        // If it's within the last 30 days, show "X days ago"
+        if (diffDays <= 30) {
+            return `${diffDays} days ago`;
+        }
+        
+        // Otherwise show date only (no time for user creation)
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric'
+        });
+    } catch (error) {
+        console.warn('Error formatting created date:', dateString, error);
+        return dateString; // Fallback to original string
+    }
 }
 
 // Populate player select dropdowns
@@ -229,17 +331,19 @@ async function addGame() {
     }
     
     try {
+        // Get player names from the selected IDs
+        const player1Name = players.find(p => p.id == team1Player1)?.name;
+        const player2Name = players.find(p => p.id == team1Player2)?.name;
+        const player3Name = players.find(p => p.id == team2Player1)?.name;
+        const player4Name = players.find(p => p.id == team2Player2)?.name;
+        
         const gameData = {
-            team1Players: [
-                { id: parseInt(team1Player1) },
-                { id: parseInt(team1Player2) }
-            ],
-            team2Players: [
-                { id: parseInt(team2Player1) },
-                { id: parseInt(team2Player2) }
-            ],
-            team1Score: team1Score,
-            team2Score: team2Score,
+            whiteTeamPlayer1: player1Name,
+            whiteTeamPlayer2: player2Name,
+            blackTeamPlayer1: player3Name,
+            blackTeamPlayer2: player4Name,
+            whiteTeamScore: team1Score,
+            blackTeamScore: team2Score,
             notes: notes
         };
         
