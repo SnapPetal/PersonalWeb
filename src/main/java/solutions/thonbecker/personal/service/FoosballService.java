@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import lombok.extern.slf4j.Slf4j;
 import solutions.thonbecker.personal.types.FoosballGame;
 import solutions.thonbecker.personal.types.FoosballPlayer;
 import solutions.thonbecker.personal.types.FoosballStats;
@@ -157,80 +157,45 @@ public class FoosballService {
 
     public List<FoosballStats> getPlayerStats() {
         try {
-            // Try the API first, but if it fails, calculate stats from games
+            // Use the correct API endpoint
             FoosballStats[] stats =
-                    restTemplate.getForObject(baseUrl + "/api/foosball/stats/players", FoosballStats[].class);
+                    restTemplate.getForObject(baseUrl + "/api/foosball/stats/players/all", FoosballStats[].class);
             if (stats != null) {
-                return Arrays.asList(stats);
+                // Sort by number of wins (descending), then by win percentage (descending)
+                return Arrays.stream(stats)
+                    .sorted((s1, s2) -> {
+                        // Get wins, treating null as 0
+                        int wins1 = s1.getWins() != null ? s1.getWins() : 0;
+                        int wins2 = s2.getWins() != null ? s2.getWins() : 0;
+                        
+                        // Primary sort: by wins (descending - higher wins first)
+                        int winsComparison = Integer.compare(wins2, wins1);
+                        if (winsComparison != 0) {
+                            return winsComparison;
+                        }
+                        
+                        // Secondary sort: if wins are equal, sort by win percentage (descending)
+                        double winPct1 = s1.getWinPercentage() != null ? s1.getWinPercentage() : 0.0;
+                        double winPct2 = s2.getWinPercentage() != null ? s2.getWinPercentage() : 0.0;
+                        int pctComparison = Double.compare(winPct2, winPct1);
+                        if (pctComparison != 0) {
+                            return pctComparison;
+                        }
+                        
+                        // Tertiary sort: if both wins and percentage are equal, sort by name (ascending)
+                        return s1.getPlayerName().compareTo(s2.getPlayerName());
+                    })
+                    .collect(Collectors.toList());
             }
+            return List.of();
         } catch (RestClientException e) {
-            log.debug("Stats API not available, calculating from games: {}", e.getMessage());
+            log.warn("Error fetching player stats from API: {}", e.getMessage());
+            return List.of();
         }
-        
-        // Calculate stats from games if API is not available
-        return calculatePlayerStatsFromGames();
     }
 
 
-    
-    private List<FoosballStats> calculatePlayerStatsFromGames() {
-        List<FoosballPlayer> players = getAllPlayers();
-        List<FoosballGame> games = getAllGames();
-        Map<String, FoosballStats> playerStatsMap = new HashMap<>();
-        
-        // Initialize stats for all players
-        for (FoosballPlayer player : players) {
-            FoosballStats stats = new FoosballStats();
-            stats.setPlayerName(player.getName());
-            stats.setGamesPlayed(0);
-            stats.setWins(0);
-            stats.setWinPercentage(0.0);
-            playerStatsMap.put(player.getName(), stats);
-        }
-        
-        // Calculate stats from games
-        for (FoosballGame game : games) {
-            // Count games and wins for each player
-            String[] players1 = {game.getWhiteTeamPlayer1(), game.getWhiteTeamPlayer2()};
-            String[] players2 = {game.getBlackTeamPlayer1(), game.getBlackTeamPlayer2()};
-            boolean team1Won = "WHITE".equals(game.getWinner());
-            
-            // Update stats for team 1 players
-            for (String playerName : players1) {
-                if (playerName != null && playerStatsMap.containsKey(playerName)) {
-                    FoosballStats stats = playerStatsMap.get(playerName);
-                    stats.setGamesPlayed(stats.getGamesPlayed() + 1);
-                    if (team1Won) {
-                        stats.setWins(stats.getWins() + 1);
-                    }
-                }
-            }
-            
-            // Update stats for team 2 players
-            for (String playerName : players2) {
-                if (playerName != null && playerStatsMap.containsKey(playerName)) {
-                    FoosballStats stats = playerStatsMap.get(playerName);
-                    stats.setGamesPlayed(stats.getGamesPlayed() + 1);
-                    if (!team1Won) {
-                        stats.setWins(stats.getWins() + 1);
-                    }
-                }
-            }
-        }
-        
-        // Calculate win percentages
-        for (FoosballStats stats : playerStatsMap.values()) {
-            if (stats.getGamesPlayed() > 0) {
-                double winPercentage = (double) stats.getWins() / stats.getGamesPlayed() * 100;
-                stats.setWinPercentage(winPercentage);
-            }
-        }
-        
-        return playerStatsMap.values().stream()
-                .filter(stats -> stats.getGamesPlayed() > 0)
-                .sorted((s1, s2) -> Double.compare(s2.getWinPercentage(), s1.getWinPercentage()))
-                .collect(Collectors.toList());
-    }
+
 
 
     public boolean isServiceAvailable() {

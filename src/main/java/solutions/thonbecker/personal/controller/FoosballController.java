@@ -67,6 +67,12 @@ public class FoosballController {
         return foosballService.getPlayerStats();
     }
 
+    @GetMapping("/api/stats/players/all")
+    @ResponseBody
+    public List<FoosballStats> getAllPlayerStats() {
+        return foosballService.getPlayerStats();
+    }
+
 
 
 
