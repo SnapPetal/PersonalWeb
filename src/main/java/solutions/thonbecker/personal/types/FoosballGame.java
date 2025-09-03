@@ -20,12 +20,12 @@ public class FoosballGame {
     private String playedAt;
     private String notes;
     private String winner;
-    
+
     // Getter for backward compatibility - use playedAt if gameDate is null
     public String getGameDate() {
         return gameDate != null ? gameDate : playedAt;
     }
-    
+
     // Computed properties for backward compatibility
     public List<FoosballPlayer> getTeam1Players() {
         // Create mock player objects for display purposes
@@ -35,7 +35,7 @@ public class FoosballGame {
         player2.setName(whiteTeamPlayer2);
         return List.of(player1, player2);
     }
-    
+
     public List<FoosballPlayer> getTeam2Players() {
         // Create mock player objects for display purposes
         FoosballPlayer player1 = new FoosballPlayer();
@@ -44,11 +44,11 @@ public class FoosballGame {
         player2.setName(blackTeamPlayer2);
         return List.of(player1, player2);
     }
-    
+
     public Integer getTeam1Score() {
         return whiteTeamScore;
     }
-    
+
     public Integer getTeam2Score() {
         return blackTeamScore;
     }

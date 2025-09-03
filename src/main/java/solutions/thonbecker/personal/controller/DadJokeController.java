@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import solutions.thonbecker.personal.types.JokeResponse;
 import solutions.thonbecker.personal.types.DadJokeApiResponse;
+import solutions.thonbecker.personal.types.JokeResponse;
 
 @RestController
 @RequestMapping("/api/joke")
@@ -70,7 +70,9 @@ public class DadJokeController {
             ResponseEntity<JokeResponse> response =
                     restTemplate.exchange(url, HttpMethod.POST, requestEntity, JokeResponse.class);
 
-            if (response.getBody() != null && response.getBody().data() != null && response.getBody().data().Location() != null) {
+            if (response.getBody() != null
+                    && response.getBody().data() != null
+                    && response.getBody().data().Location() != null) {
                 return response.getBody().data().Location().replaceFirst("https://[^/]+", CDN_DOMAIN_NAME);
             }
         } catch (Exception e) {

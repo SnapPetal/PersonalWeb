@@ -67,17 +67,17 @@ public class BibleVerseController {
     private BibleVerse fetchDailyBibleVerse() {
         try {
             // First try to get the response as a string since the API returns text/plain
-            ResponseEntity<String> response =
-                    restTemplate.getForEntity(bibleVerseApiUrl, String.class);
+            ResponseEntity<String> response = restTemplate.getForEntity(bibleVerseApiUrl, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 String responseBody = response.getBody().trim();
-                
+
                 // Check if the response looks like JSON
                 if (responseBody.startsWith("{") && responseBody.endsWith("}")) {
                     // Parse the JSON manually
                     ObjectMapper objectMapper = new ObjectMapper();
-                    BibleVerseResponse bibleVerseResponse = objectMapper.readValue(responseBody, BibleVerseResponse.class);
+                    BibleVerseResponse bibleVerseResponse =
+                            objectMapper.readValue(responseBody, BibleVerseResponse.class);
                     return formatBibleVerse(bibleVerseResponse);
                 } else {
                     // Not JSON, throw an error

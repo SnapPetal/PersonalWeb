@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import lombok.extern.slf4j.Slf4j;
 import solutions.thonbecker.personal.types.FoosballGame;
 import solutions.thonbecker.personal.types.FoosballPlayer;
 import solutions.thonbecker.personal.types.FoosballStats;
@@ -60,38 +60,52 @@ public class FoosballService {
             List<FoosballPlayer> players = getAllPlayers();
             Map<Long, FoosballGame> gamesMap = new HashMap<>();
             Map<Long, String> playerNames = new HashMap<>();
-            
+
             // Build player names map
             for (FoosballPlayer player : players) {
                 playerNames.put(player.getId(), player.getName());
             }
-            
+
             // Collect games from all players and build complete game objects
             for (FoosballPlayer player : players) {
                 // Get detailed player info with games
                 FoosballPlayer detailedPlayer = restTemplate.getForObject(
-                    baseUrl + "/api/foosball/players/" + player.getId(), 
-                    FoosballPlayer.class
-                );
-                
+                        baseUrl + "/api/foosball/players/" + player.getId(), FoosballPlayer.class);
+
                 if (detailedPlayer != null) {
                     // Process games from all positions
-                    processPlayerGames(detailedPlayer, detailedPlayer.getWhiteTeamPlayer1Games(), 
-                        gamesMap, playerNames, "whiteTeamPlayer1");
-                    processPlayerGames(detailedPlayer, detailedPlayer.getWhiteTeamPlayer2Games(), 
-                        gamesMap, playerNames, "whiteTeamPlayer2");
-                    processPlayerGames(detailedPlayer, detailedPlayer.getBlackTeamPlayer1Games(), 
-                        gamesMap, playerNames, "blackTeamPlayer1");
-                    processPlayerGames(detailedPlayer, detailedPlayer.getBlackTeamPlayer2Games(), 
-                        gamesMap, playerNames, "blackTeamPlayer2");
+                    processPlayerGames(
+                            detailedPlayer,
+                            detailedPlayer.getWhiteTeamPlayer1Games(),
+                            gamesMap,
+                            playerNames,
+                            "whiteTeamPlayer1");
+                    processPlayerGames(
+                            detailedPlayer,
+                            detailedPlayer.getWhiteTeamPlayer2Games(),
+                            gamesMap,
+                            playerNames,
+                            "whiteTeamPlayer2");
+                    processPlayerGames(
+                            detailedPlayer,
+                            detailedPlayer.getBlackTeamPlayer1Games(),
+                            gamesMap,
+                            playerNames,
+                            "blackTeamPlayer1");
+                    processPlayerGames(
+                            detailedPlayer,
+                            detailedPlayer.getBlackTeamPlayer2Games(),
+                            gamesMap,
+                            playerNames,
+                            "blackTeamPlayer2");
                 }
             }
-            
+
             // Convert to list and sort by ID (most recent first)
             return gamesMap.values().stream()
-                .sorted((g1, g2) -> Long.compare(g2.getId(), g1.getId()))
-                .collect(Collectors.toList());
-                
+                    .sorted((g1, g2) -> Long.compare(g2.getId(), g1.getId()))
+                    .collect(Collectors.toList());
+
         } catch (ResourceAccessException e) {
             return List.of();
         } catch (RestClientException e) {
@@ -100,10 +114,13 @@ public class FoosballService {
             return List.of();
         }
     }
-    
-    private void processPlayerGames(FoosballPlayer player, List<FoosballGame> games, 
-                                  Map<Long, FoosballGame> gamesMap, Map<Long, String> playerNames,
-                                  String position) {
+
+    private void processPlayerGames(
+            FoosballPlayer player,
+            List<FoosballGame> games,
+            Map<Long, FoosballGame> gamesMap,
+            Map<Long, String> playerNames,
+            String position) {
         if (games != null) {
             for (FoosballGame game : games) {
                 FoosballGame existingGame = gamesMap.get(game.getId());
@@ -123,7 +140,7 @@ public class FoosballService {
                     existingGame.setWinner(game.getWinner());
                     gamesMap.put(game.getId(), existingGame);
                 }
-                
+
                 // Set player name based on position
                 String playerName = playerNames.get(player.getId());
                 switch (position) {
@@ -163,29 +180,29 @@ public class FoosballService {
             if (stats != null) {
                 // Sort by number of wins (descending), then by win percentage (descending)
                 return Arrays.stream(stats)
-                    .sorted((s1, s2) -> {
-                        // Get wins, treating null as 0
-                        int wins1 = s1.getWins() != null ? s1.getWins() : 0;
-                        int wins2 = s2.getWins() != null ? s2.getWins() : 0;
-                        
-                        // Primary sort: by wins (descending - higher wins first)
-                        int winsComparison = Integer.compare(wins2, wins1);
-                        if (winsComparison != 0) {
-                            return winsComparison;
-                        }
-                        
-                        // Secondary sort: if wins are equal, sort by win percentage (descending)
-                        double winPct1 = s1.getWinPercentage() != null ? s1.getWinPercentage() : 0.0;
-                        double winPct2 = s2.getWinPercentage() != null ? s2.getWinPercentage() : 0.0;
-                        int pctComparison = Double.compare(winPct2, winPct1);
-                        if (pctComparison != 0) {
-                            return pctComparison;
-                        }
-                        
-                        // Tertiary sort: if both wins and percentage are equal, sort by name (ascending)
-                        return s1.getPlayerName().compareTo(s2.getPlayerName());
-                    })
-                    .collect(Collectors.toList());
+                        .sorted((s1, s2) -> {
+                            // Get wins, treating null as 0
+                            int wins1 = s1.getWins() != null ? s1.getWins() : 0;
+                            int wins2 = s2.getWins() != null ? s2.getWins() : 0;
+
+                            // Primary sort: by wins (descending - higher wins first)
+                            int winsComparison = Integer.compare(wins2, wins1);
+                            if (winsComparison != 0) {
+                                return winsComparison;
+                            }
+
+                            // Secondary sort: if wins are equal, sort by win percentage (descending)
+                            double winPct1 = s1.getWinPercentage() != null ? s1.getWinPercentage() : 0.0;
+                            double winPct2 = s2.getWinPercentage() != null ? s2.getWinPercentage() : 0.0;
+                            int pctComparison = Double.compare(winPct2, winPct1);
+                            if (pctComparison != 0) {
+                                return pctComparison;
+                            }
+
+                            // Tertiary sort: if both wins and percentage are equal, sort by name (ascending)
+                            return s1.getPlayerName().compareTo(s2.getPlayerName());
+                        })
+                        .collect(Collectors.toList());
             }
             return List.of();
         } catch (RestClientException e) {
@@ -193,10 +210,6 @@ public class FoosballService {
             return List.of();
         }
     }
-
-
-
-
 
     public boolean isServiceAvailable() {
         try {
@@ -209,6 +222,4 @@ public class FoosballService {
             return false;
         }
     }
-
-
 }
