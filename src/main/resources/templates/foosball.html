@@ -206,8 +206,11 @@
                 <div class="row mb-4">
                     <div class="col-12">
                         <div class="card">
-                            <div class="card-header">
+                            <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-graph-up"></i> Player Statistics</h5>
+                                <button class="btn btn-outline-primary btn-sm foosball-refresh-btn" onclick="refreshPlayerStats()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
                             </div>
                             <div class="card-body">
                                 <div id="playerStatsList">
@@ -219,18 +222,32 @@
                                         <table class="table table-sm foosball-table">
                                             <thead>
                                                 <tr>
-                                                    <th>Player</th>
-                                                    <th>Games</th>
-                                                    <th>Wins</th>
-                                                    <th>Win %</th>
+                                                    <th><i class="bi bi-person"></i> Player</th>
+                                                    <th><i class="bi bi-controller"></i> Games</th>
+                                                    <th><i class="bi bi-trophy"></i> Wins</th>
+                                                    <th><i class="bi bi-x-circle"></i> Losses</th>
+                                                    <th><i class="bi bi-percent"></i> Win Rate</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr th:each="stat : ${playerStats}">
-                                                    <td th:text="${stat.playerName}">Player</td>
-                                                    <td th:text="${stat.gamesPlayed}">0</td>
-                                                    <td th:text="${stat.wins}">0</td>
-                                                    <td th:text="${#numbers.formatDecimal(stat.winPercentage, 1, 1)}">0.0</td>
+                                                    <td>
+                                                        <strong class="foosball-player-name" th:text="${stat.playerName ?: 'Unknown Player'}">Player</strong>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-info" th:text="${stat.gamesPlayed ?: (stat.totalGames ?: 0)}">0</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-success" th:text="${stat.wins ?: 0}">0</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-danger" th:text="${stat.losses ?: 0}">0</span>
+                                                    </td>
+                                                    <td>
+                                                        <span th:if="${stat.winPercentage != null and (stat.gamesPlayed ?: stat.totalGames ?: 0) > 0}" 
+                                                              th:text="${#numbers.formatDecimal(stat.winPercentage, 1, 0)} + '%'">0%</span>
+                                                        <span th:if="${stat.winPercentage == null or (stat.gamesPlayed ?: stat.totalGames ?: 0) == 0}" class="text-secondary">-</span>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -246,7 +263,7 @@
     </main>
 
     <!-- Add Player Modal -->
-    <div class="modal fade" id="addPlayerModal" tabindex="-1">
+    <div class="modal fade foosball-modal" id="addPlayerModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">

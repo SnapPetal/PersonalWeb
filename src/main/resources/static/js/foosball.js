@@ -2,11 +2,13 @@
 
 let players = [];
 let games = [];
+let playerStats = [];
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
     loadPlayers();
     loadGames();
+    loadPlayerStats();
     populatePlayerSelects();
 });
 
@@ -37,6 +39,19 @@ async function loadGames() {
     }
 }
 
+// Load player statistics from the API
+async function loadPlayerStats() {
+    try {
+        const response = await fetch('/foosball/api/stats/players');
+        if (response.ok) {
+            playerStats = await response.json();
+            updatePlayerStatsList();
+        }
+    } catch (error) {
+        console.error('Error loading player stats:', error);
+    }
+}
+
 // Update the players list display
 function updatePlayersList() {
     const playersList = document.getElementById('playersList');
@@ -63,7 +78,14 @@ function updatePlayersList() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${players.map(player => `
+                    ${players
+                        .sort((a, b) => {
+                            // Sort alphabetically by player name
+                            const nameA = (a.name || 'Unknown Player').toLowerCase();
+                            const nameB = (b.name || 'Unknown Player').toLowerCase();
+                            return nameA.localeCompare(nameB);
+                        })
+                        .map(player => `
                         <tr>
                             <td>${player.name || 'N/A'}</td>
                             <td>${player.email || 'N/A'}</td>
@@ -250,8 +272,15 @@ function populatePlayerSelects() {
             // Clear existing options except the first one
             select.innerHTML = '<option value="">Select Player</option>';
             
+            // Sort players alphabetically by name before adding options
+            const sortedPlayers = [...players].sort((a, b) => {
+                const nameA = (a.name || 'Unknown Player').toLowerCase();
+                const nameB = (b.name || 'Unknown Player').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            
             // Add player options
-            players.forEach(player => {
+            sortedPlayers.forEach(player => {
                 const option = document.createElement('option');
                 option.value = player.id;
                 option.textContent = player.name || 'Unknown Player';
@@ -360,6 +389,9 @@ async function addGame() {
             games.unshift(newGame); // Add to beginning of array
             updateGamesList();
             
+            // Refresh player statistics to reflect the new game
+            await loadPlayerStats();
+            
             // Clear form and close modal
             document.getElementById('addGameForm').reset();
             const modal = bootstrap.Modal.getInstance(document.getElementById('addGameModal'));
@@ -373,6 +405,108 @@ async function addGame() {
     } catch (error) {
         console.error('Error recording game:', error);
         showAlert('Failed to record game. Please try again.', 'danger');
+    }
+}
+
+// Update the player statistics list display
+function updatePlayerStatsList() {
+    const playerStatsList = document.getElementById('playerStatsList');
+    if (!playerStatsList) return;
+
+    if (!playerStats || playerStats.length === 0) {
+        playerStatsList.innerHTML = `
+            <div class="text-center text-muted py-4 foosball-empty-state">
+                <i class="bi bi-graph-up display-4"></i>
+                <p class="mt-2">No player statistics available yet.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-sm foosball-table">
+                <thead>
+                    <tr>
+                        <th><i class="bi bi-person"></i> Player</th>
+                        <th><i class="bi bi-controller"></i> Games</th>
+                        <th><i class="bi bi-trophy"></i> Wins</th>
+                        <th><i class="bi bi-x-circle"></i> Losses</th>
+                        <th><i class="bi bi-percent"></i> Win Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${playerStats
+                        .sort((a, b) => {
+                            // Primary sort: by win percentage (descending - higher win rate first)
+                            const winPctA = a.winPercentage || 0;
+                            const winPctB = b.winPercentage || 0;
+                            const winPctComparison = winPctB - winPctA;
+                            
+                            if (winPctComparison !== 0) {
+                                return winPctComparison;
+                            }
+                            
+                            // Secondary sort: if win rates are equal, sort by player name (ascending)
+                            const nameA = (a.playerName || a.name || 'Unknown Player').toLowerCase();
+                            const nameB = (b.playerName || b.name || 'Unknown Player').toLowerCase();
+                            return nameA.localeCompare(nameB);
+                        })
+                        .map(stat => {
+                        // Debug log to see what data we're getting
+                        console.log('Player stat data:', stat);
+                        
+                        // Handle different possible property names from the API
+                        const playerName = stat.playerName || stat.name || 'Unknown Player';
+                        const gamesPlayed = stat.gamesPlayed || stat.totalGames || 0;
+                        const wins = stat.wins || 0;
+                        const losses = stat.losses || (gamesPlayed - wins) || 0;
+                        const winPercentage = stat.winPercentage || (gamesPlayed > 0 ? (wins / gamesPlayed) * 100 : 0);
+                        
+                        // No color classes needed - just plain text
+                        
+                        return `
+                            <tr>
+                                <td><strong class="foosball-player-name">${playerName}</strong></td>
+                                <td><span class="badge bg-info text-dark">${gamesPlayed}</span></td>
+                                <td><span class="badge bg-success">${wins}</span></td>
+                                <td><span class="badge bg-danger">${losses}</span></td>
+                                <td>
+                                    ${gamesPlayed > 0 ? 
+                                        `<span>${Math.round(winPercentage)}%</span>` : 
+                                        '<span class="text-secondary">-</span>'
+                                    }
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    playerStatsList.innerHTML = tableHTML;
+}
+
+// Refresh player statistics
+async function refreshPlayerStats() {
+    const refreshBtn = document.querySelector('.foosball-refresh-btn[onclick="refreshPlayerStats()"]');
+    if (refreshBtn) {
+        refreshBtn.classList.add('refreshing');
+    }
+    
+    try {
+        await loadPlayerStats();
+        showAlert('Player statistics refreshed successfully!', 'success');
+    } catch (error) {
+        console.error('Error refreshing player stats:', error);
+        showAlert('Failed to refresh player statistics.', 'danger');
+    } finally {
+        if (refreshBtn) {
+            setTimeout(() => {
+                refreshBtn.classList.remove('refreshing');
+            }, 1000);
+        }
     }
 }
 
