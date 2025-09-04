@@ -453,9 +453,6 @@ function updatePlayerStatsList() {
                             return nameA.localeCompare(nameB);
                         })
                         .map(stat => {
-                        // Debug log to see what data we're getting
-                        console.log('Player stat data:', stat);
-                        
                         // Handle different possible property names from the API
                         const playerName = stat.playerName || stat.name || 'Unknown Player';
                         const gamesPlayed = stat.gamesPlayed || stat.totalGames || 0;
