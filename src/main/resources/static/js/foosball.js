@@ -1,30 +1,16 @@
 // Foosball Management JavaScript
 
-let players = [];
 let games = [];
 let playerStats = [];
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-    loadPlayers();
     loadGames();
     loadPlayerStats();
     populatePlayerSelects();
 });
 
-// Load players from the API
-async function loadPlayers() {
-    try {
-        const response = await fetch('/foosball/api/players');
-        if (response.ok) {
-            players = await response.json();
-            updatePlayersList();
-            populatePlayerSelects();
-        }
-    } catch (error) {
-        console.error('Error loading players:', error);
-    }
-}
+
 
 // Load games from the API
 async function loadGames() {
@@ -52,53 +38,7 @@ async function loadPlayerStats() {
     }
 }
 
-// Update the players list display
-function updatePlayersList() {
-    const playersList = document.getElementById('playersList');
-    if (!playersList) return;
 
-    if (players.length === 0) {
-        playersList.innerHTML = `
-            <div class="text-center text-muted py-4">
-                <i class="bi bi-people display-4"></i>
-                <p class="mt-2">No players found. Add your first player to get started!</p>
-            </div>
-        `;
-        return;
-    }
-
-    const tableHTML = `
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${players
-                        .sort((a, b) => {
-                            // Sort alphabetically by player name
-                            const nameA = (a.name || 'Unknown Player').toLowerCase();
-                            const nameB = (b.name || 'Unknown Player').toLowerCase();
-                            return nameA.localeCompare(nameB);
-                        })
-                        .map(player => `
-                        <tr>
-                            <td>${player.name || 'N/A'}</td>
-                            <td>${player.email || 'N/A'}</td>
-                            <td>${formatCreatedAt(player.createdAt)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
-    
-    playersList.innerHTML = tableHTML;
-}
 
 // Update the games list display
 function updateGamesList() {
@@ -314,17 +254,8 @@ async function addPlayer() {
         
         if (response.ok) {
             const newPlayer = await response.json();
-            players.push(newPlayer);
-            updatePlayersList();
-            populatePlayerSelects();
-            
-            // Clear form and close modal
-            document.getElementById('addPlayerForm').reset();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('addPlayerModal'));
-            modal.hide();
-            
-            // Show success message
             showAlert('Player added successfully!', 'success');
+            location.reload();
         } else {
             throw new Error('Failed to add player');
         }
@@ -507,21 +438,7 @@ async function refreshPlayerStats() {
     }
 }
 
-// Refresh players list
-function refreshPlayers() {
-    const refreshBtn = document.querySelector('.foosball-refresh-btn[onclick="refreshPlayers()"]');
-    if (refreshBtn) {
-        refreshBtn.classList.add('refreshing');
-        refreshBtn.disabled = true;
-    }
-    
-    loadPlayers().finally(() => {
-        if (refreshBtn) {
-            refreshBtn.classList.remove('refreshing');
-            refreshBtn.disabled = false;
-        }
-    });
-}
+
 
 // Refresh games list
 function refreshGames() {

@@ -1,7 +1,8 @@
 spring:
   application:
     name: "personal"
-
+  thymeleaf:
+    cache: false
 bible:
   verse:
     api:

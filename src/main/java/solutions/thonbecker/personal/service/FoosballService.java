@@ -32,7 +32,18 @@ public class FoosballService {
         try {
             FoosballPlayer[] players =
                     restTemplate.getForObject(baseUrl + "/api/foosball/players", FoosballPlayer[].class);
-            return players != null ? Arrays.asList(players) : List.of();
+            if (players != null) {
+                for (FoosballPlayer player : players) {
+                    // Fetch detailed player info to get the email
+                    FoosballPlayer detailedPlayer = restTemplate.getForObject(
+                            baseUrl + "/api/foosball/players/" + player.getId(), FoosballPlayer.class);
+                    if (detailedPlayer != null) {
+                        player.setEmail(detailedPlayer.getEmail());
+                    }
+                }
+                return Arrays.asList(players);
+            }
+            return List.of();
         } catch (ResourceAccessException e) {
             // Return empty list if service is unavailable
             return List.of();
