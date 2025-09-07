@@ -30,21 +30,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Restore saved values from localStorage
     function restoreSavedValues() {
         // Restore server URL
-        const savedServerUrl = localStorage.getItem('trivia-server-url');
+        let savedServerUrl = localStorage.getItem('trivia-server-url');
         if (savedServerUrl) {
             serverUrlInput.value = savedServerUrl;
         } else {
-            // Default to endurance.thonbecker.biz - assuming this is your WebSocket server
-            serverUrlInput.value = 'ws://localhost:8080/quiz-websocket'; // Local Endurance backend on port 8080         
-            // Debug: Log available endpoints
-            console.log('Available endpoints for testing:');
-            console.log('1. wss://endurance.thonbecker.biz/quiz-websocket');
-            console.log('2. ws://localhost:8080/quiz-websocket'); // Local dev
-            console.log('3. wss://endurance.thonbecker.biz/ws'); // Alternative
-            
-            // Alternative endpoints for testing
-            // 'ws://localhost:8080/quiz' // Local development
-            // 'wss://endurance.thonbecker.biz/ws/quiz' // Alternative path
+            // Default to a local websocket endpoint for development
+            serverUrlInput.value = 'ws://localhost:8080/quiz-websocket';
         }
 
         // Restore player name
@@ -129,13 +120,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create WebSocket connection
             let socket;
 
-            // Determine whether to use SockJS or native WebSocket
-            if (serverUrl.includes('sockjs')) {
-                // Use SockJS
-                socket = new SockJS(serverUrl);
-            } else {
-                // Use native WebSocket
+            // Use native WebSocket for ws:// or wss://, otherwise fall back to SockJS for http:// or https://
+            if (serverUrl.startsWith('ws://') || serverUrl.startsWith('wss://')) {
                 socket = new WebSocket(serverUrl);
+            } else {
+                socket = new SockJS(serverUrl);
             }
 
             stompClient = Stomp.over(socket);
@@ -269,11 +258,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const player = {
             id: playerId,
-            name: playerName,
+            name: playerName
+        };
+
+        const joinRequest = {
+            player: player,
             quizId: quizId
         };
 
-        stompClient.send('/app/quiz/join', {}, JSON.stringify(player));
+        stompClient.send('/app/quiz/join', {}, JSON.stringify(joinRequest));
         log(`Joining quiz ${quizId} as ${playerName}`, 'info');
     }
 
@@ -499,20 +492,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         log(`Testing connection to ${serverUrl}...`, 'info');
         
-        try {
-            const testSocket = new WebSocket(serverUrl);
-            testSocket.onopen = function() {
-                log('Connection test successful!', 'success');
-                testSocket.close();
-            };
-            testSocket.onerror = function(error) {
-                log(`Connection test failed: ${error.type}`, 'danger');
-            };
-            testSocket.onclose = function(event) {
-                log(`Connection closed: ${event.code} - ${event.reason}`, 'warning');
-            };
-        } catch (error) {
-            log(`Connection test error: ${error.message}`, 'danger');
-        }
+        // For SockJS, we test the info endpoint
+        const infoUrl = serverUrl + '/info';
+        
+        fetch(infoUrl)
+            .then(response => {
+                if (response.ok) {
+                    log('Connection test successful! SockJS info endpoint is reachable.', 'success');
+                    return response.json();
+                } else {
+                    log(`Connection test failed: Unable to reach SockJS info endpoint. Status: ${response.status}`, 'danger');
+                }
+            })
+            .then(info => {
+                if (info) {
+                    log(`Server info: WebSocket enabled: ${info.websocket}`, 'info');
+                }
+            })
+            .catch(error => {
+                log(`Connection test error: ${error.message}`, 'danger');
+            });
     }
 });
