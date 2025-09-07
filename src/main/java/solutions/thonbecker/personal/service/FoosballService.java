@@ -19,23 +19,22 @@ import solutions.thonbecker.personal.types.FoosballStats;
 @Slf4j
 public class FoosballService {
 
-    @Value("${foosball.api.base-url:http://localhost:8080}")
+    @Value("${foosball.api.base-url}")
     private String baseUrl;
 
     private final RestTemplate restTemplate;
 
-    public FoosballService(RestTemplate restTemplate) {
+    public FoosballService(final RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
     public List<FoosballPlayer> getAllPlayers() {
         try {
-            FoosballPlayer[] players =
-                    restTemplate.getForObject(baseUrl + "/api/foosball/players", FoosballPlayer[].class);
+            final var players = restTemplate.getForObject(baseUrl + "/api/foosball/players", FoosballPlayer[].class);
             if (players != null) {
-                for (FoosballPlayer player : players) {
+                for (final var player : players) {
                     // Fetch detailed player info to get the email
-                    FoosballPlayer detailedPlayer = restTemplate.getForObject(
+                    final var detailedPlayer = restTemplate.getForObject(
                             baseUrl + "/api/foosball/players/" + player.getId(), FoosballPlayer.class);
                     if (detailedPlayer != null) {
                         player.setEmail(detailedPlayer.getEmail());
@@ -44,22 +43,22 @@ public class FoosballService {
                 return Arrays.asList(players);
             }
             return List.of();
-        } catch (ResourceAccessException e) {
+        } catch (final ResourceAccessException e) {
             // Return empty list if service is unavailable
             return List.of();
-        } catch (RestClientException e) {
+        } catch (final RestClientException e) {
             // Return empty list if there are parsing errors
             log.warn("Error parsing foosball players response: {}", e.getMessage());
             return List.of();
         }
     }
 
-    public FoosballPlayer createPlayer(FoosballPlayer player) {
+    public FoosballPlayer createPlayer(final FoosballPlayer player) {
         try {
             return restTemplate.postForObject(baseUrl + "/api/foosball/players", player, FoosballPlayer.class);
-        } catch (ResourceAccessException e) {
+        } catch (final ResourceAccessException e) {
             return null;
-        } catch (RestClientException e) {
+        } catch (final RestClientException e) {
             log.warn("Error creating foosball player: {}", e.getMessage());
             return null;
         }
@@ -68,19 +67,19 @@ public class FoosballService {
     public List<FoosballGame> getAllGames() {
         try {
             // Get all players first
-            List<FoosballPlayer> players = getAllPlayers();
-            Map<Long, FoosballGame> gamesMap = new HashMap<>();
-            Map<Long, String> playerNames = new HashMap<>();
+            final var players = getAllPlayers();
+            final Map<Long, FoosballGame> gamesMap = new HashMap<>();
+            final Map<Long, String> playerNames = new HashMap<>();
 
             // Build player names map
-            for (FoosballPlayer player : players) {
+            for (final var player : players) {
                 playerNames.put(player.getId(), player.getName());
             }
 
             // Collect games from all players and build complete game objects
-            for (FoosballPlayer player : players) {
+            for (final var player : players) {
                 // Get detailed player info with games
-                FoosballPlayer detailedPlayer = restTemplate.getForObject(
+                final var detailedPlayer = restTemplate.getForObject(
                         baseUrl + "/api/foosball/players/" + player.getId(), FoosballPlayer.class);
 
                 if (detailedPlayer != null) {
@@ -117,9 +116,9 @@ public class FoosballService {
                     .sorted((g1, g2) -> Long.compare(g2.getId(), g1.getId()))
                     .collect(Collectors.toList());
 
-        } catch (ResourceAccessException e) {
+        } catch (final ResourceAccessException e) {
             return List.of();
-        } catch (RestClientException e) {
+        } catch (final RestClientException e) {
             // Return empty list if there are parsing errors
             log.warn("Error parsing foosball games response: {}", e.getMessage());
             return List.of();
@@ -127,14 +126,14 @@ public class FoosballService {
     }
 
     private void processPlayerGames(
-            FoosballPlayer player,
-            List<FoosballGame> games,
-            Map<Long, FoosballGame> gamesMap,
-            Map<Long, String> playerNames,
-            String position) {
+            final FoosballPlayer player,
+            final List<FoosballGame> games,
+            final Map<Long, FoosballGame> gamesMap,
+            final Map<Long, String> playerNames,
+            final String position) {
         if (games != null) {
-            for (FoosballGame game : games) {
-                FoosballGame existingGame = gamesMap.get(game.getId());
+            for (final var game : games) {
+                var existingGame = gamesMap.get(game.getId());
                 if (existingGame == null) {
                     // Create new game with player names
                     existingGame = new FoosballGame();
@@ -153,7 +152,7 @@ public class FoosballService {
                 }
 
                 // Set player name based on position
-                String playerName = playerNames.get(player.getId());
+                final var playerName = playerNames.get(player.getId());
                 switch (position) {
                     case "whiteTeamPlayer1":
                         existingGame.setWhiteTeamPlayer1(playerName);
@@ -172,12 +171,12 @@ public class FoosballService {
         }
     }
 
-    public FoosballGame createGame(FoosballGame game) {
+    public FoosballGame createGame(final FoosballGame game) {
         try {
             return restTemplate.postForObject(baseUrl + "/api/foosball/games", game, FoosballGame.class);
-        } catch (ResourceAccessException e) {
+        } catch (final ResourceAccessException e) {
             return null;
-        } catch (RestClientException e) {
+        } catch (final RestClientException e) {
             log.warn("Error creating foosball game: {}", e.getMessage());
             return null;
         }
@@ -186,37 +185,18 @@ public class FoosballService {
     public List<FoosballStats> getPlayerStats() {
         try {
             // Use the correct API endpoint
-            FoosballStats[] stats =
+            final var stats =
                     restTemplate.getForObject(baseUrl + "/api/foosball/stats/players/all", FoosballStats[].class);
             if (stats != null) {
-                // Sort by number of wins (descending), then by win percentage (descending)
+                // Sort by rank calculation: (games played * games played) / wins
                 return Arrays.stream(stats)
                         .sorted((s1, s2) -> {
-                            // Get wins, treating null as 0
-                            int wins1 = s1.getWins() != null ? s1.getWins() : 0;
-                            int wins2 = s2.getWins() != null ? s2.getWins() : 0;
-
-                            // Primary sort: by wins (descending - higher wins first)
-                            int winsComparison = Integer.compare(wins2, wins1);
-                            if (winsComparison != 0) {
-                                return winsComparison;
-                            }
-
-                            // Secondary sort: if wins are equal, sort by win percentage (descending)
-                            double winPct1 = s1.getWinPercentage() != null ? s1.getWinPercentage() : 0.0;
-                            double winPct2 = s2.getWinPercentage() != null ? s2.getWinPercentage() : 0.0;
-                            int pctComparison = Double.compare(winPct2, winPct1);
-                            if (pctComparison != 0) {
-                                return pctComparison;
-                            }
-
-                            // Tertiary sort: if both wins and percentage are equal, sort by name (ascending)
                             return s1.getPlayerName().compareTo(s2.getPlayerName());
                         })
                         .collect(Collectors.toList());
             }
             return List.of();
-        } catch (RestClientException e) {
+        } catch (final RestClientException e) {
             log.warn("Error fetching player stats from API: {}", e.getMessage());
             return List.of();
         }
@@ -226,9 +206,9 @@ public class FoosballService {
         try {
             restTemplate.getForObject(baseUrl + "/actuator/health", Object.class);
             return true;
-        } catch (ResourceAccessException e) {
+        } catch (final ResourceAccessException e) {
             return false;
-        } catch (RestClientException e) {
+        } catch (final RestClientException e) {
             log.warn("Error checking foosball service health: {}", e.getMessage());
             return false;
         }

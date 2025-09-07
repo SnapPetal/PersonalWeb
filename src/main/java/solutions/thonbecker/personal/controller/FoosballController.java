@@ -53,8 +53,6 @@ public class FoosballController {
         return foosballService.createGame(game);
     }
 
-    
-
     @GetMapping("/api/games")
     @ResponseBody
     public List<FoosballGame> getGames() {
