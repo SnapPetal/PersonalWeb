@@ -184,16 +184,10 @@ public class FoosballService {
 
     public List<FoosballStats> getPlayerStats() {
         try {
-            // Use the correct API endpoint
             final var stats =
                     restTemplate.getForObject(baseUrl + "/api/foosball/stats/players/all", FoosballStats[].class);
             if (stats != null) {
-                // Sort by rank calculation: (games played * games played) / wins
-                return Arrays.stream(stats)
-                        .sorted((s1, s2) -> {
-                            return s1.getPlayerName().compareTo(s2.getPlayerName());
-                        })
-                        .collect(Collectors.toList());
+                return Arrays.asList(stats);
             }
             return List.of();
         } catch (final RestClientException e) {
