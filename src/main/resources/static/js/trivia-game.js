@@ -29,14 +29,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Restore saved values from localStorage
     function restoreSavedValues() {
-        // Restore server URL
-        let savedServerUrl = localStorage.getItem('trivia-server-url');
-        if (savedServerUrl) {
-            serverUrlInput.value = savedServerUrl;
+        const host = window.location.host;
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        
+        let defaultServerUrl;
+        if (host.includes('localhost') || host.includes('127.0.0.1')) {
+            // Development environment
+            defaultServerUrl = 'ws://localhost:8080/quiz-websocket';
         } else {
-            // Default to a local websocket endpoint for development
-            serverUrlInput.value = 'ws://localhost:8080/quiz-websocket';
+            // Production environment
+            defaultServerUrl = `${wsProtocol}//endurance.thonbecker.biz/quiz-websocket`;
         }
+
+        // Set the server URL input and disable it
+        serverUrlInput.value = defaultServerUrl;
+        serverUrlInput.parentElement.classList.add('d-none'); // Hide the form group
 
         // Restore player name
         const savedPlayerName = localStorage.getItem('trivia-player-name');
@@ -295,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        stompClient.send('/app/quiz/start', {}, JSON.stringify(currentQuizId));
+        stompClient.send('/app/quiz/start', {}, currentQuizId.toString());
         log(`Starting quiz ${currentQuizId}`, 'info');
     }
 
@@ -340,13 +347,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function displayQuestion(question) {
         if (!question) return;
 
-        questionElement.textContent = question.text;
+        questionElement.textContent = question.questionText;
 
         // Clear previous answers
         answersContainer.innerHTML = '';
 
         // Add answer options
-        question.answers.forEach((answer, index) => {
+        question.options.forEach((answer, index) => {
             const answerBtn = document.createElement('button');
             answerBtn.className = 'btn btn-outline-primary m-2';
             answerBtn.textContent = answer;
@@ -367,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
             quizId: currentQuizId,
             playerId: playerId,
             questionId: currentQuestion.id,
-            answerIndex: answerIndex,
+            selectedOption: answerIndex,
             timestamp: new Date().toISOString()
         };
 
