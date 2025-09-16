@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en-US" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Foosball Games - Thon Becker</title>
+    
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link href="/css/main.css" rel="stylesheet">
+    <link href="/css/foosball.css" rel="stylesheet">
+    
+    <!-- JS dependencies -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const players = /*[[${players}]]*/ [];
+        /*]]>*/
+    </script>
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <script src="/js/foosball.js"></script>
+</head>
+<body class="foosball-page">
+    <!-- Simple Header with Back Button -->
+    <div class="foosball-header py-3 border-bottom bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">🏆 Foosball Games</h4>
+                <a href="/foosball" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Back to Foosball Stats
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="py-5">
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#addGameModal">
+                        <i class="bi bi-plus-circle"></i> Record New Game
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-trophy-fill"></i> All Games</h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${#lists.isEmpty(games)}" class="text-center text-muted py-4">
+                        <p>No games recorded yet.</p>
+                    </div>
+                    <div th:if="${!#lists.isEmpty(games)}" class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Team 1</th>
+                                    <th>Score</th>
+                                    <th>Team 2</th>
+                                    <th>Winner</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="game : ${games}">
+                                    <td th:text="${game.gameDate}"></td>
+                                    <td>
+                                        <span th:each="player, iterStat : ${game.team1Players}" 
+                                              th:text="${player.name + (iterStat.last ? '' : ', ')}"></span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary" th:text="${game.team1Score}"></span> - 
+                                        <span class="badge bg-secondary" th:text="${game.team2Score}"></span>
+                                    </td>
+                                    <td>
+                                        <span th:each="player, iterStat : ${game.team2Players}" 
+                                              th:text="${player.name + (iterStat.last ? '' : ', ')}"></span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success" th:text="${game.winner}"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Game Modal -->
+    <div class="modal fade foosball-modal" id="addGameModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Record New Game</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addGameForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Team 1</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Player 1</label>
+                                    <select class="form-select" id="team1Player1" required>
+                                        <option value="">Select Player</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Player 2</label>
+                                    <select class="form-select" id="team1Player2" required>
+                                        <option value="">Select Player</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Score</label>
+                                    <input type="number" class="form-control" id="team1Score" min="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Team 2</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Player 1</label>
+                                    <select class="form-select" id="team2Player1" required>
+                                        <option value="">Select Player</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Player 2</label>
+                                    <select class="form-select" id="team2Player2" required>
+                                        <option value="">Select Player</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Score</label>
+                                    <input type="number" class="form-control" id="team2Score" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="addGame()">Save game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-4 bg-light mt-5">
+        <div class="container text-center">
+            <p class="mb-0 text-muted">© 2025 Thon Becker. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

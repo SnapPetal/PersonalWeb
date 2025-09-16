@@ -29,16 +29,24 @@ public class FoosballController {
         model.addAttribute("serviceAvailable", serviceAvailable);
 
         if (serviceAvailable) {
-            List<FoosballPlayer> players = foosballService.getAllPlayers();
-            List<FoosballGame> games = foosballService.getAllGames();
-            List<FoosballStats> playerStats = foosballService.getPlayerStats();
-
-            model.addAttribute("players", players);
-            model.addAttribute("games", games);
-            model.addAttribute("playerStats", playerStats);
+            model.addAttribute("playerStats", foosballService.getPlayerStats());
+            model.addAttribute("players", foosballService.getAllPlayers());
         }
 
         return "foosball";
+    }
+
+    @GetMapping("/players")
+    public String getPlayers(Model model) {
+        model.addAttribute("players", foosballService.getAllPlayers());
+        return "foosball-players";
+    }
+
+    @GetMapping("/games")
+    public String getGames(Model model) {
+        model.addAttribute("games", foosballService.getAllGames());
+        model.addAttribute("players", foosballService.getAllPlayers());
+        return "foosball-games";
     }
 
     @PostMapping("/players")

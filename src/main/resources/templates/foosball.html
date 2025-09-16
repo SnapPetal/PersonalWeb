@@ -5,6 +5,8 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Table Soccer (Foosball) Management - Thon Becker</title>
     
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+
     <!-- CSS Dependencies -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
@@ -83,81 +85,24 @@
                     </div>
                 </div>
 
-                <!-- Statistics Overview -->
-                <div class="row mb-4 foosball-stats-overview">
-                    <div class="col-md-4 mb-3">
-                        <div class="card text-center h-100">
-                            <div class="card-body d-flex flex-column justify-content-center">
-                                <h3 class="card-title text-primary" th:text="${#lists.size(players)}">0</h3>
-                                <p class="card-text mb-0">Total Players</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card text-center h-100">
-                            <div class="card-body d-flex flex-column justify-content-center">
-                                <h3 class="card-title text-success" th:text="${#lists.size(games)}">0</h3>
-                                <p class="card-text mb-0">Games Played</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <div class="card text-center h-100">
-                            <div class="card-body d-flex flex-column justify-content-center">
-                                <h3 class="card-title text-info" th:text="${#lists.size(playerStats)}">0</h3>
-                                <p class="card-text mb-0">Player Stats</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Games Section -->
+                <!-- Page Actions -->
                 <div class="row mb-4">
                     <div class="col-12">
                         <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0"><i class="bi bi-trophy"></i> Recent Games</h5>
-                                
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-lightning"></i> Page Actions</h5>
                             </div>
-                            <div class="card-body">
-                                <div id="gamesList">
-                                    <div th:if="${#lists.isEmpty(games)}" class="text-center text-muted py-4 foosball-empty-state">
-                                        <i class="bi bi-trophy display-4"></i>
-                                        <p class="mt-2">No games recorded yet. Record your first game!</p>
+                            <div class="card-body foosball-quick-actions">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <a href="/foosball/players" class="btn btn-info w-100">
+                                            <i class="bi bi-people"></i> View Players
+                                        </a>
                                     </div>
-                                    <div th:if="${!#lists.isEmpty(games)}" class="table-responsive">
-                                        <table class="table table-hover foosball-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Date</th>
-                                                    <th>Team 1</th>
-                                                    <th>Score</th>
-                                                    <th>Team 2</th>
-                                                    <th>Winner</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr th:each="game : ${games}">
-                                                    <td th:text="${game.gameDate}">2025-01-01</td>
-                                                    <td>
-                                                        <span th:each="player, iterStat : ${game.team1Players}" 
-                                                              th:text="${player.name + (iterStat.last ? '' : ', ')}">Player</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-primary foosball-score-badge" th:text="${game.team1Score}">0</span>
-                                                        <span class="text-muted">-</span>
-                                                        <span class="badge bg-secondary foosball-score-badge" th:text="${game.team2Score}">0</span>
-                                                    </td>
-                                                    <td>
-                                                        <span th:each="player, iterStat : ${game.team2Players}" 
-                                                              th:text="${player.name + (iterStat.last ? '' : ', ')}">Player</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-success foosball-score-badge" th:text="${game.winner}">Winner</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                    <div class="col-md-6 mb-3">
+                                        <a href="/foosball/games" class="btn btn-warning w-100">
+                                            <i class="bi bi-trophy"></i> View Games
+                                        </a>
                                     </div>
                                 </div>
                             </div>
