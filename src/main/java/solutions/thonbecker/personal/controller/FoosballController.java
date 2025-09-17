@@ -12,6 +12,7 @@ import solutions.thonbecker.personal.service.FoosballService;
 import solutions.thonbecker.personal.types.FoosballGame;
 import solutions.thonbecker.personal.types.FoosballPlayer;
 import solutions.thonbecker.personal.types.FoosballStats;
+import solutions.thonbecker.personal.types.FoosballTeamStats;
 
 @Controller
 @RequestMapping("/foosball")
@@ -42,11 +43,10 @@ public class FoosballController {
         return "foosball-players";
     }
 
-    @GetMapping("/games")
-    public String getGames(Model model) {
-        model.addAttribute("games", foosballService.getAllGames());
-        model.addAttribute("players", foosballService.getAllPlayers());
-        return "foosball-games";
+    @GetMapping("/team-stats")
+    public String getTeamStats(Model model) {
+        model.addAttribute("teamStats", foosballService.getTeamStats());
+        return "foosball-team-stats";
     }
 
     @PostMapping("/players")
@@ -61,10 +61,10 @@ public class FoosballController {
         return foosballService.createGame(game);
     }
 
-    @GetMapping("/api/games")
+    @GetMapping("/api/stats/teams")
     @ResponseBody
-    public List<FoosballGame> getGames() {
-        return foosballService.getAllGames();
+    public List<FoosballTeamStats> getTeamStats() {
+        return foosballService.getTeamStats();
     }
 
     @GetMapping("/api/stats/players")

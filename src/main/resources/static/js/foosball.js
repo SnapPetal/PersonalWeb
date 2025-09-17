@@ -233,9 +233,8 @@ function populatePlayerSelects() {
 // Add a new player
 async function addPlayer() {
     const name = document.getElementById('playerName').value.trim();
-    const email = document.getElementById('playerEmail').value.trim();
     
-    if (!name || !email) {
+    if (!name) {
         alert('Please fill in all required fields.');
         return;
     }
@@ -247,8 +246,7 @@ async function addPlayer() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                name: name,
-                email: email
+                name: name
             })
         });
         

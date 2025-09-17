@@ -14,8 +14,13 @@ foosball:
   api:
     base-url: https://foosball.thonbecker.biz
 
-# Debug logging for troubleshooting
-logging:
-  level:
-    solutions.thonbecker.personal.service.FoosballService: DEBUG
-    org.springframework.web.client.RestTemplate: DEBUG
+  web:
+    resources:
+      chain:
+        enabled: true
+      cache:
+        period: 0
+        cachecontrol:
+          no-cache: true
+          no-store: true
+          must-revalidate: true

@@ -52,4 +52,14 @@ public class FoosballGame {
     public Integer getTeam2Score() {
         return blackTeamScore;
     }
+
+    public String getWinner() {
+        if (whiteTeamScore > blackTeamScore) {
+            return "White Team";
+        } else if (blackTeamScore > whiteTeamScore) {
+            return "Black Team";
+        } else {
+            return "Tie";
+        }
+    }
 }

@@ -55,13 +55,11 @@
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Email</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr th:each="player : ${players}">
                                     <td th:text="${player.name}"></td>
-                                    <td th:text="${player.email}"></td>
                                 </tr>
                             </tbody>
                         </table>
