@@ -78,4 +78,10 @@ public class FoosballController {
     public List<FoosballStats> getAllPlayerStats() {
         return foosballService.getPlayerStats();
     }
+
+    @GetMapping("/recent-games")
+    public String getRecentGames(Model model) {
+        model.addAttribute("games", foosballService.getRecentGames());
+        return "foosball-recent-games";
+    }
 }

@@ -20,6 +20,9 @@ public class FoosballGame {
     private String playedAt;
     private String notes;
     private String winner;
+    private boolean draw;
+    private boolean whiteTeamWinner;
+    private boolean blackTeamWinner;
 
     // Getter for backward compatibility - use playedAt if gameDate is null
     public String getGameDate() {

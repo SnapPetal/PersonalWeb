@@ -96,6 +96,21 @@ public class FoosballService {
         }
     }
 
+    public List<FoosballGame> getRecentGames() {
+        try {
+            final var games = restTemplate.getForObject(baseUrl + "/api/foosball/games/recent", FoosballGame[].class);
+            if (games != null) {
+                return Arrays.asList(games);
+            }
+            return List.of();
+        } catch (final ResourceAccessException e) {
+            return List.of();
+        } catch (final RestClientException e) {
+            log.warn("Error fetching recent games from API: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     public boolean isServiceAvailable() {
         try {
             restTemplate.getForObject(baseUrl + "/actuator/health", Object.class);
