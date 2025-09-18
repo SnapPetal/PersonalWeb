@@ -1,0 +1,33 @@
+/* Table Sorter CSS */
+.sortable-table .sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 20px; /* Make space for the arrow */
+}
+
+.sortable-table .sortable::after,
+.sortable-table .sortable::before {
+    content: '';
+    position: absolute;
+    right: 5px;
+    opacity: 0.3;
+    border: 4px solid transparent;
+}
+
+.sortable-table .sortable::before {
+    bottom: 50%;
+    margin-bottom: -2px;
+    border-bottom-color: currentColor;
+}
+
+.sortable-table .sortable::after {
+    top: 50%;
+    margin-top: -2px;
+    border-top-color: currentColor;
+}
+
+/* Active sort states */
+.sortable-table .sortable.sort-asc::before,
+.sortable-table .sortable.sort-desc::after {
+    opacity: 1;
+}

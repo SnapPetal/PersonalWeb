@@ -12,10 +12,12 @@
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
     <link href="/css/main.css" rel="stylesheet">
     <link href="/css/foosball.css" rel="stylesheet">
+    <link href="/css/table-sorter.css" rel="stylesheet">
     
     <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <script src="/js/table-sorter.js"></script>
 </head>
 <body class="foosball-page">
     <!-- Simple Header with Back Button -->
@@ -42,10 +44,11 @@
                         <p>No team stats available yet.</p>
                     </div>
                     <div th:if="${!#lists.isEmpty(teamStats)}" class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover sortable-table">
                             <thead>
                                 <tr>
-                                    <th>Team</th>
+                                    <th class="sortable">Player 1</th>
+                                    <th class="sortable">Player 2</th>
                                     <th>Games Played</th>
                                     <th>Wins</th>
                                     <th>Losses</th>
@@ -54,7 +57,8 @@
                             </thead>
                             <tbody>
                                 <tr th:each="stats : ${teamStats}">
-                                    <td th:text="${stats.teamName}"></td>
+                                    <td th:text="${stats.player1Name}"></td>
+                                    <td th:text="${stats.player2Name}"></td>
                                     <td th:text="${stats.gamesPlayedTogether}"></td>
                                     <td th:text="${stats.wins}"></td>
                                     <td th:text="${stats.losses}"></td>
