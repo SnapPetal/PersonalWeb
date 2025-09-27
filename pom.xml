@@ -23,7 +23,7 @@
     <java.version>21</java.version>
     <lombok.version>1.18.42</lombok.version>
     <sockjs-client.version>1.5.1</sockjs-client.version>
-    <spotless.version>2.46.1</spotless.version>
+    <spotless.version>3.0.0</spotless.version>
     <stomp-websocket.version>2.3.4</stomp-websocket.version>
   </properties>
   <dependencyManagement>
