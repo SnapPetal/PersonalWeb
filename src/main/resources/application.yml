@@ -16,11 +16,12 @@ foosball:
     # Cognito/OAuth2 settings used to obtain a JWT access token via client_credentials
     # Prefer setting these via environment variables: FOOSBALL_COGNITO_TOKEN_URL, FOOSBALL_COGNITO_CLIENT_ID, FOOSBALL_COGNITO_CLIENT_SECRET, FOOSBALL_COGNITO_SCOPE
     cognito:
-  token-url: "${FOOSBALL_COGNITO_TOKEN_URL}"
-  client-id: "${FOOSBALL_COGNITO_CLIENT_ID}"
-  client-secret: "${FOOSBALL_COGNITO_CLIENT_SECRET}"
-  scope: "${FOOSBALL_COGNITO_SCOPE}"
+      token-url: "${FOOSBALL_COGNITO_TOKEN_URL:https://id.thonbecker.com/oauth2/token}"
+      client-id: "${FOOSBALL_COGNITO_CLIENT_ID:6k2tie9th2mfnv5pv085gej78a}"
+      client-secret: "${FOOSBALL_COGNITO_CLIENT_SECRET:26fs2k5f83vg6pl388iqc607o0efm26k4o7m61bmujpuf7int24}"
+      scope: "${FOOSBALL_COGNITO_SCOPE:access}"
 
+    
   web:
     resources:
       chain:

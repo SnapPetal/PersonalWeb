@@ -1,7 +1,8 @@
 package solutions.thonbecker.personal.types;
 
-import java.util.List;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 public class FoosballGame {

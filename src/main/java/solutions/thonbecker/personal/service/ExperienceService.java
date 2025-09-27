@@ -1,8 +1,9 @@
 package solutions.thonbecker.personal.service;
 
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import org.springframework.stereotype.Service;
 
 @Service
 public class ExperienceService {

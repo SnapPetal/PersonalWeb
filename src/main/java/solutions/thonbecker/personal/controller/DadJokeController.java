@@ -2,12 +2,14 @@ package solutions.thonbecker.personal.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
 import solutions.thonbecker.personal.types.DadJokeApiResponse;
 import solutions.thonbecker.personal.types.JokeResponse;
 
@@ -16,7 +18,8 @@ import solutions.thonbecker.personal.types.JokeResponse;
 @Slf4j
 @RequiredArgsConstructor
 public class DadJokeController {
-    private static final String JOKE_API_URL = "https://ondxpdql18.execute-api.us-east-1.amazonaws.com/joke";
+    private static final String JOKE_API_URL =
+            "https://ondxpdql18.execute-api.us-east-1.amazonaws.com/joke";
     private static final String DAD_JOKE_API_URL = "https://icanhazdadjoke.com/";
     private static final String CDN_DOMAIN_NAME = "https://cdn.thonbecker.com";
     private final RestTemplate restTemplate;
@@ -42,8 +45,8 @@ public class DadJokeController {
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
-            ResponseEntity<DadJokeApiResponse> response =
-                    restTemplate.exchange(DAD_JOKE_API_URL, HttpMethod.GET, entity, DadJokeApiResponse.class);
+            ResponseEntity<DadJokeApiResponse> response = restTemplate.exchange(
+                    DAD_JOKE_API_URL, HttpMethod.GET, entity, DadJokeApiResponse.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return response.getBody().joke();
@@ -73,7 +76,10 @@ public class DadJokeController {
             if (response.getBody() != null
                     && response.getBody().data() != null
                     && response.getBody().data().Location() != null) {
-                return response.getBody().data().Location().replaceFirst("https://[^/]+", CDN_DOMAIN_NAME);
+                return response.getBody()
+                        .data()
+                        .Location()
+                        .replaceFirst("https://[^/]+", CDN_DOMAIN_NAME);
             }
         } catch (Exception e) {
             log.error("Error converting joke to audio: {}", e.getMessage());

@@ -2,8 +2,10 @@ package solutions.thonbecker.personal.types;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
+
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -32,20 +34,3 @@ public class FoosballPlayer {
     @JsonProperty("blackTeamPlayer2Games")
     private List<FoosballGame> blackTeamPlayer2Games;
 }
-
-// If your API returns wrapped responses like {"data": [...], "status": "success"},
-// you might need a wrapper class like this:
-/*
-@Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class FoosballPlayerResponse {
-    @JsonProperty("data")
-    private List<FoosballPlayer> data;
-
-    @JsonProperty("status")
-    private String status;
-
-    @JsonProperty("message")
-    private String message;
-}
-*/

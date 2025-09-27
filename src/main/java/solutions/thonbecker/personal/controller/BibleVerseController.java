@@ -3,10 +3,9 @@ package solutions.thonbecker.personal.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +15,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+
 import solutions.thonbecker.personal.types.BibleVerse;
 import solutions.thonbecker.personal.types.BibleVerseResponse;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/bible")
@@ -67,7 +71,8 @@ public class BibleVerseController {
     private BibleVerse fetchDailyBibleVerse() {
         try {
             // First try to get the response as a string since the API returns text/plain
-            ResponseEntity<String> response = restTemplate.getForEntity(bibleVerseApiUrl, String.class);
+            ResponseEntity<String> response =
+                    restTemplate.getForEntity(bibleVerseApiUrl, String.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 String responseBody = response.getBody().trim();
@@ -93,7 +98,8 @@ public class BibleVerseController {
 
     private BibleVerse formatBibleVerse(BibleVerseResponse response) {
         String text = response.text().get(BIBLE_VERSION);
-        String formattedText = String.format(VERSE_FORMAT, text, response.book(), response.chapter(), response.verse());
+        String formattedText = String.format(
+                VERSE_FORMAT, text, response.book(), response.chapter(), response.verse());
         return new BibleVerse(formattedText, BIBLE_VERSION);
     }
 
