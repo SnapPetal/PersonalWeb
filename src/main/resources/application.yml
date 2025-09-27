@@ -7,19 +7,19 @@ spring:
     oauth2:
       client:
         registration:
-          auth0:
-            client-id: "${AUTH0_CLIENT_ID:KFWch7LS8AzxvQ75TzIBr5zqJlD53s26}"
-            client-secret: "${AUTH0_CLIENT_SECRET:MxY6OOrNHpVxaIJoRvwQnvoxEMSdj3jG0zE7iCnpQUVRhvHQZ0QWAJddHfHiOJ4N}"
+          cognito:
+            client-id: "${COGNITO_CLIENT_ID}"
+            client-secret: "${COGNITO_CLIENT_SECRET}"
             authorization-grant-type: client_credentials
-            audience: "${AUTH0_AUDIENCE:https://foosball.thonbecker.biz}"
+            scopee: "default-m2m-resource-server-sxhxn5/read"
         provider:
-          auth0:
-            token-uri: "${AUTH0_TOKEN_URL:https://thonbecker.us.auth0.com/oauth/token}"
+          cognito:
+            token-uri: "${COGNITO_TOKEN_URL}"
   cloud:
     openfeign:
       oauth2:
         enabled: true
-        clientRegistrationId: auth0
+        clientRegistrationId: cognito
 
   web:
     resources:
