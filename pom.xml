@@ -17,6 +17,8 @@
     <bootstrap-icons.version>1.13.1</bootstrap-icons.version>
     <bootstrap.version>5.3.8</bootstrap.version>
     <caffeine.version>3.2.2</caffeine.version>
+    <dotenv.version>3.0.2</dotenv.version>
+    <dotenv.version>5.2.2</dotenv.version>
     <htmx.org.version>2.0.7</htmx.org.version>
     <java.version>21</java.version>
     <lombok.version>1.18.42</lombok.version>
@@ -40,6 +42,11 @@
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
       <version>${caffeine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.cdimascio</groupId>
+      <artifactId>java-dotenv</artifactId>
+      <version>${dotenv.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>

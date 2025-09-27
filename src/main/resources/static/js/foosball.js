@@ -3,6 +3,27 @@
 let games = [];
 let playerStats = [];
 
+// CSRF Token utility
+function getCsrfToken() {
+    return document.querySelector('meta[name="_csrf"]').getAttribute('content');
+}
+
+function getCsrfHeader() {
+    return document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+}
+
+// Utility function for CSRF-protected POST requests
+async function postWithCsrf(url, data) {
+    return fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            [getCsrfHeader()]: getCsrfToken()
+        },
+        body: JSON.stringify(data)
+    });
+}
+
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
     loadGames();
@@ -240,14 +261,8 @@ async function addPlayer() {
     }
     
     try {
-        const response = await fetch('/foosball/players', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name: name
-            })
+        const response = await postWithCsrf('/foosball/players', {
+            name: name
         });
         
         if (response.ok) {
@@ -305,13 +320,7 @@ async function addGame() {
             notes: notes
         };
         
-        const response = await fetch('/foosball/games', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(gameData)
-        });
+        const response = await postWithCsrf('/foosball/games', gameData);
         
         if (response.ok) {
             const newGame = await response.json();

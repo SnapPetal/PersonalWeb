@@ -6,6 +6,10 @@
     <title>Table Soccer (Foosball) Management - Thon Becker</title>
     
     <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+    
+    <!-- CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
     <!-- CSS Dependencies -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
