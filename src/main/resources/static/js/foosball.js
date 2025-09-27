@@ -3,27 +3,6 @@
 let games = [];
 let playerStats = [];
 
-// CSRF Token utility
-function getCsrfToken() {
-    return document.querySelector('meta[name="_csrf"]').getAttribute('content');
-}
-
-function getCsrfHeader() {
-    return document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
-}
-
-// Utility function for CSRF-protected POST requests
-async function postWithCsrf(url, data) {
-    return fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            [getCsrfHeader()]: getCsrfToken()
-        },
-        body: JSON.stringify(data)
-    });
-}
-
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
     loadGames();
@@ -261,20 +240,21 @@ async function addPlayer() {
     }
     
     try {
-        const response = await postWithCsrf('/foosball/players', {
+        const response = await postWithCsrfAndErrorHandling('/foosball/players', {
             name: name
         });
         
-        if (response.ok) {
+        if (response && response.ok) {
             const newPlayer = await response.json();
             showAlert('Player added successfully!', 'success');
             location.reload();
-        } else {
+        } else if (response) {
             throw new Error('Failed to add player');
         }
+        // If response is null, error was already handled by postWithCsrfAndErrorHandling
     } catch (error) {
         console.error('Error adding player:', error);
-        showAlert('Failed to add player. Please try again.', 'danger');
+        showAlert(error.message || 'Failed to add player. Please try again.', 'danger');
     }
 }
 
@@ -320,7 +300,7 @@ async function addGame() {
             notes: notes
         };
         
-        const response = await postWithCsrf('/foosball/games', gameData);
+        const response = await postWithCsrfAndErrorHandling('/foosball/games', gameData);
         
         if (response.ok) {
             const newGame = await response.json();
