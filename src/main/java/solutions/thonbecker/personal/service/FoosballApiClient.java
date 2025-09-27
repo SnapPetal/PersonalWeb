@@ -1,21 +1,18 @@
 package solutions.thonbecker.personal.service;
 
+import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-
 import solutions.thonbecker.personal.types.FoosballGame;
 import solutions.thonbecker.personal.types.FoosballPlayer;
 import solutions.thonbecker.personal.types.FoosballStats;
 import solutions.thonbecker.personal.types.FoosballTeamStats;
 
-import java.util.List;
-
 @FeignClient(
         name = "foosball-api",
-        url = "${foosball.api.base-url}",
-        configuration = FoosballFeignConfig.class)
+        url = "${foosball.api.base-url}")
 public interface FoosballApiClient {
 
     @GetMapping("/api/foosball/players")

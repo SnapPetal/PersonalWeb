@@ -3,25 +3,24 @@ spring:
     name: "personal"
   thymeleaf:
     cache: false
-bible:
-  verse:
-    api:
-      url: https://bibleverse.thonbecker.com/
-    cache:
-      duration: 24
+  security:
+    oauth2:
+      client:
+        registration:
+          auth0:
+            client-id: "${AUTH0_CLIENT_ID:KFWch7LS8AzxvQ75TzIBr5zqJlD53s26}"
+            client-secret: "${AUTH0_CLIENT_SECRET:MxY6OOrNHpVxaIJoRvwQnvoxEMSdj3jG0zE7iCnpQUVRhvHQZ0QWAJddHfHiOJ4N}"
+            authorization-grant-type: client_credentials
+            audience: "${AUTH0_AUDIENCE:https://foosball.thonbecker.biz}"
+        provider:
+          auth0:
+            token-uri: "${AUTH0_TOKEN_URL:https://thonbecker.us.auth0.com/oauth/token}"
+  cloud:
+    openfeign:
+      oauth2:
+        enabled: true
+        clientRegistrationId: auth0
 
-foosball:
-  api:
-    base-url: https://foosball.thonbecker.biz
-    # Cognito/OAuth2 settings used to obtain a JWT access token via client_credentials
-    # Prefer setting these via environment variables: FOOSBALL_COGNITO_TOKEN_URL, FOOSBALL_COGNITO_CLIENT_ID, FOOSBALL_COGNITO_CLIENT_SECRET, FOOSBALL_COGNITO_SCOPE
-    cognito:
-      token-url: "${FOOSBALL_COGNITO_TOKEN_URL:https://id.thonbecker.com/oauth2/token}"
-      client-id: "${FOOSBALL_COGNITO_CLIENT_ID:6k2tie9th2mfnv5pv085gej78a}"
-      client-secret: "${FOOSBALL_COGNITO_CLIENT_SECRET:26fs2k5f83vg6pl388iqc607o0efm26k4o7m61bmujpuf7int24}"
-      scope: "${FOOSBALL_COGNITO_SCOPE:access}"
-
-    
   web:
     resources:
       chain:
@@ -32,3 +31,14 @@ foosball:
           no-cache: true
           no-store: true
           must-revalidate: true
+
+bible:
+  verse:
+    api:
+      url: https://bibleverse.thonbecker.com/
+    cache:
+      duration: 24
+
+foosball:
+  api:
+    base-url: https://foosball.thonbecker.biz
