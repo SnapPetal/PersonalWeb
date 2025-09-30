@@ -4,7 +4,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -52,18 +51,6 @@ public class FoosballController {
         return "foosball-team-stats";
     }
 
-    @PostMapping("/players")
-    @ResponseBody
-    public FoosballPlayer createPlayer(@RequestBody FoosballPlayer player) {
-        return foosballService.createPlayer(player);
-    }
-
-    @PostMapping("/games")
-    @ResponseBody
-    public FoosballGame createGame(@RequestBody FoosballGame game) {
-        return foosballService.createGame(game);
-    }
-
     @GetMapping("/api/stats/teams")
     @ResponseBody
     public List<FoosballTeamStats> getTeamStats() {
@@ -73,12 +60,6 @@ public class FoosballController {
     @GetMapping("/api/stats/players")
     @ResponseBody
     public List<FoosballStats> getPlayerStats() {
-        return foosballService.getPlayerStats();
-    }
-
-    @GetMapping("/api/stats/players/all")
-    @ResponseBody
-    public List<FoosballStats> getAllPlayerStats() {
         return foosballService.getPlayerStats();
     }
 
