@@ -3,7 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Table Soccer (Foosball) Management - Thon Becker</title>
+    <title>Table Soccer (Foosbal                    <form hx-post="/foosball/htmx/players" 
+                          hx-target="#player-alerts"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="if(event.detail.successful) { 
+                              this.reset(); 
+                              const modal = bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')) || new bootstrap.Modal(document.getElementById('addPlayerModal'));
+                              modal.hide();
+                              htmx.trigger('#playerStatsList', 'refresh');
+                              htmx.trigger('#gamesList', 'refresh');
+                          }">ment - Thon Becker</title>
     
     <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
     
@@ -19,12 +28,15 @@
     <link href="/css/foosball.css" rel="stylesheet">
     
     <!-- JS dependencies -->
-        <script th:inline="javascript">
-        /*<![CDATA[*/
-        const players = /*[[${players}]]*/ [];
-        /*]]>*/
-    </script>
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <script>
+        // Configure HTMX to include CSRF token in all requests
+        document.addEventListener('htmx:configRequest', function(evt) {
+            const token = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+            const header = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+            evt.detail.headers[header] = token;
+        });
+    </script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script src="/js/csrf-utils.js"></script>
     <script src="/js/foosball.js"></script>
@@ -126,55 +138,31 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-graph-up"></i> Player Statistics</h5>
-                                <button class="btn btn-outline-primary btn-sm foosball-refresh-btn" onclick="refreshPlayerStats()">
+                                <button class="btn btn-outline-primary btn-sm foosball-refresh-btn" 
+                                        hx-get="/foosball/fragments/player-stats" 
+                                        hx-target="#playerStatsList" 
+                                        hx-indicator="#stats-loading">
                                     <i class="bi bi-arrow-clockwise"></i> Refresh
                                 </button>
                             </div>
                             <div class="card-body">
-                                <div id="playerStatsList">
-                                    <div th:if="${#lists.isEmpty(playerStats)}" class="text-center text-muted py-4 foosball-empty-state">
-                                        <i class="bi bi-graph-up display-4"></i>
-                                        <p class="mt-2">No player statistics available yet.</p>
+                                <!-- Loading indicator -->
+                                <div id="stats-loading" class="htmx-indicator text-center py-3">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
                                     </div>
-                                    <div th:if="${!#lists.isEmpty(playerStats)}" class="table-responsive">
-                                        <table class="table table-sm foosball-table">
-                                            <thead>
-                                                <tr>
-                                                    <th><i class="bi bi-person"></i> Player</th>
-                                                    <th><i class="bi bi-controller"></i> Games</th>
-                                                    <th><i class="bi bi-trophy"></i> Wins</th>
-                                                    <th><i class="bi bi-x-circle"></i> Losses</th>
-                                                    <th><i class="bi bi-percent"></i> Win Rate</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr th:each="stat : ${playerStats}">
-                                                    <td>
-                                                        <strong class="foosball-player-name" th:text="${stat.playerName ?: 'Unknown Player'}">Player</strong>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-info" th:text="${stat.gamesPlayed ?: (stat.totalGames ?: 0)}">0</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-success" th:text="${stat.wins ?: 0}">0</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-danger" th:text="${stat.losses ?: 0}">0</span>
-                                                    </td>
-                                                    <td>
-                                                        <span th:if="${stat.winPercentage != null and (stat.gamesPlayed ?: stat.totalGames ?: 0) > 0}" 
-                                                              th:text="${#numbers.formatDecimal(stat.winPercentage, 1, 0)} + '%'">0%</span>
-                                                        <span th:if="${stat.winPercentage == null or (stat.gamesPlayed ?: stat.totalGames ?: 0) == 0}" class="text-secondary">-</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                </div>
+                                
+                                <!-- Player stats list with auto-refresh -->
+                                <div id="playerStatsList" 
+                                     hx-get="/foosball/fragments/player-stats" 
+                                     hx-trigger="load, every 30s">
+                                    <!-- Initial content will be loaded via HTMX -->
+                                    <div th:replace="foosball-fragments :: playerStatsList"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -189,27 +177,40 @@
                     <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="addPlayerForm">
+                    <!-- Alert container for HTMX responses -->
+                    <div id="player-alerts"></div>
+                    
+                    <form hx-post="/foosball/htmx/players" 
+                          hx-target="#player-alerts"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="if(event.detail.successful) { 
+                              this.reset(); 
+                              const modal = bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')) || new bootstrap.Modal(document.getElementById('addPlayerModal'));
+                              modal.hide();
+                              htmx.trigger('#playerStatsList', 'refresh');
+                              htmx.trigger('.foosball-player-select', 'refresh-options');
+                          }">
                         <div class="mb-3">
                             <label for="playerName" class="form-label">Name</label>
-                            <input type="text" class="form-control" id="playerName" required>
+                            <input type="text" class="form-control" name="name" id="playerName" required>
                         </div>
                         <div class="mb-3">
                             <label for="playerEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="playerEmail" required>
+                            <input type="email" class="form-control" name="email" id="playerEmail" required>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary" onclick="addPlayer()">Add Player</button>
+                    <button class="btn btn-primary" onclick="document.querySelector('#addPlayerModal form').requestSubmit()">Add Player</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Add Game Modal -->
-    <div class="modal fade foosball-modal" id="addGameModal" tabindex="-1">
+    <div class="modal fade foosball-modal" id="addGameModal" tabindex="-1"
+         hx-on::shown.bs.modal="htmx.trigger('.foosball-player-select', 'refresh-options')">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -217,26 +218,50 @@
                     <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="addGameForm">
+                    <!-- Alert container for HTMX responses -->
+                    <div id="game-alerts"></div>
+                    
+                    <form hx-post="/foosball/htmx/games" 
+                          hx-target="#game-alerts"
+                          hx-swap="innerHTML"
+                          hx-on::after-request="if(event.detail.successful) { 
+                              this.reset(); 
+                              const modal = bootstrap.Modal.getInstance(document.getElementById('addGameModal')) || new bootstrap.Modal(document.getElementById('addGameModal'));
+                              modal.hide();
+                              htmx.trigger('#playerStatsList', 'refresh');
+                              htmx.trigger('#gamesList', 'refresh');
+                          }">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="foosball-team-section">
                                     <h6>Team 1</h6>
                                     <div class="mb-3">
                                         <label class="form-label">Player 1</label>
-                                        <select class="form-select foosball-player-select" id="team1Player1" required>
+                                        <select class="form-select foosball-player-select" name="whiteTeamPlayer1" required
+                                                hx-get="/foosball/fragments/player-options" 
+                                                hx-trigger="refresh-options from:body" 
+                                                hx-swap="innerHTML">
                                             <option value="">Select Player</option>
+                                            <option th:if="${serviceAvailable}" th:each="player : ${players}" 
+                                                    th:value="${player.name}" 
+                                                    th:text="${player.name}"></option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Player 2</label>
-                                        <select class="form-select foosball-player-select" id="team1Player2" required>
+                                        <select class="form-select foosball-player-select" name="whiteTeamPlayer2" required
+                                                hx-get="/foosball/fragments/player-options" 
+                                                hx-trigger="refresh-options from:body" 
+                                                hx-swap="innerHTML">
                                             <option value="">Select Player</option>
+                                            <option th:if="${serviceAvailable}" th:each="player : ${players}" 
+                                                    th:value="${player.name}" 
+                                                    th:text="${player.name}"></option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Score</label>
-                                        <input type="number" class="form-control" id="team1Score" min="0" required>
+                                        <input type="number" class="form-control" name="whiteTeamScore" min="0" required>
                                     </div>
                                 </div>
                             </div>
@@ -245,32 +270,44 @@
                                     <h6>Team 2</h6>
                                     <div class="mb-3">
                                         <label class="form-label">Player 1</label>
-                                        <select class="form-select foosball-player-select" id="team2Player1" required>
+                                        <select class="form-select foosball-player-select" name="blackTeamPlayer1" required
+                                                hx-get="/foosball/fragments/player-options" 
+                                                hx-trigger="refresh-options from:body" 
+                                                hx-swap="innerHTML">
                                             <option value="">Select Player</option>
+                                            <option th:if="${serviceAvailable}" th:each="player : ${players}" 
+                                                    th:value="${player.name}" 
+                                                    th:text="${player.name}"></option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Player 2</label>
-                                        <select class="form-select foosball-player-select" id="team2Player2" required>
+                                        <select class="form-select foosball-player-select" name="blackTeamPlayer2" required
+                                                hx-get="/foosball/fragments/player-options" 
+                                                hx-trigger="refresh-options from:body" 
+                                                hx-swap="innerHTML">
                                             <option value="">Select Player</option>
+                                            <option th:if="${serviceAvailable}" th:each="player : ${players}" 
+                                                    th:value="${player.name}" 
+                                                    th:text="${player.name}"></option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Score</label>
-                                        <input type="number" class="form-control" id="team2Score" min="0" required>
+                                        <input type="number" class="form-control" name="blackTeamScore" min="0" required>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="gameNotes" class="form-label">Notes (Optional)</label>
-                            <textarea class="form-control" id="gameNotes" rows="3"></textarea>
+                            <textarea class="form-control" name="notes" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-success" onclick="addGame()">Record Game</button>
+                    <button class="btn btn-success" onclick="document.querySelector('#addGameModal form').requestSubmit()">Record Game</button>
                 </div>
             </div>
         </div>

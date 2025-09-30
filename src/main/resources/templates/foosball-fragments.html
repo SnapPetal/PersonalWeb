@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en-US" xmlns:th="http://www.thymeleaf.org">
+
+<!-- Player Statistics List Fragment -->
+<div th:fragment="playerStatsList" id="playerStatsList">
+    <div th:if="${#lists.isEmpty(playerStats)}" class="text-center text-muted py-4 foosball-empty-state">
+        <i class="bi bi-graph-up display-4"></i>
+        <p class="mt-2">No player statistics available yet.</p>
+    </div>
+    
+    <div th:unless="${#lists.isEmpty(playerStats)}" class="table-responsive">
+        <table class="table table-sm foosball-table">
+            <thead>
+                <tr>
+                    <th><i class="bi bi-person"></i> Player</th>
+                    <th><i class="bi bi-controller"></i> Games</th>
+                    <th><i class="bi bi-trophy"></i> Wins</th>
+                    <th><i class="bi bi-x-circle"></i> Losses</th>
+                    <th><i class="bi bi-percent"></i> Win Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="stat : ${playerStats}">
+                    <td><strong class="foosball-player-name" th:text="${stat.playerName ?: stat.name ?: 'Unknown Player'}"></strong></td>
+                    <td><span class="badge bg-info text-dark" th:text="${stat.gamesPlayed ?: stat.totalGames ?: 0}"></span></td>
+                    <td><span class="badge bg-success" th:text="${stat.wins ?: 0}"></span></td>
+                    <td><span class="badge bg-danger" th:text="${stat.losses ?: ((stat.gamesPlayed ?: stat.totalGames ?: 0) - (stat.wins ?: 0))}"></span></td>
+                    <td>
+                        <span th:if="${(stat.gamesPlayed ?: stat.totalGames ?: 0) > 0}" 
+                              th:text="${#numbers.formatInteger((stat.winPercentage ?: ((stat.wins ?: 0) * 100.0 / (stat.gamesPlayed ?: stat.totalGames ?: 1))), 0)} + '%'"></span>
+                        <span th:unless="${(stat.gamesPlayed ?: stat.totalGames ?: 0) > 0}" class="text-secondary">-</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Games List Fragment -->
+<div th:fragment="gamesList" id="gamesList">
+    <div th:if="${#lists.isEmpty(games)}" class="text-center text-muted py-4">
+        <i class="bi bi-trophy display-4"></i>
+        <p class="mt-2">No games recorded yet. Record your first game!</p>
+    </div>
+    
+    <div th:unless="${#lists.isEmpty(games)}" class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Team 1</th>
+                    <th>Score</th>
+                    <th>Team 2</th>
+                    <th>Winner</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="game : ${games}">
+                    <td th:text="${#temporals.format(game.gameDate, 'MMM dd, yyyy HH:mm')}"></td>
+                    <td>
+                        <span th:if="${game.team1Players != null and !#lists.isEmpty(game.team1Players)}"
+                              th:text="${#strings.listJoin(game.team1Players.![name], ', ')}"></span>
+                        <span th:unless="${game.team1Players != null and !#lists.isEmpty(game.team1Players)}">Team 1</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-primary" th:text="${game.team1Score ?: 0}"></span>
+                        <span class="text-muted">-</span>
+                        <span class="badge bg-secondary" th:text="${game.team2Score ?: 0}"></span>
+                    </td>
+                    <td>
+                        <span th:if="${game.team2Players != null and !#lists.isEmpty(game.team2Players)}"
+                              th:text="${#strings.listJoin(game.team2Players.![name], ', ')}"></span>
+                        <span th:unless="${game.team2Players != null and !#lists.isEmpty(game.team2Players)}">Team 2</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-success" th:text="${game.winner ?: 'N/A'}"></span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Player Options Fragment -->
+<div th:fragment="playerOptions">
+    <option value="">Select Player</option>
+    <option th:if="${#lists.isEmpty(players)}" value="" disabled>No players available</option>
+    <option th:each="player : ${players}" 
+            th:value="${player.name}" 
+            th:text="${player.name ?: 'Unknown Player'}"></option>
+</div>
+
+<!-- Success Alert Fragment -->
+<div th:fragment="successAlert" th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <span th:text="${success}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<!-- Error Alert Fragment -->
+<div th:fragment="errorAlert" th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <span th:text="${error}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+</html>
