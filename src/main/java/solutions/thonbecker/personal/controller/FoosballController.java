@@ -1,5 +1,6 @@
 package solutions.thonbecker.personal.controller;
 
+import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,14 +8,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-
 import solutions.thonbecker.personal.service.FoosballService;
 import solutions.thonbecker.personal.types.FoosballGame;
 import solutions.thonbecker.personal.types.FoosballPlayer;
 import solutions.thonbecker.personal.types.FoosballStats;
 import solutions.thonbecker.personal.types.FoosballTeamStats;
-
-import java.util.List;
 
 @Controller
 @RequestMapping("/foosball")
@@ -93,23 +91,33 @@ public class FoosballController {
         return "foosball-fragments :: playerOptions";
     }
 
+    @GetMapping("/fragments/player-table")
+    public String getPlayerTableFragment(Model model) {
+        model.addAttribute("players", foosballService.getAllPlayers());
+        return "foosball-players :: playerTable";
+    }
+
     @PostMapping("/htmx/players")
     public String createPlayerHtmx(
             @RequestParam String name, @RequestParam String email, Model model) {
-        if (name != null
-                && !name.trim().isEmpty()
-                && email != null
-                && !email.trim().isEmpty()) {
-            FoosballPlayer player = new FoosballPlayer();
-            player.setName(name.trim());
-            player.setEmail(email.trim());
-            foosballService.createPlayer(player);
+        try {
+            if (name != null
+                    && !name.trim().isEmpty()
+                    && email != null
+                    && !email.trim().isEmpty()) {
+                FoosballPlayer player = new FoosballPlayer();
+                player.setName(name.trim());
+                player.setEmail(email.trim());
+                foosballService.createPlayer(player);
+                model.addAttribute("success", "Player '" + name.trim() + "' added successfully!");
+            } else {
+                model.addAttribute("error", "Please provide both name and email.");
+            }
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to add player. Please try again.");
         }
-
-        // Return updated player options for the dropdowns
-        model.addAttribute("players", foosballService.getAllPlayers());
-        model.addAttribute("success", "Player added successfully!");
-        return "foosball-fragments :: playerOptions";
+        
+        return "foosball-fragments :: alert";
     }
 
     @PostMapping("/htmx/games")
@@ -124,6 +132,18 @@ public class FoosballController {
             Model model) {
 
         try {
+            // Validation
+            if (whiteTeamPlayer1.isEmpty() || whiteTeamPlayer2.isEmpty() || 
+                blackTeamPlayer1.isEmpty() || blackTeamPlayer2.isEmpty()) {
+                model.addAttribute("error", "Please select all players.");
+                return "foosball-fragments :: alert";
+            }
+            
+            if (whiteTeamScore < 0 || blackTeamScore < 0) {
+                model.addAttribute("error", "Scores must be non-negative.");
+                return "foosball-fragments :: alert";
+            }
+            
             FoosballGame game = new FoosballGame();
             game.setWhiteTeamPlayer1(whiteTeamPlayer1);
             game.setWhiteTeamPlayer2(whiteTeamPlayer2);
@@ -139,8 +159,6 @@ public class FoosballController {
             model.addAttribute("error", "Failed to record game. Please try again.");
         }
 
-        // Return updated games list
-        model.addAttribute("games", foosballService.getRecentGames());
-        return "foosball-fragments :: gamesList";
+        return "foosball-fragments :: alert";
     }
 }

@@ -3,16 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Table Soccer (Foosbal                    <form hx-post="/foosball/htmx/players" 
-                          hx-target="#player-alerts"
-                          hx-swap="innerHTML"
-                          hx-on::after-request="if(event.detail.successful) { 
-                              this.reset(); 
-                              const modal = bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')) || new bootstrap.Modal(document.getElementById('addPlayerModal'));
-                              modal.hide();
-                              htmx.trigger('#playerStatsList', 'refresh');
-                              htmx.trigger('#gamesList', 'refresh');
-                          }">ment - Thon Becker</title>
+    <title>Table Soccer (Foosball Management) - Thon Becker</title>
     
     <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
     
@@ -77,6 +68,9 @@
 
             <!-- Main Content when service is available -->
             <div th:if="${serviceAvailable}">
+                <!-- Alert container for success/error messages -->
+                <div id="main-alerts"></div>
+                
                 <!-- Quick Actions -->
                 <div class="row mb-4">
                     <div class="col-12">
@@ -169,7 +163,9 @@
     </main>
 
     <!-- Add Player Modal -->
-    <div class="modal fade foosball-modal" id="addPlayerModal" tabindex="-1">
+    <div class="modal fade foosball-modal" id="addPlayerModal" tabindex="-1"
+         hx-on::show.bs.modal="document.getElementById('player-alerts').innerHTML = ''"
+         hx-on::hidden.bs.modal="document.getElementById('player-alerts').innerHTML = ''">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -183,13 +179,16 @@
                     <form hx-post="/foosball/htmx/players" 
                           hx-target="#player-alerts"
                           hx-swap="innerHTML"
-                          hx-on::after-request="if(event.detail.successful) { 
-                              this.reset(); 
-                              const modal = bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')) || new bootstrap.Modal(document.getElementById('addPlayerModal'));
-                              modal.hide();
-                              htmx.trigger('#playerStatsList', 'refresh');
-                              htmx.trigger('.foosball-player-select', 'refresh-options');
-                          }">
+                          hx-on::after-request="
+                              if(event.detail.successful && !event.detail.xhr.responseText.includes('alert-danger')) { 
+                                  this.reset(); 
+                                  const modal = bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')) || new bootstrap.Modal(document.getElementById('addPlayerModal'));
+                                  modal.hide();
+                                  htmx.trigger('#playerStatsList', 'refresh');
+                                  document.getElementById('main-alerts').innerHTML = event.detail.xhr.responseText;
+                              }
+                              // if error, leave modal open so user can correct inputs
+                          ">
                         <div class="mb-3">
                             <label for="playerName" class="form-label">Name</label>
                             <input type="text" class="form-control" name="name" id="playerName" required>
@@ -224,13 +223,17 @@
                     <form hx-post="/foosball/htmx/games" 
                           hx-target="#game-alerts"
                           hx-swap="innerHTML"
-                          hx-on::after-request="if(event.detail.successful) { 
-                              this.reset(); 
-                              const modal = bootstrap.Modal.getInstance(document.getElementById('addGameModal')) || new bootstrap.Modal(document.getElementById('addGameModal'));
-                              modal.hide();
-                              htmx.trigger('#playerStatsList', 'refresh');
-                              htmx.trigger('#gamesList', 'refresh');
-                          }">
+                          hx-on::after-request="
+                              if(event.detail.successful && !event.detail.xhr.responseText.includes('alert-danger')) { 
+                                  // Show success message on main page
+                                  document.getElementById('main-alerts').innerHTML = event.detail.xhr.responseText;
+                                  this.reset(); 
+                                  const modal = bootstrap.Modal.getInstance(document.getElementById('addGameModal')) || new bootstrap.Modal(document.getElementById('addGameModal'));
+                                  modal.hide();
+                                  htmx.trigger('#playerStatsList', 'refresh');
+                                  htmx.trigger('#gamesList', 'refresh');
+                              }
+                          ">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="foosball-team-section">
