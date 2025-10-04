@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  BP_JVM_VERSION: 21
+  BP_JVM_VERSION: 25
   IMAGE_NAME: "personal"
   BUILDPACK_JAVA: "gcr.io/paketo-buildpacks/amazon-corretto"
 
@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'corretto'
-          java-version: '21'
+          java-version: '25'
           cache: 'maven'
 
       - name: Build Docker Image

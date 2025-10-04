@@ -3,7 +3,7 @@
 A modern, feature-rich personal portfolio website built with Spring Boot, showcasing professional experience and interactive applications.
 
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen)
-![Java](https://img.shields.io/badge/Java-21-orange)
+![Java](https://img.shields.io/badge/Java-25-orange)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.8-blue)
 ![HTMX](https://img.shields.io/badge/HTMX-2.0.7-purple)
 
@@ -31,7 +31,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Java 21+
+- Java 25+
 - Maven 3.6+
 - AWS Cognito setup (for authentication features)
 
@@ -49,15 +49,10 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
    # Edit .env with your actual Cognito credentials
    ```
 
-3. **Build and run**
+3. **Run the application**
    ```bash
-   ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+   mvn spring-boot:run
    ```
-
-4. **Access the application**
-   - Main site: http://localhost:8080
-   - Foosball management: http://localhost:8080/foosball
-   - Trivia game: http://localhost:8080/trivia
 
 ## 🏗️ Architecture
 
@@ -196,15 +191,14 @@ ENTRYPOINT ["java", "-jar", "/app.jar"]
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is proprietary and confidential. All rights are reserved by Thon Becker. See the [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
+## 📞 Contact
 
-- **Live Website:** [thonbecker.com](https://thonbecker.com)
-- **LinkedIn:** [Thon Becker](https://www.linkedin.com/in/thon-becker-66600947/)
-- **GitHub:** [SnapPetal](https://github.com/SnapPetal)
+- **GitHub**: [SnapPetal](https://github.com/SnapPetal)
+- **LinkedIn**: [Thon Becker](https://www.linkedin.com/in/thon-becker/)
 
 ## 🎯 Roadmap
 

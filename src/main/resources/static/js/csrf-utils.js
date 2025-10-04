@@ -21,6 +21,15 @@ function getCsrfHeader() {
     return header;
 }
 
+// Configure HTMX to include CSRF token in all requests
+document.addEventListener('htmx:configRequest', function(evt) {
+    const token = getCsrfToken();
+    const header = getCsrfHeader();
+    if (token && header) {
+        evt.detail.headers[header] = token;
+    }
+});
+
 // Utility function for CSRF-protected POST requests
 async function postWithCsrf(url, data, options = {}) {
     const csrfToken = getCsrfToken();

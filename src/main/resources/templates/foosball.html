@@ -20,16 +20,8 @@
     
     <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
-    <script>
-        // Configure HTMX to include CSRF token in all requests
-        document.addEventListener('htmx:configRequest', function(evt) {
-            const token = document.querySelector('meta[name="_csrf"]').getAttribute('content');
-            const header = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
-            evt.detail.headers[header] = token;
-        });
-    </script>
-    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script src="/js/csrf-utils.js"></script>
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script src="/js/foosball.js"></script>
 </head>
 <body class="foosball-page">
@@ -69,8 +61,11 @@
             <!-- Main Content when service is available -->
             <div th:if="${serviceAvailable}">
                 <!-- Alert container for success/error messages -->
-                <div id="main-alerts"></div>
-                
+                <div id="main-alerts">
+                    <div th:replace="foosball-fragments :: successAlert"></div>
+                    <div th:replace="foosball-fragments :: errorAlert"></div>
+                </div>
+
                 <!-- Quick Actions -->
                 <div class="row mb-4">
                     <div class="col-12">
@@ -163,12 +158,12 @@
     </main>
 
     <!-- Add Player Modal -->
-    <div class="modal fade foosball-modal" id="addPlayerModal" tabindex="-1">
+    <div class="modal fade foosball-modal" id="addPlayerModal" tabindex="-1" aria-labelledby="addPlayerModalLabel">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add New Player</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="addPlayerModalLabel">Add New Player</h5>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form hx-post="/foosball/htmx/players" 
@@ -202,13 +197,13 @@
     </div>
 
     <!-- Add Game Modal -->
-    <div class="modal fade foosball-modal" id="addGameModal" tabindex="-1"
+    <div class="modal fade foosball-modal" id="addGameModal" tabindex="-1" aria-labelledby="addGameModalLabel"
          hx-on::shown.bs.modal="htmx.trigger('.foosball-player-select', 'refresh-options')">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Record New Game</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="addGameModalLabel">Record New Game</h5>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form hx-post="/foosball/htmx/games" 
@@ -231,25 +226,21 @@
                                     <div class="mb-3">
                                         <label class="form-label">Player 1</label>
                                         <select class="form-select foosball-player-select" name="whiteTeamPlayer1" required
-                                                hx-get="/foosball/fragments/player-options" 
-                                                hx-trigger="refresh-options from:body" 
+                                                hx-get="/foosball/fragments/player-options"
+                                                hx-trigger="load, refresh-options from:body"
+                                                hx-target="this"
                                                 hx-swap="innerHTML">
-                                            <option value="">Select Player</option>
-                                            <option th:if="${serviceAvailable}" th:each="player : ${players}" 
-                                                    th:value="${player.name}" 
-                                                    th:text="${player.name}"></option>
+                                            <th:block th:include="foosball-fragments :: playerOptions"></th:block>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Player 2</label>
                                         <select class="form-select foosball-player-select" name="whiteTeamPlayer2" required
-                                                hx-get="/foosball/fragments/player-options" 
-                                                hx-trigger="refresh-options from:body" 
+                                                hx-get="/foosball/fragments/player-options"
+                                                hx-trigger="load, refresh-options from:body"
+                                                hx-target="this"
                                                 hx-swap="innerHTML">
-                                            <option value="">Select Player</option>
-                                            <option th:if="${serviceAvailable}" th:each="player : ${players}" 
-                                                    th:value="${player.name}" 
-                                                    th:text="${player.name}"></option>
+                                            <th:block th:include="foosball-fragments :: playerOptions"></th:block>
                                         </select>
                                     </div>
                                     <div class="mb-3">
@@ -264,25 +255,21 @@
                                     <div class="mb-3">
                                         <label class="form-label">Player 1</label>
                                         <select class="form-select foosball-player-select" name="blackTeamPlayer1" required
-                                                hx-get="/foosball/fragments/player-options" 
-                                                hx-trigger="refresh-options from:body" 
+                                                hx-get="/foosball/fragments/player-options"
+                                                hx-trigger="load, refresh-options from:body"
+                                                hx-target="this"
                                                 hx-swap="innerHTML">
-                                            <option value="">Select Player</option>
-                                            <option th:if="${serviceAvailable}" th:each="player : ${players}" 
-                                                    th:value="${player.name}" 
-                                                    th:text="${player.name}"></option>
+                                            <th:block th:include="foosball-fragments :: playerOptions"></th:block>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Player 2</label>
                                         <select class="form-select foosball-player-select" name="blackTeamPlayer2" required
-                                                hx-get="/foosball/fragments/player-options" 
-                                                hx-trigger="refresh-options from:body" 
+                                                hx-get="/foosball/fragments/player-options"
+                                                hx-trigger="load, refresh-options from:body"
+                                                hx-target="this"
                                                 hx-swap="innerHTML">
-                                            <option value="">Select Player</option>
-                                            <option th:if="${serviceAvailable}" th:each="player : ${players}" 
-                                                    th:value="${player.name}" 
-                                                    th:text="${player.name}"></option>
+                                            <th:block th:include="foosball-fragments :: playerOptions"></th:block>
                                         </select>
                                     </div>
                                     <div class="mb-3">

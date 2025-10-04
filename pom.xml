@@ -20,8 +20,9 @@
     <dotenv.version>3.0.2</dotenv.version>
     <dotenv.version>5.2.2</dotenv.version>
     <htmx.org.version>2.0.7</htmx.org.version>
-    <java.version>21</java.version>
+    <java.version>25</java.version>
     <lombok.version>1.18.42</lombok.version>
+    <maven.compiler.release>25</maven.compiler.release>
     <sockjs-client.version>1.5.1</sockjs-client.version>
     <spotless.version>3.0.0</spotless.version>
     <stomp-websocket.version>2.3.4</stomp-websocket.version>

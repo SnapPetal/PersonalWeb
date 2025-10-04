@@ -82,13 +82,13 @@
 </div>
 
 <!-- Player Options Fragment -->
-<div th:fragment="playerOptions">
+<th:block th:fragment="playerOptions">
     <option value="">Select Player</option>
     <option th:if="${#lists.isEmpty(players)}" value="" disabled>No players available</option>
-    <option th:each="player : ${players}" 
-            th:value="${player.name}" 
+    <option th:each="player : ${players}"
+            th:value="${player.name}"
             th:text="${player.name ?: 'Unknown Player'}"></option>
-</div>
+</th:block>
 
 <!-- Success Alert Fragment -->
 <div th:fragment="successAlert" th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">

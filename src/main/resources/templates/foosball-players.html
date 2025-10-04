@@ -19,14 +19,7 @@
     
     <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
-    <script>
-        // Configure HTMX to include CSRF token in all requests
-        document.addEventListener('htmx:configRequest', function(evt) {
-            const token = document.querySelector('meta[name="_csrf"]').getAttribute('content');
-            const header = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
-            evt.detail.headers[header] = token;
-        });
-    </script>
+    <script src="/js/csrf-utils.js"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 </head>
 <body class="foosball-page">
