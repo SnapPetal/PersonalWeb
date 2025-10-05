@@ -30,9 +30,9 @@ public class FoosballService {
         }
     }
 
-    public FoosballPlayer createPlayer(final FoosballPlayer player) {
+    public void createPlayer(final FoosballPlayer player) {
         try {
-            return foosballApiClient.createPlayer(player);
+            foosballApiClient.createPlayer(player);
         } catch (final Exception e) {
             log.warn("Error creating foosball player: {}", e.getMessage());
             throw new RuntimeException("Failed to create foosball player: " + e.getMessage(), e);

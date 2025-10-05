@@ -10,13 +10,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import solutions.thonbecker.personal.service.FoosballService;
 import solutions.thonbecker.personal.types.FoosballGame;
 import solutions.thonbecker.personal.types.FoosballPlayer;
-import solutions.thonbecker.personal.types.FoosballStats;
-import solutions.thonbecker.personal.types.FoosballTeamStats;
 
 import java.util.List;
 
@@ -54,18 +51,6 @@ public class FoosballController {
     public String getTeamStats(Model model) {
         model.addAttribute("teamStats", foosballService.getTeamStats());
         return "foosball-team-stats";
-    }
-
-    @GetMapping("/api/stats/teams")
-    @ResponseBody
-    public List<FoosballTeamStats> getTeamStats() {
-        return foosballService.getTeamStats();
-    }
-
-    @GetMapping("/api/stats/players")
-    @ResponseBody
-    public List<FoosballStats> getPlayerStats() {
-        return foosballService.getPlayerStats();
     }
 
     @GetMapping("/recent-games")
