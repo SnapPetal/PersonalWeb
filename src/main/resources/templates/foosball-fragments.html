@@ -2,14 +2,24 @@
 <html lang="en-US" xmlns:th="http://www.thymeleaf.org">
 
 <!-- Player Statistics List Fragment -->
-<div th:fragment="playerStatsList" id="playerStatsList">
-    <div th:if="${#lists.isEmpty(playerStats)}" class="text-center text-muted py-4 foosball-empty-state">
+<div th:fragment="playerStatsList" id="playerStatsList" class="skeleton-loading">
+    <div th:if="${#lists.isEmpty(playerStats)}"
+         class="text-center text-muted py-4 foosball-empty-state"
+         hx-swap-oob="true">
         <i class="bi bi-graph-up display-4"></i>
         <p class="mt-2">No player statistics available yet.</p>
+        <button class="btn btn-outline-primary btn-sm"
+                hx-get="/foosball/fragments/player-stats"
+                hx-target="#playerStatsList">
+            <i class="bi bi-arrow-clockwise"></i> Refresh Stats
+        </button>
     </div>
     
-    <div th:unless="${#lists.isEmpty(playerStats)}" class="table-responsive">
-        <table class="table table-sm foosball-table">
+    <div th:unless="${#lists.isEmpty(playerStats)}"
+         class="table-responsive"
+         hx-boost="true">
+        <table class="table table-sm foosball-table"
+               hx-preserve="true">
             <thead>
                 <tr>
                     <th><i class="bi bi-person"></i> Player</th>
@@ -20,7 +30,10 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="stat : ${playerStats}">
+                <tr th:each="stat : ${playerStats}"
+                    th:attr="data-player-id=${stat.id}"
+                    hx-target="this"
+                    hx-swap="outerHTML transition:true">
                     <td><strong class="foosball-player-name" th:text="${stat.playerName ?: stat.name ?: 'Unknown Player'}"></strong></td>
                     <td><span class="badge bg-info text-dark" th:text="${stat.gamesPlayed ?: stat.totalGames ?: 0}"></span></td>
                     <td><span class="badge bg-success" th:text="${stat.wins ?: 0}"></span></td>
@@ -83,22 +96,34 @@
 
 <!-- Player Options Fragment -->
 <th:block th:fragment="playerOptions">
-    <option value="">Select Player</option>
-    <option th:if="${#lists.isEmpty(players)}" value="" disabled>No players available</option>
+    <option value="">Select Player...</option>
     <option th:each="player : ${players}"
-            th:value="${player.name}"
-            th:text="${player.name ?: 'Unknown Player'}"></option>
+            th:value="${player.id}"
+            th:text="${player.name}"
+            th:attr="data-email=${player.email}"
+            hx-preserve="true">
+    </option>
 </th:block>
 
 <!-- Success Alert Fragment -->
-<div th:fragment="successAlert" th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
-    <span th:text="${success}"></span>
+<div th:fragment="successAlert"
+     th:if="${successMessage}"
+     class="alert alert-success alert-dismissible fade show"
+     role="alert"
+     hx-swap-oob="true">
+    <i class="bi bi-check-circle"></i>
+    <span th:text="${successMessage}">Success!</span>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
 
 <!-- Error Alert Fragment -->
-<div th:fragment="errorAlert" th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-    <span th:text="${error}"></span>
+<div th:fragment="errorAlert"
+     th:if="${errorMessage}"
+     class="alert alert-danger alert-dismissible fade show"
+     role="alert"
+     hx-swap-oob="true">
+    <i class="bi bi-exclamation-circle"></i>
+    <span th:text="${errorMessage}">Error!</span>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
 

@@ -155,6 +155,27 @@
               <sortProperties>true</sortProperties>
             </sortPom>
           </pom>
+          <javascript>
+            <includes>
+              <include>src/main/resources/static/js/*.js</include>
+            </includes>
+            <prettier>
+              <devDependencies>
+                <prettier>3.0.3</prettier>
+                <prettier-plugin-java>2.3.1</prettier-plugin-java>
+              </devDependencies>
+              <config>
+                <parser>babel</parser>
+                <printWidth>120</printWidth>
+                <tabWidth>2</tabWidth>
+                <useTabs>false</useTabs>
+                <singleQuote>true</singleQuote>
+                <trailingComma>es5</trailingComma>
+                <bracketSpacing>true</bracketSpacing>
+                <semi>true</semi>
+              </config>
+            </prettier>
+          </javascript>
         </configuration>
         <executions>
           <execution>

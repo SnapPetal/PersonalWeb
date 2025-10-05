@@ -1,0 +1,6 @@
+target/
+.git/
+*.min.js
+*.min.css
+node_modules/
+

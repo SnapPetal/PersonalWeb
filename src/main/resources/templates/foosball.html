@@ -20,6 +20,12 @@
     
     <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <script src="/js/htmx-extensions.js"></script>
+    <script>
+        htmx.addExtension('loading-states');
+        htmx.addExtension('form-validation');
+        htmx.addExtension('error-handling');
+    </script>
     <script src="/js/csrf-utils.js"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script src="/js/foosball.js"></script>
@@ -62,8 +68,8 @@
             <div th:if="${serviceAvailable}">
                 <!-- Alert container for success/error messages -->
                 <div id="main-alerts">
-                    <div th:replace="foosball-fragments :: successAlert"></div>
-                    <div th:replace="foosball-fragments :: errorAlert"></div>
+                    <div th:replace="~{foosball-fragments :: successAlert}"></div>
+                    <div th:replace="~{foosball-fragments :: errorAlert}"></div>
                 </div>
 
                 <!-- Quick Actions -->
@@ -144,10 +150,14 @@
                                 
                                 <!-- Player stats list with auto-refresh -->
                                 <div id="playerStatsList" 
-                                     hx-get="/foosball/fragments/player-stats" 
-                                     hx-trigger="load, every 30s">
+                                    class="tab-pane fade show active"
+                                    hx-get="/foosball/fragments/player-stats"
+                                    hx-trigger="load, playerUpdate from:body"
+                                    hx-target="this"
+                                    hx-swap="innerHTML transition:true"
+                                    hx-indicator=".stats-loading">
                                     <!-- Initial content will be loaded via HTMX -->
-                                    <div th:replace="foosball-fragments :: playerStatsList"></div>
+                                    <div th:replace="~{foosball-fragments :: playerStatsList}"></div>
                                 </div>
                             </div>
                         </div>
@@ -166,39 +176,44 @@
                     <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form hx-post="/foosball/htmx/players" 
+                    <form id="addPlayerForm"
+                          hx-post="/foosball/htmx/players"
                           hx-target="#main-alerts"
-                          hx-swap="innerHTML"
-                          hx-on::after-request="
-                              if(event.detail.successful) { 
+                          hx-swap="outerHTML"
+                          hx-indicator="#addPlayerForm"
+                          hx-encoding="application/x-www-form-urlencoded"
+                          data-hx-on--after-request="
+                              if(event.detail.successful) {
                                   if(!event.detail.xhr.responseText.includes('alert-danger')) {
-                                      this.reset(); 
+                                      this.reset();
+                                      htmx.trigger('body', 'playerUpdate');
                                       bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')).hide();
-                                      htmx.trigger('#playerStatsList', 'refresh');
                                   }
-                              }
-                          ">
+                              }"
+                          class="needs-validation"
+                          novalidate>
                         <div class="mb-3">
                             <label for="playerName" class="form-label">Name</label>
                             <input type="text" class="form-control" name="name" id="playerName" required>
+                            <div class="invalid-feedback">Please enter a name</div>
                         </div>
                         <div class="mb-3">
                             <label for="playerEmail" class="form-label">Email</label>
                             <input type="email" class="form-control" name="email" id="playerEmail" required>
+                            <div class="invalid-feedback">Please enter a valid email address</div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary" onclick="document.querySelector('#addPlayerModal form').requestSubmit()">Add Player</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('addPlayerForm').requestSubmit()">Add Player</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Add Game Modal -->
-    <div class="modal fade foosball-modal" id="addGameModal" tabindex="-1" aria-labelledby="addGameModalLabel"
-         hx-on::shown.bs.modal="htmx.trigger('.foosball-player-select', 'refresh-options')">
+    <div class="modal fade foosball-modal" id="addGameModal" tabindex="-1" aria-labelledby="addGameModalLabel">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -206,11 +221,14 @@
                     <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form hx-post="/foosball/htmx/games" 
+                    <form id="addGameForm"
+                          hx-post="/foosball/htmx/games"
                           hx-target="#main-alerts"
                           hx-swap="innerHTML"
-                          hx-on::after-request="
-                              if(event.detail.successful) { 
+                          hx-indicator="#addGameForm"
+                          hx-encoding="application/x-www-form-urlencoded"
+                          data-hx-on--after-request="
+                              if(event.detail.successful) {
                                   if(!event.detail.xhr.responseText.includes('alert-danger')) {
                                       this.reset(); 
                                       bootstrap.Modal.getInstance(document.getElementById('addGameModal')).hide();
@@ -225,22 +243,26 @@
                                     <h6>Team 1</h6>
                                     <div class="mb-3">
                                         <label class="form-label">Player 1</label>
-                                        <select class="form-select foosball-player-select" name="whiteTeamPlayer1" required
+                                        <select class="form-select foosball-player-select"
+                                                name="whiteTeamPlayer1"
+                                                required
                                                 hx-get="/foosball/fragments/player-options"
-                                                hx-trigger="load, refresh-options from:body"
+                                                hx-trigger="load"
                                                 hx-target="this"
-                                                hx-swap="innerHTML">
-                                            <th:block th:include="foosball-fragments :: playerOptions"></th:block>
+                                                hx-select="option">
+                                            <option value="">Select Player...</option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Player 2</label>
-                                        <select class="form-select foosball-player-select" name="whiteTeamPlayer2" required
+                                        <select class="form-select foosball-player-select"
+                                                name="whiteTeamPlayer2"
+                                                required
                                                 hx-get="/foosball/fragments/player-options"
-                                                hx-trigger="load, refresh-options from:body"
+                                                hx-trigger="load"
                                                 hx-target="this"
-                                                hx-swap="innerHTML">
-                                            <th:block th:include="foosball-fragments :: playerOptions"></th:block>
+                                                hx-select="option">
+                                            <option value="">Select Player...</option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
@@ -254,22 +276,26 @@
                                     <h6>Team 2</h6>
                                     <div class="mb-3">
                                         <label class="form-label">Player 1</label>
-                                        <select class="form-select foosball-player-select" name="blackTeamPlayer1" required
+                                        <select class="form-select foosball-player-select"
+                                                name="blackTeamPlayer1"
+                                                required
                                                 hx-get="/foosball/fragments/player-options"
-                                                hx-trigger="load, refresh-options from:body"
+                                                hx-trigger="load"
                                                 hx-target="this"
-                                                hx-swap="innerHTML">
-                                            <th:block th:include="foosball-fragments :: playerOptions"></th:block>
+                                                hx-select="option">
+                                            <option value="">Select Player...</option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Player 2</label>
-                                        <select class="form-select foosball-player-select" name="blackTeamPlayer2" required
+                                        <select class="form-select foosball-player-select"
+                                                name="blackTeamPlayer2"
+                                                required
                                                 hx-get="/foosball/fragments/player-options"
-                                                hx-trigger="load, refresh-options from:body"
+                                                hx-trigger="load"
                                                 hx-target="this"
-                                                hx-swap="innerHTML">
-                                            <th:block th:include="foosball-fragments :: playerOptions"></th:block>
+                                                hx-select="option">
+                                            <option value="">Select Player...</option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
