@@ -24,6 +24,7 @@ public class FoosballGame {
     private boolean draw;
     private boolean whiteTeamWinner;
     private boolean blackTeamWinner;
+    private String username;
 
     // Getter for backward compatibility - use playedAt if gameDate is null
     public String getGameDate() {

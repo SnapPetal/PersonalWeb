@@ -229,8 +229,8 @@
                           hx-encoding="application/x-www-form-urlencoded"
                           data-hx-on--after-request="
                               if(event.detail.successful) {
-                                  if(!event.detail.xhr.responseText.includes('alert-danger')) {
-                                      this.reset(); 
+                                  if(event.detail.xhr.responseText.includes('alert-success')) {
+                                      this.reset();
                                       bootstrap.Modal.getInstance(document.getElementById('addGameModal')).hide();
                                       htmx.trigger('#playerStatsList', 'refresh');
                                       htmx.trigger('#gamesList', 'refresh');

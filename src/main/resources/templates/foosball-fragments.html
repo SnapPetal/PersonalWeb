@@ -98,9 +98,9 @@
 <th:block th:fragment="playerOptions">
     <option value="">Select Player...</option>
     <option th:each="player : ${players}"
-            th:value="${player.id}"
+            th:value="${player.name}"
             th:text="${player.name}"
-            th:attr="data-email=${player.email}"
+            th:attr="data-email=${player.email},data-id=${player.id}"
             hx-preserve="true">
     </option>
 </th:block>

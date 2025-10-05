@@ -25,7 +25,6 @@ public class FoosballService {
         try {
             return foosballApiClient.getAllPlayers();
         } catch (final Exception e) {
-            // Return empty list if service is unavailable
             log.warn("Error fetching foosball players: {}", e.getMessage());
             return List.of();
         }
@@ -36,7 +35,7 @@ public class FoosballService {
             return foosballApiClient.createPlayer(player);
         } catch (final Exception e) {
             log.warn("Error creating foosball player: {}", e.getMessage());
-            return null;
+            throw new RuntimeException("Failed to create foosball player: " + e.getMessage(), e);
         }
     }
 
@@ -54,7 +53,7 @@ public class FoosballService {
             return foosballApiClient.createGame(game);
         } catch (final Exception e) {
             log.warn("Error creating foosball game: {}", e.getMessage());
-            return null;
+            throw new RuntimeException("Failed to create foosball game: " + e.getMessage(), e);
         }
     }
 

@@ -1,5 +1,9 @@
 package solutions.thonbecker.personal.controller;
 
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +22,7 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/foosball")
+@Slf4j
 public class FoosballController {
 
     private final FoosballService foosballService;
@@ -135,9 +140,13 @@ public class FoosballController {
 
         try {
             // Validation
-            if (whiteTeamPlayer1.isEmpty()
+            if (whiteTeamPlayer1 == null
+                    || whiteTeamPlayer1.isEmpty()
+                    || whiteTeamPlayer2 == null
                     || whiteTeamPlayer2.isEmpty()
+                    || blackTeamPlayer1 == null
                     || blackTeamPlayer1.isEmpty()
+                    || blackTeamPlayer2 == null
                     || blackTeamPlayer2.isEmpty()) {
                 model.addAttribute("error", "Please select all players.");
                 return "foosball-fragments :: alert";
@@ -148,6 +157,10 @@ public class FoosballController {
                 return "foosball-fragments :: alert";
             }
 
+            // Get username from security context
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String username = (authentication != null) ? authentication.getName() : null;
+
             FoosballGame game = new FoosballGame();
             game.setWhiteTeamPlayer1(whiteTeamPlayer1);
             game.setWhiteTeamPlayer2(whiteTeamPlayer2);
@@ -156,11 +169,26 @@ public class FoosballController {
             game.setWhiteTeamScore(whiteTeamScore);
             game.setBlackTeamScore(blackTeamScore);
             game.setNotes(notes);
+            game.setUsername(username);
 
-            foosballService.createGame(game);
-            model.addAttribute("success", "Game recorded successfully!");
+            FoosballGame createdGame = foosballService.createGame(game);
+            if (createdGame != null) {
+                model.addAttribute("success", "Game recorded successfully!");
+            } else {
+                model.addAttribute(
+                        "error", "Failed to record game. Server returned an empty response.");
+            }
         } catch (Exception e) {
-            model.addAttribute("error", "Failed to record game. Please try again.");
+            String errorMessage = "Failed to record game: " + e.getMessage();
+            // Log the detailed error
+            log.error("Error recording game", e);
+
+            // Extract meaningful message for the user
+            if (e.getMessage() != null && e.getMessage().contains("400")) {
+                errorMessage = "Invalid game data. Please check all fields and try again.";
+            }
+
+            model.addAttribute("error", errorMessage);
         }
 
         return "foosball-fragments :: alert";
