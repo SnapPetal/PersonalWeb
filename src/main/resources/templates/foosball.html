@@ -242,8 +242,9 @@
                                 <div class="foosball-team-section">
                                     <h6>Team 1</h6>
                                     <div class="mb-3">
-                                        <label class="form-label">Player 1</label>
+                                        <label for="whiteTeamPlayer1" class="form-label">Player 1</label>
                                         <select class="form-select foosball-player-select"
+                                                id="whiteTeamPlayer1"
                                                 name="whiteTeamPlayer1"
                                                 required
                                                 hx-get="/foosball/fragments/player-options"
@@ -254,8 +255,9 @@
                                         </select>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Player 2</label>
+                                        <label for="whiteTeamPlayer2" class="form-label">Player 2</label>
                                         <select class="form-select foosball-player-select"
+                                                id="whiteTeamPlayer2"
                                                 name="whiteTeamPlayer2"
                                                 required
                                                 hx-get="/foosball/fragments/player-options"
@@ -266,8 +268,8 @@
                                         </select>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Score</label>
-                                        <input type="number" class="form-control" name="whiteTeamScore" min="0" required>
+                                        <label for="whiteTeamScore" class="form-label">Score</label>
+                                        <input type="number" class="form-control" id="whiteTeamScore" name="whiteTeamScore" min="0" required>
                                     </div>
                                 </div>
                             </div>
@@ -275,8 +277,9 @@
                                 <div class="foosball-team-section">
                                     <h6>Team 2</h6>
                                     <div class="mb-3">
-                                        <label class="form-label">Player 1</label>
+                                        <label for="blackTeamPlayer1" class="form-label">Player 1</label>
                                         <select class="form-select foosball-player-select"
+                                                id="blackTeamPlayer1"
                                                 name="blackTeamPlayer1"
                                                 required
                                                 hx-get="/foosball/fragments/player-options"
@@ -287,8 +290,9 @@
                                         </select>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Player 2</label>
+                                        <label for="blackTeamPlayer2" class="form-label">Player 2</label>
                                         <select class="form-select foosball-player-select"
+                                                id="blackTeamPlayer2"
                                                 name="blackTeamPlayer2"
                                                 required
                                                 hx-get="/foosball/fragments/player-options"
@@ -299,15 +303,15 @@
                                         </select>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Score</label>
-                                        <input type="number" class="form-control" name="blackTeamScore" min="0" required>
+                                        <label for="blackTeamScore" class="form-label">Score</label>
+                                        <input type="number" class="form-control" id="blackTeamScore" name="blackTeamScore" min="0" required>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="gameNotes" class="form-label">Notes (Optional)</label>
-                            <textarea class="form-control" name="notes" rows="3"></textarea>
+                            <textarea class="form-control" id="gameNotes" name="notes" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
