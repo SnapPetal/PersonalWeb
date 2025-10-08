@@ -43,6 +43,7 @@
               <table class="table table-striped table-hover table-sortable">
                 <thead class="table-light">
                   <tr>
+                    <th>Players</th>
                     <th>Date</th>
                     <th class="text-center">Score</th>
                     <th>Winner</th>
@@ -50,24 +51,26 @@
                 </thead>
                 <tbody>
                   <tr th:each="game : ${games}">
+                    <td>
+                      <div>
+                        <span class="badge bg-light text-dark border">White</span>
+                        <span th:text="${game.whiteTeamPlayer1}"></span>
+                        <span th:if="${game.whiteTeamPlayer2 != null}" th:text="' & ' + ${game.whiteTeamPlayer2}"></span>
+                      </div>
+                      <div>
+                        <span class="badge bg-dark">Black</span>
+                        <span th:text="${game.blackTeamPlayer1}"></span>
+                        <span th:if="${game.blackTeamPlayer2 != null}" th:text="' & ' + ${game.blackTeamPlayer2}"></span>
+                      </div>
+                    </td>
                     <td
                       th:text="${#temporals.format(T(java.time.LocalDateTime).parse(game.playedAt).atZone(T(java.time.ZoneId).of('UTC')).withZoneSameInstant(T(java.time.ZoneId).of('America/Chicago')), 'yyyy-MM-dd HH:mm z')}"
                     ></td>
                     <td class="text-center" th:text="${game.whiteTeamScore} + ' - ' + ${game.blackTeamScore}"></td>
                     <td>
-                      <div th:if="${game.whiteTeamWinner}">
-                        <span class="badge bg-light text-dark border">White</span>
-                        <span th:text="${game.whiteTeamPlayer1}"></span>
-                        <span th:if="${game.whiteTeamPlayer2 != null}" th:text="' & ' + ${game.whiteTeamPlayer2}"></span>
-                      </div>
-                      <div th:if="${game.blackTeamWinner}">
-                        <span class="badge bg-dark">Black</span>
-                        <span th:text="${game.blackTeamPlayer1}"></span>
-                        <span th:if="${game.blackTeamPlayer2 != null}" th:text="' & ' + ${game.blackTeamPlayer2}"></span>
-                      </div>
-                      <div th:if="${game.draw}">
-                        <span class="badge bg-secondary">Draw</span>
-                      </div>
+                      <span th:if="${game.whiteTeamWinner}" class="badge bg-light text-dark border">White</span>
+                      <span th:if="${game.blackTeamWinner}" class="badge bg-dark">Black</span>
+                      <span th:if="${game.draw}" class="badge bg-secondary">Draw</span>
                     </td>
                   </tr>
                 </tbody>
