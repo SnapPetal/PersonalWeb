@@ -5,7 +5,7 @@
 
     <changeSet id="001" author="thonbecker">
         <!-- Quiz table -->
-        <createTable tableName="quiz" schemaName="endurance">
+        <createTable tableName="quiz" schemaName="trivia">
             <column name="id" type="bigint">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -24,12 +24,12 @@
         </createTable>
 
         <!-- Question table -->
-        <createTable tableName="question" schemaName="endurance">
+        <createTable tableName="question" schemaName="trivia">
             <column name="id" type="bigint">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="quiz_id" type="bigint">
-                <constraints nullable="false" foreignKeyName="fk_question_quiz" references="endurance.quiz(id)"/>
+                <constraints nullable="false" foreignKeyName="fk_question_quiz" references="trivia.quiz(id)"/>
             </column>
             <column name="question_text" type="text">
                 <constraints nullable="false"/>
@@ -46,12 +46,12 @@
         </createTable>
 
         <!-- Question options table -->
-        <createTable tableName="question_option" schemaName="endurance">
+        <createTable tableName="question_option" schemaName="trivia">
             <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="question_id" type="bigint">
-                <constraints nullable="false" foreignKeyName="fk_option_question" references="endurance.question(id)"/>
+                <constraints nullable="false" foreignKeyName="fk_option_question" references="trivia.question(id)"/>
             </column>
             <column name="option_text" type="varchar(255)">
                 <constraints nullable="false"/>
@@ -62,7 +62,7 @@
         </createTable>
 
         <!-- Player table -->
-        <createTable tableName="player" schemaName="endurance">
+        <createTable tableName="player" schemaName="trivia">
             <column name="id" type="varchar(36)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -75,12 +75,12 @@
         </createTable>
 
         <!-- Quiz player association table -->
-        <createTable tableName="quiz_player" schemaName="endurance">
+        <createTable tableName="quiz_player" schemaName="trivia">
             <column name="quiz_id" type="bigint">
-                <constraints nullable="false" foreignKeyName="fk_quiz_player_quiz" references="endurance.quiz(id)"/>
+                <constraints nullable="false" foreignKeyName="fk_quiz_player_quiz" references="trivia.quiz(id)"/>
             </column>
             <column name="player_id" type="varchar(36)">
-                <constraints nullable="false" foreignKeyName="fk_quiz_player_player" references="endurance.player(id)"/>
+                <constraints nullable="false" foreignKeyName="fk_quiz_player_player" references="trivia.player(id)"/>
             </column>
             <column name="score" type="int" defaultValue="0">
                 <constraints nullable="false"/>
@@ -89,21 +89,21 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <addPrimaryKey tableName="quiz_player" columnNames="quiz_id, player_id" schemaName="endurance"/>
+        <addPrimaryKey tableName="quiz_player" columnNames="quiz_id, player_id" schemaName="trivia"/>
 
         <!-- Answer submission table -->
-        <createTable tableName="answer_submission" schemaName="endurance">
+        <createTable tableName="answer_submission" schemaName="trivia">
             <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="player_id" type="varchar(36)">
-                <constraints nullable="false" foreignKeyName="fk_answer_player" references="endurance.player(id)"/>
+                <constraints nullable="false" foreignKeyName="fk_answer_player" references="trivia.player(id)"/>
             </column>
             <column name="quiz_id" type="bigint">
-                <constraints nullable="false" foreignKeyName="fk_answer_quiz" references="endurance.quiz(id)"/>
+                <constraints nullable="false" foreignKeyName="fk_answer_quiz" references="trivia.quiz(id)"/>
             </column>
             <column name="question_id" type="bigint">
-                <constraints nullable="false" foreignKeyName="fk_answer_question" references="endurance.question(id)"/>
+                <constraints nullable="false" foreignKeyName="fk_answer_question" references="trivia.question(id)"/>
             </column>
             <column name="selected_option" type="int">
                 <constraints nullable="false"/>
@@ -117,25 +117,25 @@
         </createTable>
 
         <!-- Indexes -->
-        <createIndex tableName="question" indexName="idx_question_quiz_id" schemaName="endurance">
+        <createIndex tableName="question" indexName="idx_question_quiz_id" schemaName="trivia">
             <column name="quiz_id"/>
         </createIndex>
-        <createIndex tableName="question_option" indexName="idx_option_question_id" schemaName="endurance">
+        <createIndex tableName="question_option" indexName="idx_option_question_id" schemaName="trivia">
             <column name="question_id"/>
         </createIndex>
-        <createIndex tableName="quiz_player" indexName="idx_quiz_player_quiz_id" schemaName="endurance">
+        <createIndex tableName="quiz_player" indexName="idx_quiz_player_quiz_id" schemaName="trivia">
             <column name="quiz_id"/>
         </createIndex>
-        <createIndex tableName="quiz_player" indexName="idx_quiz_player_player_id" schemaName="endurance">
+        <createIndex tableName="quiz_player" indexName="idx_quiz_player_player_id" schemaName="trivia">
             <column name="player_id"/>
         </createIndex>
-        <createIndex tableName="answer_submission" indexName="idx_answer_quiz_id" schemaName="endurance">
+        <createIndex tableName="answer_submission" indexName="idx_answer_quiz_id" schemaName="trivia">
             <column name="quiz_id"/>
         </createIndex>
-        <createIndex tableName="answer_submission" indexName="idx_answer_question_id" schemaName="endurance">
+        <createIndex tableName="answer_submission" indexName="idx_answer_question_id" schemaName="trivia">
             <column name="question_id"/>
         </createIndex>
-        <createIndex tableName="answer_submission" indexName="idx_answer_player_id" schemaName="endurance">
+        <createIndex tableName="answer_submission" indexName="idx_answer_player_id" schemaName="trivia">
             <column name="player_id"/>
         </createIndex>
     </changeSet>

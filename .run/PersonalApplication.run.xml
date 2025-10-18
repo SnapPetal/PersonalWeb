@@ -1,10 +1,14 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="PersonalApplication" type="Application" factoryName="Application" nameIsGenerated="true">
+    <envs>
+      <env name="SPRING_PROFILES_ACTIVE" value="dev" />
+    </envs>
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/.env" />
     </option>
     <option name="MAIN_CLASS_NAME" value="solutions.thonbecker.personal.PersonalApplication" />
     <module name="personal" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=dev" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="solutions.thonbecker.personal.*" />

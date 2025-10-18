@@ -7,10 +7,10 @@
 
     <changeSet id="000-create-schema" author="thonbecker">
         <sql>
-            CREATE SCHEMA IF NOT EXISTS endurance;
+            CREATE SCHEMA IF NOT EXISTS trivia;
         </sql>
         <sql>
-            SET search_path TO endurance, public;
+            SET search_path TO trivia, public;
         </sql>
 
     </changeSet>

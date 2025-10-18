@@ -1,7 +1,9 @@
 package solutions.thonbecker.personal.service;
 
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
+
 import solutions.thonbecker.personal.entity.QuizResultEntity;
 import solutions.thonbecker.personal.repository.QuizResultRepository;
 import solutions.thonbecker.personal.types.quiz.*;
@@ -20,15 +22,19 @@ public class TriviaService {
     private final FinancialPeaceQuestionGenerator questionGenerator;
     private final QuizResultRepository quizResultRepository;
 
-    public TriviaService(FinancialPeaceQuestionGenerator questionGenerator,
-                         QuizResultRepository quizResultRepository) {
+    public TriviaService(
+            FinancialPeaceQuestionGenerator questionGenerator,
+            QuizResultRepository quizResultRepository) {
         this.questionGenerator = questionGenerator;
         this.quizResultRepository = quizResultRepository;
     }
 
     public Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty) {
-        log.info("Creating Financial Peace trivia quiz: {} with {} questions at {} difficulty",
-                title, questionCount, difficulty);
+        log.info(
+                "Creating Financial Peace trivia quiz: {} with {} questions at {} difficulty",
+                title,
+                questionCount,
+                difficulty);
 
         Long quizId = quizIdGenerator.incrementAndGet();
         List<Question> questions = questionGenerator.generateQuestions(questionCount, difficulty);
@@ -37,7 +43,10 @@ public class TriviaService {
         quiz.setDifficulty(difficulty);
         quizzes.put(quizId, quiz);
 
-        log.info("Quiz created with ID: {} with {} AI-generated questions", quizId, questions.size());
+        log.info(
+                "Quiz created with ID: {} with {} AI-generated questions",
+                quizId,
+                questions.size());
         return quiz;
     }
 
@@ -49,8 +58,8 @@ public class TriviaService {
         Quiz quiz = quizzes.get(quizId);
         if (quiz != null) {
             // Check if player already exists
-            boolean playerExists = quiz.getPlayers().stream()
-                    .anyMatch(p -> p.getId().equals(player.getId()));
+            boolean playerExists =
+                    quiz.getPlayers().stream().anyMatch(p -> p.getId().equals(player.getId()));
 
             if (!playerExists) {
                 quiz.getPlayers().add(player);
@@ -78,7 +87,8 @@ public class TriviaService {
         return buildQuizState(quiz);
     }
 
-    public QuizState submitAnswer(Long quizId, String playerId, Long questionId, int selectedOption) {
+    public QuizState submitAnswer(
+            Long quizId, String playerId, Long questionId, int selectedOption) {
         Quiz quiz = quizzes.get(quizId);
         if (quiz == null) {
             return null;
@@ -94,7 +104,10 @@ public class TriviaService {
                         .findFirst()
                         .ifPresent(player -> {
                             player.setScore(player.getScore() + 100);
-                            log.info("Player {} answered correctly! New score: {}", player.getName(), player.getScore());
+                            log.info(
+                                    "Player {} answered correctly! New score: {}",
+                                    player.getName(),
+                                    player.getScore());
                         });
             }
         }
@@ -109,7 +122,11 @@ public class TriviaService {
         }
 
         quiz.nextQuestion();
-        log.info("Quiz {} moved to question {}/{}", quizId, quiz.getCurrentQuestionIndex() + 1, quiz.getQuestions().size());
+        log.info(
+                "Quiz {} moved to question {}/{}",
+                quizId,
+                quiz.getCurrentQuestionIndex() + 1,
+                quiz.getQuestions().size());
 
         // Check if quiz is completed and save results
         if (quiz.getStatus() == QuizStatus.COMPLETED) {
@@ -141,11 +158,13 @@ public class TriviaService {
                     correctAnswers,
                     LocalDateTime.now(),
                     winner != null && player.getId().equals(winner.getId()),
-                    quiz.getDifficulty() != null ? quiz.getDifficulty().name() : "MEDIUM"
-            );
+                    quiz.getDifficulty() != null ? quiz.getDifficulty().name() : "MEDIUM");
 
             quizResultRepository.save(result);
-            log.info("Saved quiz result for player {} with score {}", player.getName(), player.getScore());
+            log.info(
+                    "Saved quiz result for player {} with score {}",
+                    player.getName(),
+                    player.getScore());
         }
     }
 
@@ -160,7 +179,7 @@ public class TriviaService {
                     currentQuestion.getQuestionText(),
                     currentQuestion.getOptions(),
                     -1 // Hide correct answer from clients
-            );
+                    );
         }
 
         return new QuizState(
@@ -169,8 +188,7 @@ public class TriviaService {
                 sanitizedQuestion,
                 quiz.getPlayers(),
                 quiz.getCurrentQuestionIndex(),
-                quiz.getQuestions().size()
-        );
+                quiz.getQuestions().size());
     }
 
     public List<QuizResultEntity> getWinners() {
