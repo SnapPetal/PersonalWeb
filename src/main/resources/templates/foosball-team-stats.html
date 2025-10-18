@@ -57,12 +57,12 @@
                             </thead>
                             <tbody>
                                 <tr th:each="stats : ${teamStats}">
-                                    <td th:text="${stats.player1Name}"></td>
-                                    <td th:text="${stats.player2Name}"></td>
-                                    <td th:text="${stats.gamesPlayedTogether}"></td>
+                                    <td th:text="${stats.player1}"></td>
+                                    <td th:text="${stats.player2}"></td>
+                                    <td th:text="${stats.gamesPlayed}"></td>
                                     <td th:text="${stats.wins}"></td>
                                     <td th:text="${stats.losses}"></td>
-                                    <td th:text="${stats.formattedWinPercentage}"></td>
+                                    <td th:text="${#numbers.formatDecimal(stats.winPercentage, 0, 0)} + '%'"></td>
                                 </tr>
                             </tbody>
                         </table>

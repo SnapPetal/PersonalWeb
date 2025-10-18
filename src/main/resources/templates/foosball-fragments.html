@@ -31,17 +31,17 @@
             </thead>
             <tbody>
                 <tr th:each="stat : ${playerStats}"
-                    th:attr="data-player-id=${stat.id}"
+                    th:attr="data-player-name=${stat.playerName}"
                     hx-target="this"
                     hx-swap="outerHTML transition:true">
-                    <td><strong class="foosball-player-name" th:text="${stat.playerName ?: stat.name ?: 'Unknown Player'}"></strong></td>
-                    <td><span class="badge bg-info text-dark" th:text="${stat.gamesPlayed ?: stat.totalGames ?: 0}"></span></td>
-                    <td><span class="badge bg-success" th:text="${stat.wins ?: 0}"></span></td>
-                    <td><span class="badge bg-danger" th:text="${stat.losses ?: ((stat.gamesPlayed ?: stat.totalGames ?: 0) - (stat.wins ?: 0))}"></span></td>
+                    <td><strong class="foosball-player-name" th:text="${stat.playerName}"></strong></td>
+                    <td><span class="badge bg-info text-dark" th:text="${stat.totalGames}"></span></td>
+                    <td><span class="badge bg-success" th:text="${stat.wins}"></span></td>
+                    <td><span class="badge bg-danger" th:text="${stat.losses}"></span></td>
                     <td>
-                        <span th:if="${(stat.gamesPlayed ?: stat.totalGames ?: 0) > 0}" 
-                              th:text="${#numbers.formatInteger((stat.winPercentage ?: ((stat.wins ?: 0) * 100.0 / (stat.gamesPlayed ?: stat.totalGames ?: 1))), 0)} + '%'"></span>
-                        <span th:unless="${(stat.gamesPlayed ?: stat.totalGames ?: 0) > 0}" class="text-secondary">-</span>
+                        <span th:if="${stat.totalGames > 0}"
+                              th:text="${#numbers.formatDecimal(stat.winPercentage, 0, 0)} + '%'"></span>
+                        <span th:unless="${stat.totalGames > 0}" class="text-secondary">-</span>
                     </td>
                 </tr>
             </tbody>

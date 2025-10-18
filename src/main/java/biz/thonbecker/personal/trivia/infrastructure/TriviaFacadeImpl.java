@@ -212,7 +212,7 @@ class TriviaFacadeImpl implements TriviaFacade {
                     quiz.getQuestions().size(),
                     correctAnswers,
                     LocalDateTime.now(),
-                    winner != null && player.getId().equals(winner.getId()),
+                    player.getId().equals(winner.getId()),
                     quiz.getDifficulty() != null ? quiz.getDifficulty().name() : "MEDIUM");
 
             quizResultRepository.save(result);
