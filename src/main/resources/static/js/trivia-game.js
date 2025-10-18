@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const answersContainer = document.getElementById("answers-container");
   const scoreboardElement = document.getElementById("scoreboard");
   const logElement = document.getElementById("log");
+  const nextQuestionBtn = document.getElementById("next-question-btn");
 
   // Form elements
   const serverUrlInput = document.getElementById("server-url");
@@ -435,6 +436,27 @@ document.addEventListener("DOMContentLoaded", function () {
         btn.classList.remove("btn-outline-primary");
       }
     });
+
+    // Show the Next Question button
+    nextQuestionBtn.classList.remove("d-none");
+  }
+
+  // Move to next question
+  function nextQuestion() {
+    if (!currentQuizId) {
+      log("No quiz selected", "warning");
+      return;
+    }
+
+    const nextRequest = {
+      quizId: currentQuizId,
+    };
+
+    stompClient.send("/app/quiz/next", {}, JSON.stringify(nextRequest));
+    log("Moving to next question", "info");
+
+    // Hide the Next Question button
+    nextQuestionBtn.classList.add("d-none");
   }
 
   // Update scoreboard
@@ -528,6 +550,7 @@ document.addEventListener("DOMContentLoaded", function () {
   disconnectBtn.addEventListener("click", disconnect);
   createQuizBtn.addEventListener("click", createTriviaQuiz);
   startQuizBtn.addEventListener("click", startQuiz);
+  nextQuestionBtn.addEventListener("click", nextQuestion);
 
   // Add connection test functionality
   const testConnectionBtn = document.getElementById("test-connection-btn");

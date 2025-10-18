@@ -18,7 +18,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 
 ### **Interactive Applications**
 - **🏓 Foosball Management System** - Complete table soccer game tracking
-- **🎯 Trivia Game** - Real-time multiplayer trivia with WebSocket
+- **🎯 Dave Ramsey FPU Trivia** - AI-powered Financial Peace University trivia with real-time multiplayer
 - **📊 Statistics Dashboard** - Player and team performance analytics
 
 ### **Technical Features**
@@ -33,7 +33,10 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ### Prerequisites
 - Java 25+
 - Maven 3.6+
+- PostgreSQL 16+ (for local development)
+- Docker (for running PostgreSQL locally)
 - AWS Cognito setup (for authentication features)
+- AWS Bedrock access (for AI-powered trivia questions)
 
 ### Installation
 
@@ -61,6 +64,9 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - **Spring Security** - Authentication & CSRF protection
 - **Spring Cloud OpenFeign** - HTTP client for microservices
 - **Spring WebSocket** - Real-time communication for trivia
+- **Spring AI with AWS Bedrock** - AI-powered question generation
+- **PostgreSQL 16** - Relational database
+- **Liquibase** - Database migration and version control
 - **Caffeine Cache** - In-memory caching solution
 - **Thymeleaf** - Server-side template engine
 
@@ -114,11 +120,14 @@ Complete setup for development environment and AWS Cognito integration:
 
 **Repository:** [Foosball Backend Service](https://github.com/SnapPetal/foosball)
 
-### **Trivia Game**
-- **WebSocket Integration** - Real-time multiplayer gameplay
-- **Dynamic Questions** - External trivia API integration
-- **Scoring System** - Live leaderboard updates
-- **Event Logging** - Game session tracking
+### **Dave Ramsey FPU Trivia Game**
+- **AI-Powered Questions** - Spring AI with AWS Bedrock generates Dave Ramsey Financial Peace University questions
+- **WebSocket Integration** - Real-time multiplayer gameplay using STOMP protocol
+- **Difficulty Levels** - Easy, Medium, and Hard question difficulty
+- **Fallback Questions** - 20 pre-configured FPU questions when AI is unavailable
+- **Scoring System** - Live leaderboard updates and winner determination
+- **Database Persistence** - PostgreSQL stores quiz results and player statistics
+- **Event Logging** - Comprehensive game session tracking
 
 ### **Bible Verse of the Day**
 - **Daily Verses** - Cached daily verse retrieval
