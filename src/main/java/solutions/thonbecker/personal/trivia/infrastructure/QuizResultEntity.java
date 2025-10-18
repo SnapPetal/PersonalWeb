@@ -1,4 +1,4 @@
-package solutions.thonbecker.personal.entity;
+package solutions.thonbecker.personal.trivia.infrastructure;
 
 import jakarta.persistence.*;
 

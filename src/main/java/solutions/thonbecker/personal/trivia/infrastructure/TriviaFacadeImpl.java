@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 
-import solutions.thonbecker.personal.entity.QuizResultEntity;
-import solutions.thonbecker.personal.repository.QuizResultRepository;
 import solutions.thonbecker.personal.trivia.api.*;
 import solutions.thonbecker.personal.trivia.domain.*;
 
@@ -60,8 +58,8 @@ class TriviaFacadeImpl implements TriviaFacade {
         Long quizId = quizIdGenerator.incrementAndGet();
         List<Question> questions = questionGenerator.generateQuestions(questionCount, difficulty);
 
-        Quiz quiz = new Quiz(quizId, title, questions, DEFAULT_TIME_PER_QUESTION_SECONDS);
-        quiz.setDifficulty(difficulty);
+        Quiz quiz =
+                new Quiz(quizId, title, questions, DEFAULT_TIME_PER_QUESTION_SECONDS, difficulty);
         quizzes.put(quizId, quiz);
 
         log.info(

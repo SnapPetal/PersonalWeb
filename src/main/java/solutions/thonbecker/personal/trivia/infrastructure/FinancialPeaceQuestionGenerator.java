@@ -1,4 +1,4 @@
-package solutions.thonbecker.personal.service;
+package solutions.thonbecker.personal.trivia.infrastructure;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,10 +9,10 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-import solutions.thonbecker.personal.types.quiz.Question;
-import solutions.thonbecker.personal.types.quiz.QuizDifficulty;
+import solutions.thonbecker.personal.trivia.domain.Question;
+import solutions.thonbecker.personal.trivia.domain.QuizDifficulty;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,9 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Service
+/**
+ * Generates Financial Peace trivia questions using AI.
+ * Package-private to enforce module boundaries.
+ */
+@Component
 @Slf4j
-public class FinancialPeaceQuestionGenerator {
+class FinancialPeaceQuestionGenerator implements QuestionGenerator {
 
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;

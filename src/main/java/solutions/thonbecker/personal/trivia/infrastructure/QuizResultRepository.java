@@ -1,15 +1,15 @@
-package solutions.thonbecker.personal.repository;
+package solutions.thonbecker.personal.trivia.infrastructure;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
-
-import solutions.thonbecker.personal.entity.QuizResultEntity;
 
 import java.util.List;
 
-@Repository
-public interface QuizResultRepository extends JpaRepository<QuizResultEntity, Long> {
+/**
+ * Repository for QuizResult persistence.
+ * Package-private to enforce module boundaries.
+ */
+interface QuizResultRepository extends JpaRepository<QuizResultEntity, Long> {
 
     List<QuizResultEntity> findByQuizIdOrderByScoreDesc(Long quizId);
 

@@ -100,15 +100,13 @@ src/
 └── test/                    # Unit and integration tests
 ```
 
-## 🔧 Configuration Guides
+## 🔧 Configuration
 
-### **🔐 CSRF Protection Setup**
-Detailed guide for implementing Cross-Site Request Forgery protection:
-**[→ CSRF Implementation Guide](./CSRF_IMPLEMENTATION.md)**
+### **🔐 CSRF Protection**
+The application implements Cross-Site Request Forgery protection using Spring Security with token-based validation for all POST requests.
 
 ### **🌍 Environment Configuration**
-Complete setup for development environment and AWS Cognito integration:
-**[→ Environment Setup Guide](./ENVIRONMENT_SETUP.md)**
+Configure your development environment with AWS Cognito integration using environment variables. See `.env.example` for required settings.
 
 ## 🎮 Applications
 

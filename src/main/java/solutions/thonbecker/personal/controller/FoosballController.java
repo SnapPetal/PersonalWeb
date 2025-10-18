@@ -2,8 +2,6 @@ package solutions.thonbecker.personal.controller;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,31 +9,39 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import solutions.thonbecker.personal.service.FoosballService;
-import solutions.thonbecker.personal.types.FoosballGame;
-import solutions.thonbecker.personal.types.FoosballPlayer;
+import solutions.thonbecker.personal.foosball.api.FoosballFacade;
+import solutions.thonbecker.personal.foosball.domain.Game;
+import solutions.thonbecker.personal.foosball.domain.Player;
+import solutions.thonbecker.personal.foosball.domain.Team;
 
 import java.util.List;
 
+/**
+ * Legacy Foosball controller - delegating to new FoosballFacade.
+ * This controller will be removed in a future version once all views are updated.
+ *
+ * @deprecated Use {@link FoosballFacade} directly instead
+ */
 @Controller
 @RequestMapping("/foosball")
 @Slf4j
+@Deprecated
 public class FoosballController {
 
-    private final FoosballService foosballService;
+    private final FoosballFacade foosballFacade;
 
-    public FoosballController(FoosballService foosballService) {
-        this.foosballService = foosballService;
+    public FoosballController(FoosballFacade foosballFacade) {
+        this.foosballFacade = foosballFacade;
     }
 
     @GetMapping
     public String foosballPage(Model model) {
-        boolean serviceAvailable = foosballService.isServiceAvailable();
+        boolean serviceAvailable = foosballFacade.isServiceAvailable();
         model.addAttribute("serviceAvailable", serviceAvailable);
 
         if (serviceAvailable) {
-            model.addAttribute("playerStats", foosballService.getPlayerStats());
-            model.addAttribute("players", foosballService.getAllPlayers());
+            model.addAttribute("playerStats", foosballFacade.getPlayerStats());
+            model.addAttribute("players", foosballFacade.getAllPlayers());
         }
 
         return "foosball";
@@ -43,39 +49,39 @@ public class FoosballController {
 
     @GetMapping("/players")
     public String getPlayers(Model model) {
-        model.addAttribute("players", foosballService.getAllPlayers());
+        model.addAttribute("players", foosballFacade.getAllPlayers());
         return "foosball-players";
     }
 
     @GetMapping("/team-stats")
     public String getTeamStats(Model model) {
-        model.addAttribute("teamStats", foosballService.getTeamStats());
+        model.addAttribute("teamStats", foosballFacade.getTeamStats());
         return "foosball-team-stats";
     }
 
     @GetMapping("/recent-games")
     public String getRecentGames(Model model) {
-        model.addAttribute("games", foosballService.getRecentGames());
+        model.addAttribute("games", foosballFacade.getRecentGames());
         return "foosball-recent-games";
     }
 
     // HTMX Fragment Endpoints
     @GetMapping("/fragments/player-stats")
     public String getPlayerStatsFragment(Model model) {
-        model.addAttribute("playerStats", foosballService.getPlayerStats());
+        model.addAttribute("playerStats", foosballFacade.getPlayerStats());
         return "foosball-fragments :: playerStatsList";
     }
 
     @GetMapping("/fragments/games-list")
     public String getGamesListFragment(Model model) {
-        model.addAttribute("games", foosballService.getRecentGames());
+        model.addAttribute("games", foosballFacade.getRecentGames());
         return "foosball-fragments :: gamesList";
     }
 
     @GetMapping("/fragments/player-options")
     public String getPlayerOptionsFragment(Model model) {
         try {
-            model.addAttribute("players", foosballService.getAllPlayers());
+            model.addAttribute("players", foosballFacade.getAllPlayers());
         } catch (Exception e) {
             // If service is unavailable, provide empty list
             model.addAttribute("players", List.of());
@@ -85,7 +91,7 @@ public class FoosballController {
 
     @GetMapping("/fragments/player-table")
     public String getPlayerTableFragment(Model model) {
-        model.addAttribute("players", foosballService.getAllPlayers());
+        model.addAttribute("players", foosballFacade.getAllPlayers());
         return "foosball-players :: playerTable";
     }
 
@@ -97,10 +103,8 @@ public class FoosballController {
                     && !name.trim().isEmpty()
                     && email != null
                     && !email.trim().isEmpty()) {
-                FoosballPlayer player = new FoosballPlayer();
-                player.setName(name.trim());
-                player.setEmail(email.trim());
-                foosballService.createPlayer(player);
+                Player player = new Player(name.trim());
+                foosballFacade.createPlayer(player);
                 model.addAttribute("success", "Player '" + name.trim() + "' added successfully!");
             } else {
                 model.addAttribute("error", "Please provide both name and email.");
@@ -142,21 +146,12 @@ public class FoosballController {
                 return "foosball-fragments :: alert";
             }
 
-            // Get username from security context
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String username = (authentication != null) ? authentication.getName() : null;
+            // Create game using new domain model
+            Team whiteTeam = new Team(whiteTeamPlayer1, whiteTeamPlayer2);
+            Team blackTeam = new Team(blackTeamPlayer1, blackTeamPlayer2);
+            Game game = new Game(whiteTeam, blackTeam, whiteTeamScore, blackTeamScore);
 
-            FoosballGame game = new FoosballGame();
-            game.setWhiteTeamPlayer1(whiteTeamPlayer1);
-            game.setWhiteTeamPlayer2(whiteTeamPlayer2);
-            game.setBlackTeamPlayer1(blackTeamPlayer1);
-            game.setBlackTeamPlayer2(blackTeamPlayer2);
-            game.setWhiteTeamScore(whiteTeamScore);
-            game.setBlackTeamScore(blackTeamScore);
-            game.setNotes(notes);
-            game.setUsername(username);
-
-            FoosballGame createdGame = foosballService.createGame(game);
+            Game createdGame = foosballFacade.createGame(game);
             if (createdGame != null) {
                 model.addAttribute("success", "Game recorded successfully!");
             } else {

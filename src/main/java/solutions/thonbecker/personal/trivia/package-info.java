@@ -27,12 +27,10 @@
  * </ul>
  *
  * @since 1.0
- *
- * TODO: Add Spring Modulith dependency and uncomment the annotation below:
- * @org.springframework.modulith.ApplicationModule(
- *     displayName = "Trivia Quiz",
- *     allowedDependencies = {"shared"}
- * )
  */
+@org.springframework.modulith.ApplicationModule(
+        displayName = "Trivia Quiz",
+        allowedDependencies = {},
+        type = org.springframework.modulith.ApplicationModule.Type.OPEN)
 @org.springframework.lang.NonNullApi
 package solutions.thonbecker.personal.trivia;
