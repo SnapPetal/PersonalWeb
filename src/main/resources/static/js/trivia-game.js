@@ -29,17 +29,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Restore saved values from localStorage
   function restoreSavedValues() {
-    const host = window.location.host;
-    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-
-    let defaultServerUrl;
-    if (host.includes("localhost") || host.includes("127.0.0.1")) {
-      // Development environment
-      defaultServerUrl = "ws://localhost:8080/quiz-websocket";
-    } else {
-      // Production environment
-      defaultServerUrl = `${wsProtocol}//endurance.thonbecker.biz/quiz-websocket`;
-    }
+    // Always use the production backend server
+    const defaultServerUrl = "https://endurance.thonbecker.biz/quiz-websocket";
 
     // Set the server URL input and disable it
     serverUrlInput.value = defaultServerUrl;
@@ -251,18 +242,25 @@ document.addEventListener("DOMContentLoaded", function () {
   // Handle quiz creation event
   function onQuizCreated(payload) {
     const quiz = JSON.parse(payload.body);
+    console.log("Quiz created payload:", quiz);
     log(`Quiz created: ${quiz.title} with ID ${quiz.id}`, "success");
 
     // Store the quiz ID for later use
     currentQuizId = quiz.id;
 
     // Subscribe to this specific quiz's state updates
-    stompClient.subscribe("/topic/quiz/state/" + quiz.id, onQuizStateUpdated);
+    const subscription = stompClient.subscribe(
+      "/topic/quiz/state/" + quiz.id,
+      onQuizStateUpdated
+    );
+    console.log("Subscribed to /topic/quiz/state/" + quiz.id, subscription);
+    log("Subscribed to quiz state updates", "info");
 
     // Join the quiz with our player info
     joinQuiz(quiz.id);
 
-    // Show the start button for the quiz creator
+    // Show the start button for the quiz creator with quiz title
+    startQuizBtn.innerHTML = `<i class="bi bi-play-circle me-2"></i>Start "${quiz.title}"`;
     startQuizBtn.disabled = false;
   }
 
@@ -312,14 +310,25 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    stompClient.send("/app/quiz/start", {}, currentQuizId.toString());
+    const startRequest = {
+      quizId: currentQuizId,
+    };
+
+    console.log("Sending start request:", startRequest);
+    stompClient.send("/app/quiz/start", {}, JSON.stringify(startRequest));
     log(`Starting quiz ${currentQuizId}`, "info");
   }
 
   // Handle quiz state updates
   function onQuizStateUpdated(payload) {
     const state = JSON.parse(payload.body);
-    log(`Quiz state updated: ${state.status}`, "info");
+
+    // Log the full state for debugging
+    console.log("Quiz state received:", state);
+    log(
+      `Quiz state updated: ${state.status || state.state || "UNKNOWN"}`,
+      "info"
+    );
 
     // Update UI based on quiz state
     updateQuizUI(state);
@@ -327,29 +336,42 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Update the UI based on quiz state
   function updateQuizUI(state) {
+    console.log("Updating UI with quiz state:", state);
+
     // Hide/show elements based on quiz state
-    if (state.status === "WAITING") {
+    // Handle both WAITING and CREATED as waiting states
+    if (state.status === "WAITING" || state.status === "CREATED") {
       document.getElementById("waiting-room").classList.remove("d-none");
       document.getElementById("quiz-area").classList.add("d-none");
       document.getElementById("results-area").classList.add("d-none");
-    } else if (state.status === "IN_PROGRESS") {
+    } else if (state.status === "IN_PROGRESS" || state.status === "STARTED") {
       document.getElementById("waiting-room").classList.add("d-none");
       document.getElementById("quiz-area").classList.remove("d-none");
       document.getElementById("results-area").classList.add("d-none");
 
       // Display current question
       currentQuestion = state.currentQuestion;
-      displayQuestion(currentQuestion);
+      if (currentQuestion) {
+        displayQuestion(currentQuestion);
+      } else {
+        log("No current question in state", "warning");
+      }
 
-      // Update scoreboard
-      updateScoreboard(state.players);
-    } else if (state.status === "COMPLETED") {
+      // Update scoreboard if players exist
+      if (state.players && state.players.length > 0) {
+        updateScoreboard(state.players);
+      }
+    } else if (state.status === "COMPLETED" || state.status === "FINISHED") {
       document.getElementById("waiting-room").classList.add("d-none");
       document.getElementById("quiz-area").classList.add("d-none");
       document.getElementById("results-area").classList.remove("d-none");
 
       // Show final results
-      displayResults(state.players);
+      if (state.players && state.players.length > 0) {
+        displayResults(state.players);
+      }
+    } else {
+      log(`Unknown quiz status: ${state.status}`, "warning");
     }
   }
 
