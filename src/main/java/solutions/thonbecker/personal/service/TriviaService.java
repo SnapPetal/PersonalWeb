@@ -12,10 +12,15 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class TriviaService {
+
+    private static final int POINTS_PER_CORRECT_ANSWER = 100;
+    private static final int DEFAULT_TIME_PER_QUESTION_SECONDS = 60;
+    private static final int ANSWER_HIDDEN = -1;
 
     private final Map<Long, Quiz> quizzes = new ConcurrentHashMap<>();
     private final AtomicLong quizIdGenerator = new AtomicLong(System.currentTimeMillis());
@@ -30,6 +35,17 @@ public class TriviaService {
     }
 
     public Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty) {
+        // Input validation
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Quiz title cannot be null or empty");
+        }
+        if (questionCount <= 0 || questionCount > 20) {
+            throw new IllegalArgumentException("Question count must be between 1 and 20");
+        }
+        if (difficulty == null) {
+            throw new IllegalArgumentException("Difficulty cannot be null");
+        }
+
         log.info(
                 "Creating Financial Peace trivia quiz: {} with {} questions at {} difficulty",
                 title,
@@ -39,7 +55,7 @@ public class TriviaService {
         Long quizId = quizIdGenerator.incrementAndGet();
         List<Question> questions = questionGenerator.generateQuestions(questionCount, difficulty);
 
-        Quiz quiz = new Quiz(quizId, title, questions, 60);
+        Quiz quiz = new Quiz(quizId, title, questions, DEFAULT_TIME_PER_QUESTION_SECONDS);
         quiz.setDifficulty(difficulty);
         quizzes.put(quizId, quiz);
 
@@ -50,11 +66,24 @@ public class TriviaService {
         return quiz;
     }
 
-    public Quiz getQuiz(Long quizId) {
-        return quizzes.get(quizId);
+    public Optional<Quiz> getQuiz(Long quizId) {
+        return Optional.ofNullable(quizzes.get(quizId));
     }
 
     public void addPlayer(Long quizId, QuizPlayer player) {
+        if (quizId == null) {
+            throw new IllegalArgumentException("Quiz ID cannot be null");
+        }
+        if (player == null) {
+            throw new IllegalArgumentException("Player cannot be null");
+        }
+        if (player.getId() == null || player.getId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Player ID cannot be null or empty");
+        }
+        if (player.getName() == null || player.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Player name cannot be null or empty");
+        }
+
         Quiz quiz = quizzes.get(quizId);
         if (quiz != null) {
             // Check if player already exists
@@ -103,7 +132,7 @@ public class TriviaService {
                         .filter(p -> p.getId().equals(playerId))
                         .findFirst()
                         .ifPresent(player -> {
-                            player.setScore(player.getScore() + 100);
+                            player.setScore(player.getScore() + POINTS_PER_CORRECT_ANSWER);
                             log.info(
                                     "Player {} answered correctly! New score: {}",
                                     player.getName(),
@@ -145,7 +174,7 @@ public class TriviaService {
                 .orElse(null);
 
         for (QuizPlayer player : quiz.getPlayers()) {
-            int correctAnswers = player.getScore() / 100; // 100 points per correct answer
+            int correctAnswers = player.getScore() / POINTS_PER_CORRECT_ANSWER;
 
             QuizResultEntity result = new QuizResultEntity(
                     null,
@@ -178,8 +207,7 @@ public class TriviaService {
                     currentQuestion.getId(),
                     currentQuestion.getQuestionText(),
                     currentQuestion.getOptions(),
-                    -1 // Hide correct answer from clients
-                    );
+                    ANSWER_HIDDEN);
         }
 
         return new QuizState(

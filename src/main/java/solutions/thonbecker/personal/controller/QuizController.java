@@ -83,7 +83,7 @@ public class QuizController {
     }
 
     @MessageMapping("/quiz/next")
-    public void nextQuestion(StartQuizRequest request) {
+    public void nextQuestion(NextQuestionRequest request) {
         log.info("Moving to next question for quiz: {}", request.getQuizId());
 
         QuizState state = triviaService.nextQuestion(request.getQuizId());
