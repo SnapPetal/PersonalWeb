@@ -62,6 +62,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        default_schema: trivia
 
   # Spring AI Bedrock Configuration
   ai:
