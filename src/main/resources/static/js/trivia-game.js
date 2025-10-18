@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const scoreboardElement = document.getElementById("scoreboard");
   const logElement = document.getElementById("log");
   const nextQuestionBtn = document.getElementById("next-question-btn");
+  const joinQuizBtn = document.getElementById("join-quiz-btn");
+  const joinQuizIdInput = document.getElementById("join-quiz-id");
 
   // Form elements
   const serverUrlInput = document.getElementById("server-url");
@@ -64,6 +66,7 @@ document.addEventListener("DOMContentLoaded", function () {
       connectBtn.classList.add("d-none");
       disconnectBtn.classList.remove("d-none");
       createQuizBtn.disabled = false;
+      joinQuizBtn.disabled = false;
       serverUrlInput.disabled = true;
       playerNameInput.disabled = true;
 
@@ -74,6 +77,7 @@ document.addEventListener("DOMContentLoaded", function () {
       connectBtn.classList.remove("d-none");
       disconnectBtn.classList.add("d-none");
       createQuizBtn.disabled = true;
+      joinQuizBtn.disabled = true;
       startQuizBtn.disabled = true;
       serverUrlInput.disabled = false;
       playerNameInput.disabled = false;
@@ -284,6 +288,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     stompClient.send("/app/quiz/join", {}, JSON.stringify(joinRequest));
     log(`Joining quiz ${quizId} as ${playerName}`, "info");
+
+    // Store the quiz ID and subscribe to state updates
+    currentQuizId = quizId;
+    stompClient.subscribe(
+      "/topic/quiz/state/" + quizId,
+      onQuizStateUpdated
+    );
+    log("Subscribed to quiz state updates", "info");
+  }
+
+  // Join quiz by ID button handler
+  function joinQuizById() {
+    const quizId = parseInt(joinQuizIdInput.value, 10);
+    if (!quizId || quizId < 1) {
+      alert("Please enter a valid Quiz ID");
+      return;
+    }
+
+    joinQuiz(quizId);
+    log(`Attempting to join quiz with ID: ${quizId}`, "info");
   }
 
   // Handle player updates
@@ -551,6 +575,7 @@ document.addEventListener("DOMContentLoaded", function () {
   createQuizBtn.addEventListener("click", createTriviaQuiz);
   startQuizBtn.addEventListener("click", startQuiz);
   nextQuestionBtn.addEventListener("click", nextQuestion);
+  joinQuizBtn.addEventListener("click", joinQuizById);
 
   // Add connection test functionality
   const testConnectionBtn = document.getElementById("test-connection-btn");
