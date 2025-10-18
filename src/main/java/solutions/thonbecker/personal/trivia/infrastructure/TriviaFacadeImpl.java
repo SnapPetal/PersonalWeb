@@ -1,4 +1,4 @@
-package solutions.thonbecker.personal.service;
+package solutions.thonbecker.personal.trivia.infrastructure;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -6,16 +6,22 @@ import org.springframework.stereotype.Service;
 
 import solutions.thonbecker.personal.entity.QuizResultEntity;
 import solutions.thonbecker.personal.repository.QuizResultRepository;
-import solutions.thonbecker.personal.types.quiz.*;
+import solutions.thonbecker.personal.trivia.api.*;
+import solutions.thonbecker.personal.trivia.domain.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
+/**
+ * Internal implementation of the Trivia Facade.
+ * This class is NOT part of the public API and should not be used directly by other modules.
+ */
 @Service
 @Slf4j
-public class TriviaService {
+class TriviaFacadeImpl implements TriviaFacade {
 
     private static final int POINTS_PER_CORRECT_ANSWER = 100;
     private static final int DEFAULT_TIME_PER_QUESTION_SECONDS = 60;
@@ -23,16 +29,16 @@ public class TriviaService {
 
     private final Map<Long, Quiz> quizzes = new ConcurrentHashMap<>();
     private final AtomicLong quizIdGenerator = new AtomicLong(System.currentTimeMillis());
-    private final FinancialPeaceQuestionGenerator questionGenerator;
+    private final QuestionGenerator questionGenerator;
     private final QuizResultRepository quizResultRepository;
 
-    public TriviaService(
-            FinancialPeaceQuestionGenerator questionGenerator,
-            QuizResultRepository quizResultRepository) {
+    public TriviaFacadeImpl(
+            QuestionGenerator questionGenerator, QuizResultRepository quizResultRepository) {
         this.questionGenerator = questionGenerator;
         this.quizResultRepository = quizResultRepository;
     }
 
+    @Override
     public Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty) {
         // Input validation
         if (title == null || title.trim().isEmpty()) {
@@ -65,11 +71,13 @@ public class TriviaService {
         return quiz;
     }
 
+    @Override
     public Optional<Quiz> getQuiz(Long quizId) {
         return Optional.ofNullable(quizzes.get(quizId));
     }
 
-    public void addPlayer(Long quizId, QuizPlayer player) {
+    @Override
+    public void addPlayer(Long quizId, Player player) {
         if (quizId == null) {
             throw new IllegalArgumentException("Quiz ID cannot be null");
         }
@@ -96,11 +104,13 @@ public class TriviaService {
         }
     }
 
-    public List<QuizPlayer> getPlayers(Long quizId) {
+    @Override
+    public List<Player> getPlayers(Long quizId) {
         Quiz quiz = quizzes.get(quizId);
         return quiz != null ? quiz.getPlayers() : Collections.emptyList();
     }
 
+    @Override
     public QuizState startQuiz(Long quizId) {
         Quiz quiz = quizzes.get(quizId);
         if (quiz == null) {
@@ -115,6 +125,7 @@ public class TriviaService {
         return buildQuizState(quiz);
     }
 
+    @Override
     public QuizState submitAnswer(
             Long quizId, String playerId, Long questionId, int selectedOption) {
         Quiz quiz = quizzes.get(quizId);
@@ -143,6 +154,7 @@ public class TriviaService {
         return buildQuizState(quiz);
     }
 
+    @Override
     public QuizState nextQuestion(Long quizId) {
         Quiz quiz = quizzes.get(quizId);
         if (quiz == null) {
@@ -164,15 +176,29 @@ public class TriviaService {
         return buildQuizState(quiz);
     }
 
+    @Override
+    public List<QuizResult> getWinners() {
+        return quizResultRepository.findByIsWinnerTrueOrderByCompletedAtDesc().stream()
+                .map(this::toQuizResult)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<QuizResult> getPlayerHistory(String playerId) {
+        return quizResultRepository.findByPlayerIdOrderByCompletedAtDesc(playerId).stream()
+                .map(this::toQuizResult)
+                .collect(Collectors.toList());
+    }
+
     private void saveQuizResults(Quiz quiz) {
         log.info("Saving quiz results for quiz {}", quiz.getId());
 
         // Find the winner (highest score)
-        QuizPlayer winner = quiz.getPlayers().stream()
-                .max(Comparator.comparingInt(QuizPlayer::getScore))
+        Player winner = quiz.getPlayers().stream()
+                .max(Comparator.comparingInt(Player::getScore))
                 .orElse(null);
 
-        for (QuizPlayer player : quiz.getPlayers()) {
+        for (Player player : quiz.getPlayers()) {
             int correctAnswers = player.getScore() / POINTS_PER_CORRECT_ANSWER;
 
             QuizResultEntity result = new QuizResultEntity(
@@ -218,11 +244,18 @@ public class TriviaService {
                 quiz.getQuestions().size());
     }
 
-    public List<QuizResultEntity> getWinners() {
-        return quizResultRepository.findByIsWinnerTrueOrderByCompletedAtDesc();
-    }
-
-    public List<QuizResultEntity> getPlayerHistory(String playerId) {
-        return quizResultRepository.findByPlayerIdOrderByCompletedAtDesc(playerId);
+    private QuizResult toQuizResult(QuizResultEntity entity) {
+        return new QuizResult(
+                entity.getId(),
+                entity.getQuizTitle(),
+                entity.getQuizId(),
+                entity.getPlayerName(),
+                entity.getPlayerId(),
+                entity.getScore(),
+                entity.getTotalQuestions(),
+                entity.getCorrectAnswers(),
+                entity.getCompletedAt(),
+                entity.getIsWinner(),
+                entity.getDifficulty());
     }
 }

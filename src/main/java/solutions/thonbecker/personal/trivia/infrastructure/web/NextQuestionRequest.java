@@ -1,4 +1,4 @@
-package solutions.thonbecker.personal.types.quiz;
+package solutions.thonbecker.personal.trivia.infrastructure.web;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class NextQuestionRequest {
+class NextQuestionRequest {
     private Long quizId;
 }

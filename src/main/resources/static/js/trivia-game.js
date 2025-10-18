@@ -291,10 +291,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Store the quiz ID and subscribe to state updates
     currentQuizId = quizId;
-    stompClient.subscribe(
-      "/topic/quiz/state/" + quizId,
-      onQuizStateUpdated
-    );
+    stompClient.subscribe("/topic/quiz/state/" + quizId, onQuizStateUpdated);
     log("Subscribed to quiz state updates", "info");
   }
 

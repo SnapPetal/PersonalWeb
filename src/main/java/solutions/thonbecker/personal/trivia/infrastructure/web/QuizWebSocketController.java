@@ -1,4 +1,4 @@
-package solutions.thonbecker.personal.controller;
+package solutions.thonbecker.personal.trivia.infrastructure.web;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -8,27 +8,24 @@ import org.springframework.stereotype.Controller;
 
 import solutions.thonbecker.personal.trivia.api.QuizState;
 import solutions.thonbecker.personal.trivia.api.TriviaFacade;
-import solutions.thonbecker.personal.trivia.domain.*;
-import solutions.thonbecker.personal.types.quiz.*;
+import solutions.thonbecker.personal.trivia.domain.Player;
+import solutions.thonbecker.personal.trivia.domain.Quiz;
 
 import java.util.List;
 
 /**
- * LEGACY Controller - delegates to the new modular TriviaFacade.
- * This controller is maintained for backwards compatibility.
- * New code should use the trivia module's web controller directly.
- *
- * @deprecated Use {@link solutions.thonbecker.personal.trivia.infrastructure.web.QuizWebSocketController} instead
+ * WebSocket controller for trivia quiz operations.
+ * This is internal infrastructure and should not be accessed directly by other modules.
  */
 @Controller
 @Slf4j
-@Deprecated
-public class QuizController {
+class QuizWebSocketController {
 
     private final TriviaFacade triviaFacade;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public QuizController(TriviaFacade triviaFacade, SimpMessagingTemplate messagingTemplate) {
+    public QuizWebSocketController(
+            TriviaFacade triviaFacade, SimpMessagingTemplate messagingTemplate) {
         this.triviaFacade = triviaFacade;
         this.messagingTemplate = messagingTemplate;
     }
@@ -37,12 +34,8 @@ public class QuizController {
     public void createTriviaQuiz(TriviaQuizRequest request) {
         log.info("Received trivia quiz creation request: {}", request);
 
-        // Delegate to new modular facade
-        solutions.thonbecker.personal.trivia.domain.Quiz quiz = triviaFacade.createTriviaQuiz(
-                request.getTitle(),
-                request.getQuestionCount(),
-                solutions.thonbecker.personal.trivia.domain.QuizDifficulty.valueOf(
-                        request.getDifficulty().name()));
+        Quiz quiz = triviaFacade.createTriviaQuiz(
+                request.getTitle(), request.getQuestionCount(), request.getDifficulty());
 
         // Broadcast quiz creation to all subscribers
         messagingTemplate.convertAndSend("/topic/quiz/created", quiz);
@@ -53,13 +46,7 @@ public class QuizController {
     public void joinQuiz(JoinQuizRequest request) {
         log.info("Player {} joining quiz {}", request.getPlayer().getName(), request.getQuizId());
 
-        // Convert old Player to new domain Player
-        Player player = new Player(
-                request.getPlayer().getId(),
-                request.getPlayer().getName(),
-                request.getPlayer().getScore());
-
-        triviaFacade.addPlayer(request.getQuizId(), player);
+        triviaFacade.addPlayer(request.getQuizId(), request.getPlayer());
 
         // Broadcast updated player list
         List<Player> players = triviaFacade.getPlayers(request.getQuizId());
