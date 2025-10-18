@@ -1,0 +1,142 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001" author="thonbecker">
+        <!-- Quiz table -->
+        <createTable tableName="quiz" schemaName="endurance">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="time_per_question_in_seconds" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Question table -->
+        <createTable tableName="question" schemaName="endurance">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="quiz_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_question_quiz" references="endurance.quiz(id)"/>
+            </column>
+            <column name="question_text" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="correct_option_index" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="points" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="question_order" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Question options table -->
+        <createTable tableName="question_option" schemaName="endurance">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="question_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_option_question" references="endurance.question(id)"/>
+            </column>
+            <column name="option_text" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="option_order" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Player table -->
+        <createTable tableName="player" schemaName="endurance">
+            <column name="id" type="varchar(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Quiz player association table -->
+        <createTable tableName="quiz_player" schemaName="endurance">
+            <column name="quiz_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_quiz_player_quiz" references="endurance.quiz(id)"/>
+            </column>
+            <column name="player_id" type="varchar(36)">
+                <constraints nullable="false" foreignKeyName="fk_quiz_player_player" references="endurance.player(id)"/>
+            </column>
+            <column name="score" type="int" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_ready" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="quiz_player" columnNames="quiz_id, player_id" schemaName="endurance"/>
+
+        <!-- Answer submission table -->
+        <createTable tableName="answer_submission" schemaName="endurance">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="player_id" type="varchar(36)">
+                <constraints nullable="false" foreignKeyName="fk_answer_player" references="endurance.player(id)"/>
+            </column>
+            <column name="quiz_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_answer_quiz" references="endurance.quiz(id)"/>
+            </column>
+            <column name="question_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_answer_question" references="endurance.question(id)"/>
+            </column>
+            <column name="selected_option" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="submission_time" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Indexes -->
+        <createIndex tableName="question" indexName="idx_question_quiz_id" schemaName="endurance">
+            <column name="quiz_id"/>
+        </createIndex>
+        <createIndex tableName="question_option" indexName="idx_option_question_id" schemaName="endurance">
+            <column name="question_id"/>
+        </createIndex>
+        <createIndex tableName="quiz_player" indexName="idx_quiz_player_quiz_id" schemaName="endurance">
+            <column name="quiz_id"/>
+        </createIndex>
+        <createIndex tableName="quiz_player" indexName="idx_quiz_player_player_id" schemaName="endurance">
+            <column name="player_id"/>
+        </createIndex>
+        <createIndex tableName="answer_submission" indexName="idx_answer_quiz_id" schemaName="endurance">
+            <column name="quiz_id"/>
+        </createIndex>
+        <createIndex tableName="answer_submission" indexName="idx_answer_question_id" schemaName="endurance">
+            <column name="question_id"/>
+        </createIndex>
+        <createIndex tableName="answer_submission" indexName="idx_answer_player_id" schemaName="endurance">
+            <column name="player_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

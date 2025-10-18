@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dbmaster
+    username: dbmasteruser
+    password:
+  
+  liquibase:
+    url: jdbc:postgresql://localhost:5432/dbmaster
+    user: dbmasteruser
+    password:
+  

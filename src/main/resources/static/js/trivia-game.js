@@ -29,8 +29,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Restore saved values from localStorage
   function restoreSavedValues() {
-    // Always use the production backend server
-    const defaultServerUrl = "https://endurance.thonbecker.biz/quiz-websocket";
+    // Use local WebSocket endpoint
+    const defaultServerUrl = window.location.origin + "/quiz-websocket";
 
     // Set the server URL input and disable it
     serverUrlInput.value = defaultServerUrl;
@@ -310,6 +310,12 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    // Prevent multiple start requests
+    if (startQuizBtn.disabled) {
+      console.log("Start button already disabled, ignoring click");
+      return;
+    }
+
     const startRequest = {
       quizId: currentQuizId,
     };
@@ -317,6 +323,10 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("Sending start request:", startRequest);
     stompClient.send("/app/quiz/start", {}, JSON.stringify(startRequest));
     log(`Starting quiz ${currentQuizId}`, "info");
+
+    // Disable the button immediately after sending
+    startQuizBtn.disabled = true;
+    startQuizBtn.innerHTML = `<i class="bi bi-hourglass-split me-2"></i>Starting...`;
   }
 
   // Handle quiz state updates

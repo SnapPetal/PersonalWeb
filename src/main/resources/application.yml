@@ -1,8 +1,12 @@
 spring:
   application:
     name: "personal"
+
+  # Thymeleaf Configuration
   thymeleaf:
     cache: false
+
+  # Security & OAuth2
   security:
     oauth2:
       client:
@@ -11,16 +15,19 @@ spring:
             client-id: "${COGNITO_CLIENT_ID}"
             client-secret: "${COGNITO_CLIENT_SECRET}"
             authorization-grant-type: client_credentials
-            scopee: "default-m2m-resource-server-sxhxn5/read"
+            scope: "default-m2m-resource-server-sxhxn5/read"
         provider:
           cognito:
             token-uri: "${COGNITO_TOKEN_URL}"
+
+  # OpenFeign Configuration
   cloud:
     openfeign:
       oauth2:
         enabled: true
         clientRegistrationId: cognito
 
+  # Web Resources
   web:
     resources:
       chain:
@@ -32,6 +39,56 @@ spring:
           no-store: true
           must-revalidate: true
 
+  # Database Configuration
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://ls-3cd9e093f05f5c4d801b58031197f04063b55800.cmldxjsfqvn4.us-east-1.rds.amazonaws.com:5432/dbmaster}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # Liquibase Configuration
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    database-change-log-table: trivia_changelog
+    database-change-log-lock-table: trivia_changelog_lock
+
+  # JPA/Hibernate Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Spring AI Bedrock Configuration
+  ai:
+    bedrock:
+      converse:
+        chat:
+          enabled: true
+          options:
+            model: anthropic.claude-3-sonnet-20240229-v1:0
+            temperature: 0.7
+            max-tokens: 1500
+            top-p: 0.9
+      aws:
+        region: ${AWS_REGION:us-east-1}
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+
+  # Task Execution (for WebSocket async operations)
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 16
+        queue-capacity: 100
+      thread-name-prefix: websocket-task-
+
+# Bible Verse API Configuration
 bible:
   verse:
     api:
@@ -39,6 +96,7 @@ bible:
     cache:
       duration: 24
 
+# Foosball API Configuration
 foosball:
   api:
     base-url: https://foosball.thonbecker.biz
