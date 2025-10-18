@@ -1,0 +1,26 @@
+@startuml
+set separator none
+title Controller
+
+top to bottom direction
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+Container_Boundary("PersonalApplication.PersonalApplication_boundary", "PersonalApplication", $tags="") {
+  Component(PersonalApplication.PersonalApplication.Types, "Types", $techn="Module", $descr="", $tags="", $link="")
+  Component(PersonalApplication.PersonalApplication.Service, "Service", $techn="Module", $descr="", $tags="", $link="")
+  Component(PersonalApplication.PersonalApplication.Foosball, "Foosball", $techn="Module", $descr="", $tags="", $link="")
+  Component(PersonalApplication.PersonalApplication.Controller, "Controller", $techn="Module", $descr="", $tags="", $link="")
+}
+
+Rel(PersonalApplication.PersonalApplication.Foosball, PersonalApplication.PersonalApplication.Types, "depends on", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Foosball, PersonalApplication.PersonalApplication.Service, "uses", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Controller, PersonalApplication.PersonalApplication.Types, "depends on", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Controller, PersonalApplication.PersonalApplication.Service, "uses", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Controller, PersonalApplication.PersonalApplication.Foosball, "uses", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Service, PersonalApplication.PersonalApplication.Types, "depends on", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+@enduml
