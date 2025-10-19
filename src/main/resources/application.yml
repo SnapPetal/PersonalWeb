@@ -101,3 +101,20 @@ bible:
 foosball:
   api:
     base-url: https://foosball.thonbecker.biz
+
+# Spring Modulith Configuration
+spring.modulith:
+  # Event publication and handling
+  events:
+    # Enable event externalization (for publishing to message brokers)
+    externalization:
+      enabled: false  # Set to true when integrating with Kafka, RabbitMQ, etc.
+    # Enable event republication for failed events
+    republish-outstanding-events-on-restart: true
+
+  # Module detection and verification
+  detection-strategy: explicitly-annotated  # Only detect modules with @ApplicationModule annotation
+
+  # Documentation generation
+  moments:
+    enable-time-machine: false  # Enable for event sourcing scenarios

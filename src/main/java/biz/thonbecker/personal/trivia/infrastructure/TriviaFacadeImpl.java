@@ -8,8 +8,11 @@ import biz.thonbecker.personal.trivia.domain.*;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,11 +35,15 @@ class TriviaFacadeImpl implements TriviaFacade {
     private final AtomicLong quizIdGenerator = new AtomicLong(System.currentTimeMillis());
     private final QuestionGenerator questionGenerator;
     private final QuizResultRepository quizResultRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TriviaFacadeImpl(
-            QuestionGenerator questionGenerator, QuizResultRepository quizResultRepository) {
+            QuestionGenerator questionGenerator,
+            QuizResultRepository quizResultRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.questionGenerator = questionGenerator;
         this.quizResultRepository = quizResultRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -78,6 +85,7 @@ class TriviaFacadeImpl implements TriviaFacade {
     }
 
     @Override
+    @Transactional
     public void addPlayer(Long quizId, Player player) {
         if (quizId == null) {
             throw new IllegalArgumentException("Quiz ID cannot be null");
@@ -101,6 +109,10 @@ class TriviaFacadeImpl implements TriviaFacade {
             if (!playerExists) {
                 quiz.getPlayers().add(player);
                 log.info("Player {} joined quiz {}", player.getName(), quizId);
+
+                // Publish event
+                eventPublisher.publishEvent(new PlayerJoinedQuizEvent(
+                        quizId, player.getId(), player.getName(), Instant.now()));
             }
         }
     }
@@ -112,6 +124,7 @@ class TriviaFacadeImpl implements TriviaFacade {
     }
 
     @Override
+    @Transactional
     public QuizState startQuiz(Long quizId) {
         Quiz quiz = quizzes.get(quizId);
         if (quiz == null) {
@@ -122,6 +135,15 @@ class TriviaFacadeImpl implements TriviaFacade {
         quiz.setStatus(QuizStatus.IN_PROGRESS);
         quiz.setCurrentQuestionIndex(0);
         log.info("Quiz {} started", quizId);
+
+        // Publish event
+        eventPublisher.publishEvent(new QuizStartedEvent(
+                quizId,
+                quiz.getTitle(),
+                quiz.getDifficulty(),
+                quiz.getQuestions().size(),
+                quiz.getPlayers().stream().map(Player::getId).toList(),
+                Instant.now()));
 
         return buildQuizState(quiz);
     }
@@ -156,6 +178,7 @@ class TriviaFacadeImpl implements TriviaFacade {
     }
 
     @Override
+    @Transactional
     public QuizState nextQuestion(Long quizId) {
         Quiz quiz = quizzes.get(quizId);
         if (quiz == null) {
@@ -172,6 +195,7 @@ class TriviaFacadeImpl implements TriviaFacade {
         // Check if quiz is completed and save results
         if (quiz.getStatus() == QuizStatus.COMPLETED) {
             saveQuizResults(quiz);
+            publishQuizCompletedEvent(quiz);
         }
 
         return buildQuizState(quiz);
@@ -258,5 +282,42 @@ class TriviaFacadeImpl implements TriviaFacade {
                 entity.getCompletedAt(),
                 entity.getIsWinner(),
                 entity.getDifficulty());
+    }
+
+    private void publishQuizCompletedEvent(Quiz quiz) {
+        Player winner = quiz.getPlayers().stream()
+                .max(Comparator.comparingInt(Player::getScore))
+                .orElse(null);
+
+        if (winner == null) {
+            return;
+        }
+
+        // Create sorted player results
+        List<Player> sortedPlayers = quiz.getPlayers().stream()
+                .sorted(Comparator.comparingInt(Player::getScore).reversed())
+                .toList();
+
+        List<QuizCompletedEvent.PlayerResult> playerResults = new ArrayList<>();
+        for (int i = 0; i < sortedPlayers.size(); i++) {
+            Player p = sortedPlayers.get(i);
+            playerResults.add(new QuizCompletedEvent.PlayerResult(
+                    p.getId(), p.getName(), p.getScore(), i + 1 // rank (1-based)
+                    ));
+        }
+
+        eventPublisher.publishEvent(new QuizCompletedEvent(
+                quiz.getId(),
+                quiz.getTitle(),
+                winner.getId(),
+                winner.getName(),
+                winner.getScore(),
+                playerResults,
+                Instant.now()));
+
+        log.info(
+                "Published QuizCompletedEvent for quiz {} with winner {}",
+                quiz.getId(),
+                winner.getName());
     }
 }

@@ -8,8 +8,11 @@ import biz.thonbecker.personal.foosball.domain.TeamStats;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -22,9 +25,11 @@ import java.util.List;
 class FoosballFacadeImpl implements FoosballFacade {
 
     private final FoosballClient foosballClient;
+    private final ApplicationEventPublisher eventPublisher;
 
-    FoosballFacadeImpl(FoosballClient foosballClient) {
+    FoosballFacadeImpl(FoosballClient foosballClient, ApplicationEventPublisher eventPublisher) {
         this.foosballClient = foosballClient;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -34,6 +39,7 @@ class FoosballFacadeImpl implements FoosballFacade {
     }
 
     @Override
+    @Transactional
     public void createPlayer(Player player) {
         if (player == null) {
             throw new IllegalArgumentException("Player cannot be null");
@@ -44,6 +50,14 @@ class FoosballFacadeImpl implements FoosballFacade {
 
         log.info("Creating player: {}", player.getName());
         foosballClient.createPlayer(player);
+
+        // Publish event (note: player.getId() may be null before creation)
+        if (player.getId() != null) {
+            eventPublisher.publishEvent(new biz.thonbecker.personal.foosball.api.PlayerCreatedEvent(
+                    null, // ID not available until after API call
+                    player.getName(),
+                    Instant.now()));
+        }
     }
 
     @Override
@@ -53,6 +67,7 @@ class FoosballFacadeImpl implements FoosballFacade {
     }
 
     @Override
+    @Transactional
     public Game createGame(Game game) {
         if (game == null) {
             throw new IllegalArgumentException("Game cannot be null");
@@ -66,7 +81,33 @@ class FoosballFacadeImpl implements FoosballFacade {
                 game.getWhiteTeam().getPlayer1() + "&" + game.getWhiteTeam().getPlayer2(),
                 game.getBlackTeam().getPlayer1() + "&" + game.getBlackTeam().getPlayer2());
 
-        return foosballClient.createGame(game);
+        Game createdGame = foosballClient.createGame(game);
+
+        // Publish event
+        String winnerTeamName = determineWinnerTeamName(createdGame);
+        eventPublisher.publishEvent(new biz.thonbecker.personal.foosball.api.GameRecordedEvent(
+                createdGame.getId(),
+                createdGame.getWhiteTeam().getPlayer1() + " & "
+                        + createdGame.getWhiteTeam().getPlayer2(),
+                createdGame.getWhiteTeamScore(),
+                createdGame.getBlackTeam().getPlayer1() + " & "
+                        + createdGame.getBlackTeam().getPlayer2(),
+                createdGame.getBlackTeamScore(),
+                createdGame.getResult(),
+                winnerTeamName,
+                Instant.now()));
+
+        return createdGame;
+    }
+
+    private String determineWinnerTeamName(Game game) {
+        return switch (game.getResult()) {
+            case WHITE_TEAM_WIN ->
+                game.getWhiteTeam().getPlayer1() + " & " + game.getWhiteTeam().getPlayer2();
+            case BLACK_TEAM_WIN ->
+                game.getBlackTeam().getPlayer1() + " & " + game.getBlackTeam().getPlayer2();
+            case DRAW -> "Draw";
+        };
     }
 
     @Override
