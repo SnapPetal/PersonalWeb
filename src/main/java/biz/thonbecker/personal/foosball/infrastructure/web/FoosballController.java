@@ -1,4 +1,4 @@
-package biz.thonbecker.personal.controller;
+package biz.thonbecker.personal.foosball.infrastructure.web;
 
 import biz.thonbecker.personal.foosball.api.FoosballFacade;
 import biz.thonbecker.personal.foosball.domain.Game;
