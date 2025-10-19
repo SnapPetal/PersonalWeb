@@ -17,15 +17,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 
 /**
- * Legacy Foosball controller - delegating to new FoosballFacade.
- * This controller will be removed in a future version once all views are updated.
- *
- * @deprecated Use {@link FoosballFacade} directly instead
+ * Foosball controller - handles web endpoints for foosball functionality.
+ * Delegates to FoosballFacade for business logic.
  */
 @Controller
 @RequestMapping("/foosball")
 @Slf4j
-@Deprecated
 public class FoosballController {
 
     private final FoosballFacade foosballFacade;

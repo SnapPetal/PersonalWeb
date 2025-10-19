@@ -100,7 +100,7 @@
     <option th:each="player : ${players}"
             th:value="${player.name}"
             th:text="${player.name}"
-            th:attr="data-email=${player.email},data-id=${player.id}"
+            th:attr="data-id=${player.id}"
             hx-preserve="true">
     </option>
 </th:block>

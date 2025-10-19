@@ -3,6 +3,8 @@ package biz.thonbecker.personal.foosball.domain;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * Core domain entity representing a Foosball game.
  * Contains business logic for game state and winner determination.
@@ -16,6 +18,7 @@ public class Game {
     private int whiteTeamScore;
     private int blackTeamScore;
     private GameResult result;
+    private LocalDateTime playedAt;
 
     /**
      * Creates a new game with the specified teams.

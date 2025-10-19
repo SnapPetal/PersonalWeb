@@ -54,18 +54,16 @@
                     <td>
                       <div>
                         <span class="badge bg-light text-dark border">White</span>
-                        <span th:text="${game.whiteTeamPlayer1}"></span>
-                        <span th:if="${game.whiteTeamPlayer2 != null}" th:text="' & ' + ${game.whiteTeamPlayer2}"></span>
+                        <span th:text="${game.whiteTeam.player1}"></span>
+                        <span th:if="${game.whiteTeam.player2 != null}" th:text="' & ' + ${game.whiteTeam.player2}"></span>
                       </div>
                       <div>
                         <span class="badge bg-dark">Black</span>
-                        <span th:text="${game.blackTeamPlayer1}"></span>
-                        <span th:if="${game.blackTeamPlayer2 != null}" th:text="' & ' + ${game.blackTeamPlayer2}"></span>
+                        <span th:text="${game.blackTeam.player1}"></span>
+                        <span th:if="${game.blackTeam.player2 != null}" th:text="' & ' + ${game.blackTeam.player2}"></span>
                       </div>
                     </td>
-                    <td
-                      th:text="${#temporals.format(T(java.time.LocalDateTime).parse(game.playedAt).atZone(T(java.time.ZoneId).of('UTC')).withZoneSameInstant(T(java.time.ZoneId).of('America/Chicago')), 'yyyy-MM-dd HH:mm z')}"
-                    ></td>
+                    <td th:text="${game.playedAt != null ? #temporals.format(game.playedAt.atZone(T(java.time.ZoneId).of('UTC')).withZoneSameInstant(T(java.time.ZoneId).of('America/Chicago')), 'yyyy-MM-dd HH:mm z') : 'N/A'}"></td>
                     <td class="text-center" th:text="${game.whiteTeamScore} + ' - ' + ${game.blackTeamScore}"></td>
                     <td>
                       <span th:if="${game.whiteTeamWinner}" class="badge bg-light text-dark border">White</span>

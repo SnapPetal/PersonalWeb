@@ -67,7 +67,11 @@ class FoosballApiClientAdapter implements FoosballClient {
         try {
             FoosballGame apiGame = toApiGame(game);
             FoosballGame result = apiClient.createGame(apiGame);
-            return toGame(result);
+            // Only extract the ID from the response, keep the original game data
+            if (result != null && result.getId() != null) {
+                game.setId(result.getId());
+            }
+            return game;
         } catch (FeignException e) {
             log.error("Failed to create game via API", e);
             throw new RuntimeException("Failed to create game", e);
@@ -170,6 +174,16 @@ class FoosballApiClientAdapter implements FoosballClient {
                 apiGame.getWhiteTeamScore() != null ? apiGame.getWhiteTeamScore() : 0,
                 apiGame.getBlackTeamScore() != null ? apiGame.getBlackTeamScore() : 0);
         game.setId(apiGame.getId());
+
+        // Map playedAt field from API
+        if (apiGame.getPlayedAt() != null && !apiGame.getPlayedAt().isEmpty()) {
+            try {
+                game.setPlayedAt(java.time.LocalDateTime.parse(apiGame.getPlayedAt()));
+            } catch (Exception e) {
+                log.warn("Failed to parse playedAt: {}", apiGame.getPlayedAt(), e);
+            }
+        }
+
         return game;
     }
 

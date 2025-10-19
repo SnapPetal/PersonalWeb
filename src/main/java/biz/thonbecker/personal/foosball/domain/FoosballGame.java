@@ -13,17 +13,16 @@ import java.util.List;
 public class FoosballGame {
     private Long id;
 
-    // Support old and new API field names for player names
-    @JsonAlias({"whiteTeamPlayer1Name"})
+    @JsonAlias({"whiteTeamPlayer1", "whiteTeamPlayer1Name"})
     private String whiteTeamPlayer1;
 
-    @JsonAlias({"whiteTeamPlayer2Name"})
+    @JsonAlias({"whiteTeamPlayer2", "whiteTeamPlayer2Name"})
     private String whiteTeamPlayer2;
 
-    @JsonAlias({"blackTeamPlayer1Name"})
+    @JsonAlias({"blackTeamPlayer1", "blackTeamPlayer1Name"})
     private String blackTeamPlayer1;
 
-    @JsonAlias({"blackTeamPlayer2Name"})
+    @JsonAlias({"blackTeamPlayer2", "blackTeamPlayer2Name"})
     private String blackTeamPlayer2;
 
     private Integer whiteTeamScore;
@@ -33,13 +32,11 @@ public class FoosballGame {
     private Integer whiteTeamForwardScore;
     private Integer blackTeamForwardScore;
 
-    // Some backends used gameDate, newer uses playedAt
     private String gameDate;
     private String playedAt;
 
     private String notes;
 
-    // Raw winner value from API (e.g., "WHITE", "BLACK", "DRAW") or human readable
     private String winner;
 
     private boolean draw;
@@ -48,12 +45,10 @@ public class FoosballGame {
 
     private String username;
 
-    // Getter for backward compatibility - use playedAt if gameDate is null
     public String getGameDate() {
         return gameDate != null ? gameDate : playedAt;
     }
 
-    // Normalize and propagate winner into boolean flags when deserializing or setting manually
     @JsonProperty("winner")
     public void setWinner(String winner) {
         this.winner = winner;
