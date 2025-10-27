@@ -1,4 +1,4 @@
-package biz.thonbecker.personal.service;
+package biz.thonbecker.personal.content.infrastructure.service;
 
 import org.springframework.stereotype.Service;
 

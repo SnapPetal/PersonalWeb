@@ -5,6 +5,9 @@ import biz.thonbecker.personal.foosball.api.PlayerCreatedEvent;
 import biz.thonbecker.personal.trivia.api.PlayerJoinedQuizEvent;
 import biz.thonbecker.personal.trivia.api.QuizCompletedEvent;
 import biz.thonbecker.personal.trivia.api.QuizStartedEvent;
+import biz.thonbecker.personal.user.api.UserLoginEvent;
+import biz.thonbecker.personal.user.api.UserProfileUpdatedEvent;
+import biz.thonbecker.personal.user.api.UserRegisteredEvent;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -94,5 +97,32 @@ class EventLoggingListener {
     @Async
     void onPlayerCreated(PlayerCreatedEvent event) {
         log.info("🆕 New foosball player created: {}", event.playerName());
+    }
+
+    /**
+     * Listens to user registered events.
+     */
+    @EventListener
+    @Async
+    void onUserRegistered(UserRegisteredEvent event) {
+        log.info("👋 New user registered: {} ({})", event.username(), event.email());
+    }
+
+    /**
+     * Listens to user login events.
+     */
+    @EventListener
+    @Async
+    void onUserLogin(UserLoginEvent event) {
+        log.info("🔐 User logged in: {}", event.username());
+    }
+
+    /**
+     * Listens to user profile updated events.
+     */
+    @EventListener
+    @Async
+    void onUserProfileUpdated(UserProfileUpdatedEvent event) {
+        log.info("✏️ User profile updated: {}", event.displayName());
     }
 }

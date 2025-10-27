@@ -1,6 +1,6 @@
-package biz.thonbecker.personal.controller;
+package biz.thonbecker.personal.content.infrastructure.web;
 
-import biz.thonbecker.personal.service.ExperienceService;
+import biz.thonbecker.personal.content.infrastructure.service.ExperienceService;
 
 import lombok.RequiredArgsConstructor;
 

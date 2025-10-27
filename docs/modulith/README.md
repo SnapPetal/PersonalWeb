@@ -17,6 +17,7 @@ The application is organized into the following modules:
 ### Core Modules
 
 #### Trivia Module (`trivia/`)
+
 **Purpose**: Financial Peace University trivia quiz functionality
 
 **Public API**:
@@ -31,6 +32,7 @@ The application is organized into the following modules:
 **Files**: See `module-trivia.puml`
 
 #### Foosball Module (`foosball/`)
+
 **Purpose**: Foosball game tracking, player management, and statistics
 
 **Public API**:
@@ -47,18 +49,23 @@ The application is organized into the following modules:
 ### Infrastructure Modules
 
 #### Service Module (`service/`)
+
 Contains various service implementations and legacy code. Being gradually refactored into proper modules.
 
 #### Types Module (`types/`)
+
 Contains shared type definitions. Being gradually refactored into domain-specific modules.
 
 #### Controller Module (`controller/`)
+
 Contains web controllers. Will be moved into module-specific infrastructure/web packages.
 
 #### Configuration Module (`configuration/`)
+
 Contains Spring configuration classes.
 
 #### Client Module (`client/`)
+
 Contains external API clients.
 
 ## PlantUML Diagrams
@@ -66,6 +73,7 @@ Contains external API clients.
 The `*.puml` files can be rendered using PlantUML to visualize:
 
 ### Module Component Diagram (`components.puml`)
+
 Shows all modules and their relationships.
 
 **To view**:
@@ -74,6 +82,7 @@ Shows all modules and their relationships.
 3. Or use IDE plugin (IntelliJ, VS Code)
 
 ### Individual Module Diagrams
+
 Each `module-*.puml` file shows the internal structure of a specific module.
 
 ## Verification Tests
@@ -86,6 +95,7 @@ The module structure is verified by tests in `src/test/java/solutions/thonbecker
 - `FoosballModuleTest` - Tests the Foosball module in isolation
 
 Run tests with:
+
 ```bash
 mvn test -Dtest=ModuleStructureTest
 ```
@@ -93,21 +103,25 @@ mvn test -Dtest=ModuleStructureTest
 ## Module Design Principles
 
 ### 1. Hexagonal Architecture
+
 - **Domain Layer**: Pure business logic
 - **Application Layer**: Public API (Facades)
 - **Infrastructure Layer**: External integrations, persistence
 
 ### 2. Encapsulation
+
 - Only `api` and `domain` packages are public
 - `infrastructure` package is package-private
 - Other modules cannot access implementation details
 
 ### 3. Dependency Rules
+
 - Modules declare allowed dependencies explicitly
 - Circular dependencies are prevented
 - Dependencies are verified at test time
 
 ### 4. SOLID Principles
+
 - **Single Responsibility**: Each module has one clear purpose
 - **Open/Closed**: Extend via interfaces, not modification
 - **Dependency Inversion**: Depend on abstractions (Facades)
@@ -115,16 +129,19 @@ mvn test -Dtest=ModuleStructureTest
 ## Migration Status
 
 ### ✅ Completed
+
 - **Trivia Module**: Fully migrated with domain models, facade, and infrastructure
 - **Foosball Module**: Fully migrated with domain models, facade, and infrastructure
 - Module boundary verification tests
 - Automated documentation generation
 
 ### 🔄 In Progress
+
 - Moving legacy controllers into module infrastructure packages
 - Refactoring service and types modules into domain-specific modules
 
 ### 📋 Planned
+
 - Event-driven communication between modules
 - Module-specific event publishing
 - Observability and monitoring integration
@@ -142,3 +159,4 @@ cp -r target/spring-modulith-docs/* docs/modulith/
 
 - [Spring Modulith Documentation](https://spring.io/projects/spring-modulith)
 - Module migration documentation is part of the codebase history and package-info.java files
+

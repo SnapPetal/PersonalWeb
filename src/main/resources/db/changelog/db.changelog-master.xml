@@ -7,4 +7,5 @@
     <include file="classpath:db/changelog/changes/000-create-schema.xml"/>
     <include file="classpath:db/changelog/changes/001-initial-schema.xml"/>
     <include file="classpath:db/changelog/changes/002-quiz-results-table.xml"/>
+    <include file="classpath:db/changelog/changes/003-user-tables.xml"/>
 </databaseChangeLog>

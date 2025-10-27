@@ -7,7 +7,8 @@
  * <h2>Public API</h2>
  * <p>This module exposes infrastructure services through:
  * <ul>
- *   <li>{@link solutions.thonbecker.personal.shared.api} - Shared service interfaces and utilities
+ *   <li>{@link biz.thonbecker.personal.shared.api.CacheFacade} - Caching operations</li>
+ *   <li>{@link biz.thonbecker.personal.shared.api.SecurityFacade} - Security context and authorization</li>
  * </ul>
  *
  * <h2>Internal Implementation</h2>
@@ -22,9 +23,13 @@
  * <h2>Module Architecture</h2>
  * <pre>
  * shared/
- * ├── api/                            (public interface - currently empty)
+ * ├── api/                            (public interface)
+ * │   ├── CacheFacade                - Cache operations API
+ * │   └── SecurityFacade             - Security operations API
  * ├── domain/                         (shared domain types - currently empty)
  * └── infrastructure/                 (internal implementation)
+ *     ├── CacheFacadeImpl            - Cache facade implementation
+ *     ├── SecurityFacadeImpl         - Security facade implementation
  *     └── configuration/
  *         ├── SecurityConfig          - Application security setup
  *         ├── CacheConfig             - Cache management

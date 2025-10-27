@@ -211,6 +211,12 @@
             </includes>
             <prettier/>
           </javascript>
+          <markdown>
+            <includes>
+              <include>**/*.md</include>
+            </includes>
+            <flexmark/>
+          </markdown>
         </configuration>
         <executions>
           <execution>

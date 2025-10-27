@@ -1,0 +1,58 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003-create-users-table" author="claude">
+        <createTable tableName="users" schemaName="trivia">
+            <column name="id" type="VARCHAR(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="role" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_login_at" type="TIMESTAMP"/>
+        </createTable>
+
+        <createIndex indexName="idx_users_username" tableName="users" schemaName="trivia">
+            <column name="username"/>
+        </createIndex>
+
+        <createIndex indexName="idx_users_email" tableName="users" schemaName="trivia">
+            <column name="email"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="003-create-user-profiles-table" author="claude">
+        <createTable tableName="user_profiles" schemaName="trivia">
+            <column name="user_id" type="VARCHAR(255)">
+                <constraints primaryKey="true" nullable="false"
+                             foreignKeyName="fk_user_profiles_users"
+                             references="trivia.users(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="display_name" type="VARCHAR(255)"/>
+            <column name="avatar_url" type="VARCHAR(512)"/>
+            <column name="bio" type="VARCHAR(500)"/>
+            <column name="email_notifications" type="BOOLEAN" defaultValueBoolean="true"/>
+            <column name="push_notifications" type="BOOLEAN" defaultValueBoolean="true"/>
+            <column name="timezone" type="VARCHAR(50)" defaultValue="UTC"/>
+            <column name="language" type="VARCHAR(10)" defaultValue="en"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

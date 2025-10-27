@@ -10,6 +10,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ## 🌟 Features
 
 ### **Core Portfolio**
+
 - **Professional Experience Display** with dynamic year counter
 - **Responsive Design** using Bootstrap 5
 - **Dark/Light Mode** toggle for better user experience
@@ -17,11 +18,13 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - **Dad Jokes Player** with audio integration
 
 ### **Interactive Applications**
+
 - **🏓 Foosball Management System** - Complete table soccer game tracking
 - **🎯 Dave Ramsey FPU Trivia** - AI-powered Financial Peace University trivia with real-time multiplayer
 - **📊 Statistics Dashboard** - Player and team performance analytics
 
 ### **Technical Features**
+
 - **🔒 CSRF Protection** for secure form submissions
 - **🌍 Environment Configuration** with AWS Cognito integration
 - **⚡ Caching** with Caffeine for optimized performance
@@ -31,6 +34,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Java 25+
 - Maven 3.6+
 - PostgreSQL 16+ (for local development)
@@ -41,18 +45,19 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/SnapPetal/PersonalWeb.git
    cd PersonalWeb
    ```
-
 2. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Edit .env with your actual Cognito credentials
    ```
-
 3. **Run the application**
+
    ```bash
    mvn spring-boot:run
    ```
@@ -60,6 +65,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ## 🏗️ Architecture
 
 ### **Backend Stack**
+
 - **Spring Boot 3.5.6** - Core framework
 - **Spring Security** - Authentication & CSRF protection
 - **Spring Cloud OpenFeign** - HTTP client for microservices
@@ -71,6 +77,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - **Thymeleaf** - Server-side template engine
 
 ### **Frontend Stack**
+
 - **Bootstrap 5.3.8** - Responsive UI framework
 - **HTMX 2.0.7** - Dynamic HTML interactions
 - **Bootstrap Icons** - Icon library
@@ -78,6 +85,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - **Vanilla JavaScript** - Custom interactions
 
 ### **Integration & Services**
+
 - **AWS Cognito** - OAuth2/OpenID authentication
 - **External APIs** - Bible verse and dad jokes integration
 - **Foosball Backend Service** - Separate microservice for game management
@@ -103,14 +111,17 @@ src/
 ## 🔧 Configuration
 
 ### **🔐 CSRF Protection**
+
 The application implements Cross-Site Request Forgery protection using Spring Security with token-based validation for all POST requests.
 
 ### **🌍 Environment Configuration**
+
 Configure your development environment with AWS Cognito integration using environment variables. See `.env.example` for required settings.
 
 ## 🎮 Applications
 
 ### **Foosball Management System**
+
 - **Player Management** - Add, view, and track players
 - **Game Recording** - Record match results with positions
 - **Statistics** - Team and individual performance metrics
@@ -119,6 +130,7 @@ Configure your development environment with AWS Cognito integration using enviro
 **Repository:** [Foosball Backend Service](https://github.com/SnapPetal/foosball)
 
 ### **Dave Ramsey FPU Trivia Game**
+
 - **AI-Powered Questions** - Spring AI with AWS Bedrock generates Dave Ramsey Financial Peace University questions
 - **WebSocket Integration** - Real-time multiplayer gameplay using STOMP protocol
 - **Difficulty Levels** - Easy, Medium, and Hard question difficulty
@@ -128,6 +140,7 @@ Configure your development environment with AWS Cognito integration using enviro
 - **Event Logging** - Comprehensive game session tracking
 
 ### **Bible Verse of the Day**
+
 - **Daily Verses** - Cached daily verse retrieval
 - **KJV Translation** - King James Version integration
 - **Retry Logic** - Fault-tolerant API calls
@@ -143,11 +156,13 @@ Configure your development environment with AWS Cognito integration using enviro
 ## 🔄 API Endpoints
 
 ### **Core APIs**
+
 - `GET /api/experience/count` - Professional experience counter
 - `GET /api/bible/verse-of-day` - Daily bible verse
 - `GET /api/joke` - Dad joke with audio
 
 ### **Foosball APIs**
+
 - `GET /foosball/api/stats/players` - Player statistics
 - `GET /foosball/api/stats/teams` - Team statistics
 - `POST /foosball/players` - Create new player
@@ -169,11 +184,13 @@ Configure your development environment with AWS Cognito integration using enviro
 ## 📦 Deployment
 
 ### **Development**
+
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 ### **Production**
+
 ```bash
 # Build
 ./mvnw clean package -Pproduction
@@ -183,6 +200,7 @@ java -jar target/personal-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
 ```
 
 ### **Docker** (Optional)
+
 ```dockerfile
 FROM openjdk:21-jre-slim
 COPY target/personal-0.0.1-SNAPSHOT.jar app.jar

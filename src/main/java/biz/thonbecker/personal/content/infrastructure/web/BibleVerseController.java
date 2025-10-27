@@ -1,7 +1,7 @@
-package biz.thonbecker.personal.controller;
+package biz.thonbecker.personal.content.infrastructure.web;
 
-import biz.thonbecker.personal.types.BibleVerse;
-import biz.thonbecker.personal.types.BibleVerseResponse;
+import biz.thonbecker.personal.content.domain.BibleVerse;
+import biz.thonbecker.personal.content.domain.BibleVerseResponse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;

@@ -1,4 +1,4 @@
-package biz.thonbecker.personal.types;
+package biz.thonbecker.personal.content.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

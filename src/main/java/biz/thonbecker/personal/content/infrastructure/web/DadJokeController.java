@@ -1,7 +1,7 @@
-package biz.thonbecker.personal.controller;
+package biz.thonbecker.personal.content.infrastructure.web;
 
-import biz.thonbecker.personal.types.DadJokeApiResponse;
-import biz.thonbecker.personal.types.JokeResponse;
+import biz.thonbecker.personal.content.domain.DadJokeApiResponse;
+import biz.thonbecker.personal.content.domain.JokeResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
