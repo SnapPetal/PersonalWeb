@@ -32,7 +32,7 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Notification Services",
-        allowedDependencies = {"shared", "user"},
+        allowedDependencies = {"shared", "user", "trivia", "foosball"},
         type = org.springframework.modulith.ApplicationModule.Type.OPEN)
 @org.springframework.lang.NonNullApi
 package biz.thonbecker.personal.notification;
