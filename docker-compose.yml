@@ -6,5 +6,4 @@ services:
       - POSTGRES_PASSWORD=
       - POSTGRES_HOST_AUTH_METHOD=trust
     image: public.ecr.aws/docker/library/postgres:16.4
-    ports:
-      - "5432:5432"
+    network_mode: host

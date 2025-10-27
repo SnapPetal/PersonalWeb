@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 class StartQuizRequest {
     private Long quizId;
+    private String playerId; // ID of the player attempting to start the quiz
 }

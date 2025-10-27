@@ -17,6 +17,7 @@ public class Quiz {
     private final List<Player> players = new ArrayList<>();
     private QuizStatus status = QuizStatus.CREATED;
     private int currentQuestionIndex = -1;
+    private String creatorId; // ID of the player who created the quiz
 
     public Quiz(
             Long id,

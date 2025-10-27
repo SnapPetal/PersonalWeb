@@ -13,4 +13,5 @@ class TriviaQuizRequest {
     private String title;
     private int questionCount;
     private QuizDifficulty difficulty;
+    private String creatorId; // ID of the player creating the quiz
 }

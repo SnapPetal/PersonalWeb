@@ -47,7 +47,8 @@ class TriviaFacadeImpl implements TriviaFacade {
     }
 
     @Override
-    public Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty) {
+    public Quiz createTriviaQuiz(
+            String title, int questionCount, QuizDifficulty difficulty, String creatorId) {
         // Input validation
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Quiz title cannot be null or empty");
@@ -58,18 +59,23 @@ class TriviaFacadeImpl implements TriviaFacade {
         if (difficulty == null) {
             throw new IllegalArgumentException("Difficulty cannot be null");
         }
+        if (creatorId == null || creatorId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Creator ID cannot be null or empty");
+        }
 
         log.info(
-                "Creating Financial Peace trivia quiz: {} with {} questions at {} difficulty",
+                "Creating Financial Peace trivia quiz: {} with {} questions at {} difficulty by creator {}",
                 title,
                 questionCount,
-                difficulty);
+                difficulty,
+                creatorId);
 
         Long quizId = quizIdGenerator.incrementAndGet();
         List<Question> questions = questionGenerator.generateQuestions(questionCount, difficulty);
 
         Quiz quiz =
                 new Quiz(quizId, title, questions, DEFAULT_TIME_PER_QUESTION_SECONDS, difficulty);
+        quiz.setCreatorId(creatorId);
         quizzes.put(quizId, quiz);
 
         log.info(
@@ -125,16 +131,26 @@ class TriviaFacadeImpl implements TriviaFacade {
 
     @Override
     @Transactional
-    public QuizState startQuiz(Long quizId) {
+    public QuizState startQuiz(Long quizId, String playerId) {
         Quiz quiz = quizzes.get(quizId);
         if (quiz == null) {
             log.warn("Quiz not found: {}", quizId);
             return null;
         }
 
+        // Validate that only the creator can start the quiz
+        if (quiz.getCreatorId() == null || !quiz.getCreatorId().equals(playerId)) {
+            log.warn(
+                    "Player {} attempted to start quiz {} but is not the creator (creator: {})",
+                    playerId,
+                    quizId,
+                    quiz.getCreatorId());
+            throw new IllegalArgumentException("Only the quiz creator can start the quiz");
+        }
+
         quiz.setStatus(QuizStatus.IN_PROGRESS);
         quiz.setCurrentQuestionIndex(0);
-        log.info("Quiz {} started", quizId);
+        log.info("Quiz {} started by creator {}", quizId, playerId);
 
         // Publish event
         eventPublisher.publishEvent(new QuizStartedEvent(

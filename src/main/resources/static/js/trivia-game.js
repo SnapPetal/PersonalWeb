@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let currentQuestion = null;
   let playerId = null;
   let playerName = null;
+  let isQuizCreator = false; // Track if current player is the quiz creator
 
   // Restore saved values from localStorage
   function restoreSavedValues() {
@@ -231,6 +232,7 @@ document.addEventListener("DOMContentLoaded", function () {
       title: title,
       questionCount: questionCount,
       difficulty: difficulty,
+      creatorId: playerId, // Include the creator's player ID
     };
 
     stompClient.send(
@@ -242,6 +244,9 @@ document.addEventListener("DOMContentLoaded", function () {
       `Creating trivia quiz: "${title}" with ${questionCount} questions`,
       "info"
     );
+
+    // Mark this player as the creator
+    isQuizCreator = true;
   }
 
   // Handle quiz creation event
@@ -332,6 +337,13 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    // Only allow the creator to start the quiz
+    if (!isQuizCreator) {
+      log("Only the quiz creator can start the game", "warning");
+      alert("Only the quiz creator can start the game");
+      return;
+    }
+
     // Prevent multiple start requests
     if (startQuizBtn.disabled) {
       console.log("Start button already disabled, ignoring click");
@@ -340,6 +352,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const startRequest = {
       quizId: currentQuizId,
+      playerId: playerId, // Include player ID for server validation
     };
 
     console.log("Sending start request:", startRequest);

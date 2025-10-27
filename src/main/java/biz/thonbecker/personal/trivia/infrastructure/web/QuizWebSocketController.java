@@ -35,7 +35,10 @@ class QuizWebSocketController {
         log.info("Received trivia quiz creation request: {}", request);
 
         Quiz quiz = triviaFacade.createTriviaQuiz(
-                request.getTitle(), request.getQuestionCount(), request.getDifficulty());
+                request.getTitle(),
+                request.getQuestionCount(),
+                request.getDifficulty(),
+                request.getCreatorId());
 
         // Broadcast quiz creation to all subscribers
         messagingTemplate.convertAndSend("/topic/quiz/created", quiz);
@@ -57,16 +60,24 @@ class QuizWebSocketController {
 
     @MessageMapping("/quiz/start")
     public void startQuiz(StartQuizRequest request) {
-        log.info("Starting quiz: {}", request.getQuizId());
+        log.info(
+                "Player {} attempting to start quiz: {}",
+                request.getPlayerId(),
+                request.getQuizId());
 
-        QuizState state = triviaFacade.startQuiz(request.getQuizId());
+        try {
+            QuizState state = triviaFacade.startQuiz(request.getQuizId(), request.getPlayerId());
 
-        if (state != null) {
-            // Broadcast quiz state to all subscribers of this specific quiz
-            messagingTemplate.convertAndSend("/topic/quiz/state/" + request.getQuizId(), state);
-            log.info("Quiz {} started and state broadcast", request.getQuizId());
-        } else {
-            log.warn("Failed to start quiz: {}", request.getQuizId());
+            if (state != null) {
+                // Broadcast quiz state to all subscribers of this specific quiz
+                messagingTemplate.convertAndSend("/topic/quiz/state/" + request.getQuizId(), state);
+                log.info("Quiz {} started and state broadcast", request.getQuizId());
+            } else {
+                log.warn("Failed to start quiz: {}", request.getQuizId());
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("Failed to start quiz {}: {}", request.getQuizId(), e.getMessage());
+            // Could optionally send an error message back to the client here
         }
     }
 

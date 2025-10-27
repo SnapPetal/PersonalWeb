@@ -17,7 +17,8 @@ public interface TriviaFacade {
     /**
      * Creates a new Financial Peace University trivia quiz with AI-generated questions
      */
-    Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty);
+    Quiz createTriviaQuiz(
+            String title, int questionCount, QuizDifficulty difficulty, String creatorId);
 
     /**
      * Retrieves a quiz by its ID
@@ -35,9 +36,9 @@ public interface TriviaFacade {
     List<Player> getPlayers(Long quizId);
 
     /**
-     * Starts a quiz
+     * Starts a quiz (only the creator can start it)
      */
-    QuizState startQuiz(Long quizId);
+    QuizState startQuiz(Long quizId, String playerId);
 
     /**
      * Submits an answer for a player
