@@ -219,6 +219,9 @@
             <includes>
               <include>**/*.md</include>
             </includes>
+            <excludes>
+              <exclude>**/target/**/*.md</exclude>
+            </excludes>
             <flexmark/>
           </markdown>
         </configuration>
