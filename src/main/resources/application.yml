@@ -6,39 +6,6 @@ spring:
   thymeleaf:
     cache: false
 
-  # Security & OAuth2
-  security:
-    oauth2:
-      client:
-        registration:
-          cognito:
-            client-id: "${COGNITO_CLIENT_ID}"
-            client-secret: "${COGNITO_CLIENT_SECRET}"
-            authorization-grant-type: client_credentials
-            scope: "default-m2m-resource-server-sxhxn5/read"
-        provider:
-          cognito:
-            token-uri: "${COGNITO_TOKEN_URL}"
-
-  # OpenFeign Configuration
-  cloud:
-    openfeign:
-      oauth2:
-        enabled: true
-        clientRegistrationId: cognito
-
-  # Web Resources
-  web:
-    resources:
-      chain:
-        enabled: true
-      cache:
-        period: 0
-        cachecontrol:
-          no-cache: true
-          no-store: true
-          must-revalidate: true
-
   # Database Configuration
   datasource:
     url: ${DB_URL:jdbc:postgresql://ls-3cd9e093f05f5c4d801b58031197f04063b55800.cmldxjsfqvn4.us-east-1.rds.amazonaws.com:5432/dbmaster}
@@ -96,11 +63,6 @@ bible:
       url: https://bibleverse.thonbecker.com/
     cache:
       duration: 24
-
-# Foosball API Configuration
-foosball:
-  api:
-    base-url: https://foosball.thonbecker.biz
 
 # Spring Modulith Configuration
 spring.modulith:

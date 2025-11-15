@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="007-tournament-schema" author="system">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="tournaments" schemaName="foosball" />
+            </not>
+        </preConditions>
+
+        <!-- Tournaments table -->
+        <createTable tableName="tournaments" schemaName="foosball">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" />
+            </column>
+            <column name="description" type="TEXT">
+                <constraints nullable="true" />
+            </column>
+            <column name="tournament_type" type="VARCHAR(50)">
+                <constraints nullable="false" />
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="DRAFT">
+                <constraints nullable="false" />
+            </column>
+            <column name="max_participants" type="INTEGER">
+                <constraints nullable="true" />
+            </column>
+            <column name="registration_start" type="TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+            <column name="registration_end" type="TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+            <column name="start_date" type="TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+            <column name="end_date" type="TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+            <column name="created_by" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_tournaments_created_by"
+                    references="foosball.players(id)" />
+            </column>
+            <column name="settings" type="JSONB">
+                <constraints nullable="true" />
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <!-- Tournament registrations table -->
+        <createTable tableName="tournament_registrations" schemaName="foosball">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="tournament_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_registrations_tournament"
+                    references="foosball.tournaments(id)" deleteCascade="true" />
+            </column>
+            <column name="player_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_registrations_player"
+                    references="foosball.players(id)" />
+            </column>
+            <column name="partner_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_registrations_partner"
+                    references="foosball.players(id)" />
+            </column>
+            <column name="team_name" type="VARCHAR(100)">
+                <constraints nullable="true" />
+            </column>
+            <column name="registration_date" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+            <column name="seed" type="INTEGER">
+                <constraints nullable="true" />
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="ACTIVE">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <!-- Tournament matches table -->
+        <createTable tableName="tournament_matches" schemaName="foosball">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="tournament_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_matches_tournament"
+                    references="foosball.tournaments(id)" deleteCascade="true" />
+            </column>
+            <column name="round_number" type="INTEGER">
+                <constraints nullable="false" />
+            </column>
+            <column name="match_number" type="INTEGER">
+                <constraints nullable="false" />
+            </column>
+            <column name="bracket_type" type="VARCHAR(20)" defaultValue="MAIN">
+                <constraints nullable="false" />
+            </column>
+            <column name="team1_registration_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_matches_team1"
+                    references="foosball.tournament_registrations(id)" />
+            </column>
+            <column name="team2_registration_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_matches_team2"
+                    references="foosball.tournament_registrations(id)" />
+            </column>
+            <column name="winner_registration_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_matches_winner"
+                    references="foosball.tournament_registrations(id)" />
+            </column>
+            <column name="game_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_matches_game"
+                    references="foosball.games(id)" />
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false" />
+            </column>
+            <column name="scheduled_time" type="TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+            <column name="completed_at" type="TIMESTAMP">
+                <constraints nullable="true" />
+            </column>
+            <column name="next_match_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_matches_next_match"
+                    references="foosball.tournament_matches(id)" />
+            </column>
+            <column name="consolation_match_id" type="BIGINT">
+                <constraints nullable="true" foreignKeyName="fk_matches_consolation"
+                    references="foosball.tournament_matches(id)" />
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <!-- Tournament standings table for ladder/Swiss tournaments -->
+        <createTable tableName="tournament_standings" schemaName="foosball">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="tournament_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_standings_tournament"
+                    references="foosball.tournaments(id)" deleteCascade="true" />
+            </column>
+            <column name="registration_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_standings_registration"
+                    references="foosball.tournament_registrations(id)" />
+            </column>
+            <column name="position" type="INTEGER">
+                <constraints nullable="true" />
+            </column>
+            <column name="points" type="DECIMAL(10,2)" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="wins" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="losses" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="draws" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="games_played" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="goals_for" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="goals_against" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="goal_difference" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <!-- Indexes for performance -->
+        <createIndex tableName="tournaments" schemaName="foosball" indexName="idx_tournaments_status">
+            <column name="status" />
+        </createIndex>
+
+        <createIndex tableName="tournaments" schemaName="foosball" indexName="idx_tournaments_type">
+            <column name="tournament_type" />
+        </createIndex>
+
+        <createIndex tableName="tournament_registrations" schemaName="foosball" indexName="idx_registrations_tournament">
+            <column name="tournament_id" />
+        </createIndex>
+
+        <createIndex tableName="tournament_matches" schemaName="foosball" indexName="idx_matches_tournament">
+            <column name="tournament_id" />
+        </createIndex>
+
+        <createIndex tableName="tournament_matches" schemaName="foosball" indexName="idx_matches_round">
+            <column name="tournament_id" />
+            <column name="round_number" />
+        </createIndex>
+
+        <createIndex tableName="tournament_standings" schemaName="foosball" indexName="idx_standings_tournament">
+            <column name="tournament_id" />
+        </createIndex>
+
+        <createIndex tableName="tournament_standings" schemaName="foosball" indexName="idx_standings_position">
+            <column name="tournament_id" />
+            <column name="position" />
+        </createIndex>
+
+        <!-- Unique constraints -->
+        <addUniqueConstraint tableName="tournament_registrations" schemaName="foosball"
+            columnNames="tournament_id,player_id" constraintName="uk_tournament_player" />
+
+        <addUniqueConstraint tableName="tournament_matches" schemaName="foosball"
+            columnNames="tournament_id,round_number,match_number" constraintName="uk_tournament_round_match" />
+
+        <addUniqueConstraint tableName="tournament_standings" schemaName="foosball"
+            columnNames="tournament_id,registration_id" constraintName="uk_tournament_registration_standing" />
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -8,4 +8,8 @@
     <include file="classpath:db/changelog/changes/001-initial-schema.xml"/>
     <include file="classpath:db/changelog/changes/002-quiz-results-table.xml"/>
     <include file="classpath:db/changelog/changes/003-user-tables.xml"/>
+    <include file="classpath:db/changelog/changes/004-foosball-initial-schema.xml"/>
+    <include file="classpath:db/changelog/changes/005-update-team-stats-view.xml"/>
+    <include file="classpath:db/changelog/changes/006-add-shedlock-table.xml"/>
+    <include file="classpath:db/changelog/changes/007-tournament-schema.xml"/>
 </databaseChangeLog>

@@ -10,6 +10,9 @@
             CREATE SCHEMA IF NOT EXISTS trivia;
         </sql>
         <sql>
+            CREATE SCHEMA IF NOT EXISTS foosball;
+        </sql>
+        <sql>
             SET search_path TO trivia, public;
         </sql>
 

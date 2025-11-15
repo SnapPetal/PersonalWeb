@@ -4,8 +4,11 @@ import biz.thonbecker.personal.foosball.api.FoosballFacade;
 import biz.thonbecker.personal.foosball.domain.Game;
 import biz.thonbecker.personal.foosball.domain.Player;
 import biz.thonbecker.personal.foosball.domain.PlayerStats;
+import biz.thonbecker.personal.foosball.domain.Team;
 import biz.thonbecker.personal.foosball.domain.TeamStats;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.GameWithPlayers;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of the Foosball facade.
@@ -22,20 +26,18 @@ import java.util.List;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 class FoosballFacadeImpl implements FoosballFacade {
 
-    private final FoosballClient foosballClient;
+    private final FoosballService foosballService;
     private final ApplicationEventPublisher eventPublisher;
-
-    FoosballFacadeImpl(FoosballClient foosballClient, ApplicationEventPublisher eventPublisher) {
-        this.foosballClient = foosballClient;
-        this.eventPublisher = eventPublisher;
-    }
 
     @Override
     public List<Player> getAllPlayers() {
         log.debug("Retrieving all players");
-        return foosballClient.getAllPlayers();
+        return foosballService.getAllPlayers().stream()
+                .map(this::toPlayerDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -49,21 +51,19 @@ class FoosballFacadeImpl implements FoosballFacade {
         }
 
         log.info("Creating player: {}", player.getName());
-        foosballClient.createPlayer(player);
+        var createdPlayer = foosballService.createPlayer(player.getName());
 
-        // Publish event (note: player.getId() may be null before creation)
-        if (player.getId() != null) {
-            eventPublisher.publishEvent(new biz.thonbecker.personal.foosball.api.PlayerCreatedEvent(
-                    null, // ID not available until after API call
-                    player.getName(),
-                    Instant.now()));
-        }
+        // Publish event
+        eventPublisher.publishEvent(new biz.thonbecker.personal.foosball.api.PlayerCreatedEvent(
+                createdPlayer.getId().toString(), createdPlayer.getName(), Instant.now()));
     }
 
     @Override
     public List<TeamStats> getTeamStats() {
         log.debug("Retrieving team statistics");
-        return foosballClient.getTeamStats();
+        return foosballService.getAllTeamStatsOrderedByWinPercentage().stream()
+                .map(this::toTeamStatsDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -81,23 +81,50 @@ class FoosballFacadeImpl implements FoosballFacade {
                 game.getWhiteTeam().getPlayer1() + "&" + game.getWhiteTeam().getPlayer2(),
                 game.getBlackTeam().getPlayer1() + "&" + game.getBlackTeam().getPlayer2());
 
-        Game createdGame = foosballClient.createGame(game);
+        // Look up or create players
+        var whitePlayer1 = foosballService
+                .findPlayerByName(game.getWhiteTeam().getPlayer1())
+                .orElseGet(
+                        () -> foosballService.createPlayer(game.getWhiteTeam().getPlayer1()));
+        var whitePlayer2 = foosballService
+                .findPlayerByName(game.getWhiteTeam().getPlayer2())
+                .orElseGet(
+                        () -> foosballService.createPlayer(game.getWhiteTeam().getPlayer2()));
+        var blackPlayer1 = foosballService
+                .findPlayerByName(game.getBlackTeam().getPlayer1())
+                .orElseGet(
+                        () -> foosballService.createPlayer(game.getBlackTeam().getPlayer1()));
+        var blackPlayer2 = foosballService
+                .findPlayerByName(game.getBlackTeam().getPlayer2())
+                .orElseGet(
+                        () -> foosballService.createPlayer(game.getBlackTeam().getPlayer2()));
+
+        var createdGame = foosballService.recordGame(
+                whitePlayer1,
+                whitePlayer2,
+                blackPlayer1,
+                blackPlayer2,
+                game.getWhiteTeamScore(),
+                game.getBlackTeamScore());
+
+        var gameDomain =
+                toGameDomainFromEntity(createdGame, game.getWhiteTeam(), game.getBlackTeam());
 
         // Publish event
-        String winnerTeamName = determineWinnerTeamName(createdGame);
+        String winnerTeamName = determineWinnerTeamName(gameDomain);
         eventPublisher.publishEvent(new biz.thonbecker.personal.foosball.api.GameRecordedEvent(
-                createdGame.getId(),
-                createdGame.getWhiteTeam().getPlayer1() + " & "
-                        + createdGame.getWhiteTeam().getPlayer2(),
-                createdGame.getWhiteTeamScore(),
-                createdGame.getBlackTeam().getPlayer1() + " & "
-                        + createdGame.getBlackTeam().getPlayer2(),
-                createdGame.getBlackTeamScore(),
-                createdGame.getResult(),
+                gameDomain.getId(),
+                gameDomain.getWhiteTeam().getPlayer1() + " & "
+                        + gameDomain.getWhiteTeam().getPlayer2(),
+                gameDomain.getWhiteTeamScore(),
+                gameDomain.getBlackTeam().getPlayer1() + " & "
+                        + gameDomain.getBlackTeam().getPlayer2(),
+                gameDomain.getBlackTeamScore(),
+                gameDomain.getResult(),
                 winnerTeamName,
                 Instant.now()));
 
-        return createdGame;
+        return gameDomain;
     }
 
     private String determineWinnerTeamName(Game game) {
@@ -113,17 +140,84 @@ class FoosballFacadeImpl implements FoosballFacade {
     @Override
     public List<PlayerStats> getPlayerStats() {
         log.debug("Retrieving player statistics");
-        return foosballClient.getPlayerStats();
+        return foosballService.getAllPlayerStatsOrderedByRankScore().stream()
+                .map(this::toPlayerStatsDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<Game> getRecentGames() {
         log.debug("Retrieving recent games");
-        return foosballClient.getRecentGames();
+        return foosballService.getRecentGames().stream()
+                .map(this::toGameDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
     public boolean isServiceAvailable() {
-        return foosballClient.isServiceAvailable();
+        return true; // Local service is always available
+    }
+
+    // Mapper methods
+    private Player toPlayerDomain(
+            biz.thonbecker.personal.foosball.infrastructure.persistence.Player entity) {
+        return new Player(entity.getId().toString(), entity.getName());
+    }
+
+    private PlayerStats toPlayerStatsDomain(
+            biz.thonbecker.personal.foosball.infrastructure.persistence.PlayerStats projection) {
+        return new PlayerStats(
+                projection.getName(),
+                projection.getTotalGames().intValue(),
+                projection.getWins().intValue(),
+                projection.getTotalGames().intValue() - projection.getWins().intValue(),
+                0, // draws not tracked
+                0, // goals scored not tracked
+                0); // goals against not tracked
+    }
+
+    private TeamStats toTeamStatsDomain(
+            biz.thonbecker.personal.foosball.infrastructure.persistence.TeamStats projection) {
+        return new TeamStats(
+                projection.getPlayer1Name(),
+                projection.getPlayer2Name(),
+                projection.getGamesPlayedTogether().intValue(),
+                projection.getWins().intValue(),
+                projection.getGamesPlayedTogether().intValue()
+                        - projection.getWins().intValue(),
+                0, // draws not tracked
+                0, // goals scored not tracked
+                0); // goals against not tracked
+    }
+
+    private Game toGameDomain(GameWithPlayers gameWithPlayers) {
+        Team whiteTeam = new Team(
+                gameWithPlayers.getWhiteTeamPlayer1Name(),
+                gameWithPlayers.getWhiteTeamPlayer2Name());
+        Team blackTeam = new Team(
+                gameWithPlayers.getBlackTeamPlayer1Name(),
+                gameWithPlayers.getBlackTeamPlayer2Name());
+
+        var gameDomain = new Game(
+                whiteTeam,
+                blackTeam,
+                gameWithPlayers.getWhiteTeamScore(),
+                gameWithPlayers.getBlackTeamScore());
+        gameDomain.setId(gameWithPlayers.getId());
+        gameDomain.setPlayedAt(gameWithPlayers.getPlayedAt());
+
+        return gameDomain;
+    }
+
+    private Game toGameDomainFromEntity(
+            biz.thonbecker.personal.foosball.infrastructure.persistence.Game entity,
+            Team whiteTeam,
+            Team blackTeam) {
+        var gameDomain = new Game(
+                whiteTeam, blackTeam, entity.getWhiteTeamScore(), entity.getBlackTeamScore());
+        gameDomain.setId(entity.getId());
+        gameDomain.setPlayedAt(entity.getPlayedAt());
+
+        return gameDomain;
     }
 }

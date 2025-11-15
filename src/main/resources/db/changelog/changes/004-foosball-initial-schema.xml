@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="004-foosball-initial-schema" author="thonbecker">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="players" schemaName="foosball" />
+            </not>
+        </preConditions>
+
+        <!-- Players table -->
+        <createTable tableName="players" schemaName="foosball">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="true" />
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+
+        <!-- Games table -->
+        <createTable tableName="games" schemaName="foosball">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="white_team_player1_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_games_white_player1"
+                    references="foosball.players(id)" />
+            </column>
+            <column name="white_team_player2_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_games_white_player2"
+                    references="foosball.players(id)" />
+            </column>
+            <column name="black_team_player1_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_games_black_player1"
+                    references="foosball.players(id)" />
+            </column>
+            <column name="black_team_player2_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_games_black_player2"
+                    references="foosball.players(id)" />
+            </column>
+            <column name="white_team_score" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="black_team_score" type="INTEGER" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="winner" type="VARCHAR(10)">
+                <constraints nullable="true" />
+            </column>
+            <column name="played_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false" />
+            </column>
+            <column name="game_duration_minutes" type="INTEGER">
+                <constraints nullable="true" />
+            </column>
+            <column name="notes" type="VARCHAR(500)">
+                <constraints nullable="true" />
+            </column>
+        </createTable>
+
+        <!-- Player stats view -->
+        <sql><![CDATA[
+            CREATE OR REPLACE VIEW foosball.player_stats AS
+            SELECT
+                p.id,
+                p.name,
+                COUNT(DISTINCT g.id) as total_games,
+                COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p.id OR g.white_team_player2_id = p.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p.id OR g.black_team_player2_id = p.id) THEN 1 END) as wins,
+                (COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p.id OR g.white_team_player2_id = p.id) THEN 1 END) +
+                 COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p.id OR g.black_team_player2_id = p.id) THEN 1 END)) * 100.0 /
+                NULLIF(COUNT(DISTINCT g.id), 0) as win_percentage
+            FROM foosball.players p
+            LEFT JOIN foosball.games g ON p.id IN (g.white_team_player1_id, g.white_team_player2_id, g.black_team_player1_id, g.black_team_player2_id)
+            GROUP BY p.id, p.name;
+        ]]></sql>
+
+        <!-- Team performance view -->
+        <sql><![CDATA[
+            CREATE OR REPLACE VIEW foosball.team_stats AS
+            SELECT
+                p1.id as player1_id,
+                p1.name as player1_name,
+                p2.id as player2_id,
+                p2.name as player2_name,
+                COUNT(DISTINCT g.id) as games_played_together,
+                COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p1.id AND g.white_team_player2_id = p2.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p1.id AND g.black_team_player2_id = p2.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p2.id AND g.white_team_player2_id = p1.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p2.id AND g.black_team_player2_id = p1.id) THEN 1 END) as wins_together,
+                SUM(CASE WHEN g.white_team_player1_id = p1.id AND g.white_team_player2_id = p2.id THEN g.white_team_score
+                         WHEN g.black_team_player1_id = p1.id AND g.black_team_player2_id = p2.id THEN g.black_team_score
+                         WHEN g.white_team_player1_id = p2.id AND g.white_team_player2_id = p1.id THEN g.white_team_score
+                         WHEN g.black_team_player1_id = p2.id AND g.black_team_player2_id = p1.id THEN g.black_team_score
+                         ELSE 0 END) / NULLIF(COUNT(DISTINCT g.id), 0) as avg_team_score
+            FROM foosball.players p1
+            CROSS JOIN foosball.players p2
+            LEFT JOIN foosball.games g ON (g.white_team_player1_id = p1.id AND g.white_team_player2_id = p2.id)
+                             OR (g.black_team_player1_id = p1.id AND g.black_team_player2_id = p2.id)
+                             OR (g.white_team_player1_id = p2.id AND g.white_team_player2_id = p1.id)
+                             OR (g.black_team_player1_id = p2.id AND g.black_team_player2_id = p1.id)
+            WHERE p1.id < p2.id
+            GROUP BY p1.id, p1.name, p2.id, p2.name
+            HAVING COUNT(DISTINCT g.id) > 0;
+        ]]></sql>
+
+        <!-- Indexes for better performance -->
+        <createIndex tableName="games" indexName="idx_games_players" schemaName="foosball">
+            <column name="white_team_player1_id" />
+            <column name="white_team_player2_id" />
+            <column name="black_team_player1_id" />
+            <column name="black_team_player2_id" />
+        </createIndex>
+
+        <createIndex tableName="games" indexName="idx_games_played_at" schemaName="foosball">
+            <column name="played_at" />
+        </createIndex>
+
+        <createIndex tableName="players" indexName="idx_players_name" schemaName="foosball">
+            <column name="name" />
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>
