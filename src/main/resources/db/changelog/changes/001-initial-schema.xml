@@ -4,6 +4,17 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="001" author="thonbecker">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="quiz" schemaName="trivia" />
+                <tableExists tableName="question" schemaName="trivia" />
+                <tableExists tableName="question_option" schemaName="trivia" />
+                <tableExists tableName="player" schemaName="trivia" />
+                <tableExists tableName="quiz_player" schemaName="trivia" />
+                <tableExists tableName="answer_submission" schemaName="trivia" />
+            </not>
+        </preConditions>
+
         <!-- Quiz table -->
         <createTable tableName="quiz" schemaName="trivia">
             <column name="id" type="bigint">

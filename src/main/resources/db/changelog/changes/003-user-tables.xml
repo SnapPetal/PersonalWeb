@@ -6,6 +6,12 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="003-create-users-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="users" schemaName="trivia" />
+            </not>
+        </preConditions>
+
         <createTable tableName="users" schemaName="trivia">
             <column name="id" type="VARCHAR(255)">
                 <constraints primaryKey="true" nullable="false"/>
@@ -38,6 +44,12 @@
     </changeSet>
 
     <changeSet id="003-create-user-profiles-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="user_profiles" schemaName="trivia" />
+            </not>
+        </preConditions>
+
         <createTable tableName="user_profiles" schemaName="trivia">
             <column name="user_id" type="VARCHAR(255)">
                 <constraints primaryKey="true" nullable="false"

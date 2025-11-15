@@ -17,8 +17,6 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.xml
-    database-change-log-table: trivia_changelog
-    database-change-log-lock-table: trivia_changelog_lock
 
   # JPA/Hibernate Configuration
   jpa:
