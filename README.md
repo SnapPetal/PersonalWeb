@@ -88,25 +88,38 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 
 - **AWS Cognito** - OAuth2/OpenID authentication
 - **External APIs** - Bible verse and dad jokes integration
-- **Foosball Backend Service** - Separate microservice for game management
+- **Spring Modulith** - Modular monolith architecture with enforced boundaries
 
 ## 📁 Project Structure
+
+This project follows a modular monolith architecture using Spring Modulith:
 
 ```
 src/
 ├── main/
-│   ├── java/solutions/thonbecker/personal/
-│   │   ├── configuration/     # Security, CSRF, Environment config
-│   │   ├── controller/        # REST & Web controllers
-│   │   ├── service/          # Business logic & API clients
-│   │   ├── types/            # Data models & DTOs
-│   │   └── client/           # External service clients
+│   ├── java/biz/thonbecker/personal/
+│   │   ├── foosball/                  # Foosball Module
+│   │   │   ├── api/                   # Public facade interfaces
+│   │   │   ├── domain/                # Domain models (Game, Player, Stats)
+│   │   │   └── infrastructure/        # Implementation, persistence, web
+│   │   ├── trivia/                    # Trivia Module
+│   │   │   ├── api/                   # Public facade interfaces
+│   │   │   ├── domain/                # Domain models (Quiz, Question)
+│   │   │   └── infrastructure/        # Implementation, persistence, web
+│   │   ├── shared/                    # Shared infrastructure
+│   │   ├── configuration/             # Spring configuration
+│   │   └── PersonalWebApplication.java
 │   ├── resources/
-│   │   ├── templates/        # Thymeleaf HTML templates
-│   │   ├── static/          # CSS, JS, images
-│   │   └── application.yml  # Configuration
-└── test/                    # Unit and integration tests
+│   │   ├── templates/                 # Thymeleaf HTML templates
+│   │   ├── static/                    # CSS, JS, images
+│   │   ├── db/changelog/              # Liquibase migrations
+│   │   └── application.yml            # Configuration
+└── test/
+    ├── java/                          # Unit tests
+    └── modulith/                      # Module structure tests
 ```
+
+See [Spring Modulith Documentation](docs/modulith/README.md) for detailed module architecture.
 
 ## 🔧 Configuration
 
@@ -122,12 +135,22 @@ Configure your development environment with AWS Cognito integration using enviro
 
 ### **Foosball Management System**
 
-- **Player Management** - Add, view, and track players
-- **Game Recording** - Record match results with positions
-- **Statistics** - Team and individual performance metrics
-- **Live Updates** - Real-time data synchronization
+A complete table soccer game tracking system integrated as a Spring Modulith module:
 
-**Repository:** [Foosball Backend Service](https://github.com/SnapPetal/foosball)
+- **Player Management** - Create and track players with email validation
+- **Game Recording** - Record match results with team positions and scores
+- **Statistics & Analytics** - Comprehensive player and team performance metrics
+  - Win/loss records and percentages
+  - Head-to-head team statistics
+  - Player rankings by various criteria
+  - Game history and trends
+- **Tournament System** - Single-elimination tournament bracket generation
+- **Database Persistence** - PostgreSQL with Liquibase migrations
+- **HTMX Integration** - Dynamic UI updates without page reloads
+- **Module Architecture** - Hexagonal architecture with public facades and encapsulated implementation
+
+**Module:** `biz.thonbecker.personal.foosball`
+**Public API:** `FoosballFacade` interface
 
 ### **Dave Ramsey FPU Trivia Game**
 
@@ -163,10 +186,26 @@ Configure your development environment with AWS Cognito integration using enviro
 
 ### **Foosball APIs**
 
-- `GET /foosball/api/stats/players` - Player statistics
-- `GET /foosball/api/stats/teams` - Team statistics
-- `POST /foosball/players` - Create new player
-- `POST /foosball/games` - Record new game
+**REST Endpoints:**
+- `GET /api/foosball/players` - Retrieve all players
+- `GET /api/foosball/stats/players` - Player statistics and rankings
+- `GET /api/foosball/stats/teams` - Team performance statistics
+- `GET /api/foosball/games` - Retrieve recent games
+- `POST /api/foosball/players` - Create new player
+- `POST /api/foosball/games` - Record new game
+
+**HTMX Endpoints:**
+- `GET /foosball/htmx/games` - Game list partial
+- `POST /foosball/htmx/games` - Record game with HTMX response
+- `GET /foosball/htmx/stats/players` - Player stats partial
+- `GET /foosball/htmx/stats/teams` - Team stats partial
+
+**Tournament Endpoints:**
+- `GET /api/tournaments` - List all tournaments
+- `POST /api/tournaments` - Create new tournament
+- `POST /api/tournaments/{id}/register` - Register player for tournament
+- `POST /api/tournaments/{id}/start` - Start tournament and generate bracket
+- `POST /api/tournaments/matches/{matchId}/result` - Record match result
 
 ## 🧪 Testing
 

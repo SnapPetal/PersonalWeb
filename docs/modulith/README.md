@@ -18,31 +18,44 @@ The application is organized into the following modules:
 
 #### Trivia Module (`trivia/`)
 
-**Purpose**: Financial Peace University trivia quiz functionality
+**Purpose**: AI-powered Financial Peace University trivia quiz functionality with real-time multiplayer support
 
 **Public API**:
-- `trivia.api.TriviaFacade` - Main service interface
-- `trivia.domain.*` - Domain models (Quiz, Question, Player, etc.)
+- `biz.thonbecker.personal.trivia.api.TriviaFacade` - Main service interface for other modules
+- `biz.thonbecker.personal.trivia.domain.*` - Domain models (Quiz, Question, Player, etc.)
 
-**Internal**:
-- `trivia.infrastructure.*` - Service implementation, question generation, persistence
+**Internal Implementation**:
+- `biz.thonbecker.personal.trivia.infrastructure.TriviaService` - Core business logic
+- `biz.thonbecker.personal.trivia.infrastructure.QuestionGenerationService` - AI-powered question generation using AWS Bedrock
+- `biz.thonbecker.personal.trivia.infrastructure.persistence.*` - JPA entities and repositories
+- `biz.thonbecker.personal.trivia.infrastructure.web.*` - WebSocket and STOMP controllers
 
-**Dependencies**: None
+**Database Schema**: `trivia` schema with tables for quiz results and player statistics
+
+**Dependencies**: None (self-contained module)
 
 **Files**: See `module-trivia.puml`
 
 #### Foosball Module (`foosball/`)
 
-**Purpose**: Foosball game tracking, player management, and statistics
+**Purpose**: Foosball game tracking, player management, tournament system, and comprehensive statistics
 
 **Public API**:
-- `foosball.api.FoosballFacade` - Main service interface
-- `foosball.domain.*` - Domain models (Game, Player, Team, Stats)
+- `biz.thonbecker.personal.foosball.api.FoosballFacade` - Main service interface for other modules
+- `biz.thonbecker.personal.foosball.domain.*` - Domain models (Game, Player, Team, Stats)
+- `biz.thonbecker.personal.foosball.api.GameRecordedEvent` - Event published when games are recorded
+- `biz.thonbecker.personal.foosball.api.PlayerCreatedEvent` - Event published when players are created
 
-**Internal**:
-- `foosball.infrastructure.*` - Service implementation, external API client
+**Internal Implementation**:
+- `biz.thonbecker.personal.foosball.infrastructure.FoosballService` - Core business logic
+- `biz.thonbecker.personal.foosball.infrastructure.TournamentService` - Tournament bracket management
+- `biz.thonbecker.personal.foosball.infrastructure.persistence.*` - JPA entities and repositories
+- `biz.thonbecker.personal.foosball.infrastructure.web.*` - REST and HTMX controllers
+- `biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.*` - Tournament algorithms
 
-**Dependencies**: `service`, `types` (for legacy API client)
+**Database Schema**: `foosball` schema with tables for players, games, teams, statistics, and tournaments
+
+**Dependencies**: `shared` (for common infrastructure)
 
 **Files**: See `module-foosball.puml`
 
