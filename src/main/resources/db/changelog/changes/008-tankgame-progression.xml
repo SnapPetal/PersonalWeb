@@ -1,0 +1,128 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="008-create-tankgame-schema" author="claude">
+        <sql>CREATE SCHEMA IF NOT EXISTS tankgame</sql>
+    </changeSet>
+
+    <changeSet id="008-create-player-progression-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="player_progression" schemaName="tankgame"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="player_progression" schemaName="tankgame">
+            <column name="user_id" type="VARCHAR(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="level" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_xp" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_xp" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="coins" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_kills" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_deaths" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_wins" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_games" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_player_progression_level" tableName="player_progression" schemaName="tankgame">
+            <column name="level" descending="true"/>
+        </createIndex>
+
+        <createIndex indexName="idx_player_progression_total_xp" tableName="player_progression" schemaName="tankgame">
+            <column name="total_xp" descending="true"/>
+        </createIndex>
+
+        <createIndex indexName="idx_player_progression_username" tableName="player_progression" schemaName="tankgame">
+            <column name="username"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="008-create-match-history-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="match_history" schemaName="tankgame"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="match_history" schemaName="tankgame">
+            <column name="id" type="VARCHAR(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="game_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="placement" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kills" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deaths" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="damage_dealt" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="xp_earned" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="coins_earned" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="match_duration_seconds" type="INT"/>
+            <column name="played_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_match_history_user_id" tableName="match_history" schemaName="tankgame">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_match_history_game_id" tableName="match_history" schemaName="tankgame">
+            <column name="game_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_match_history_played_at" tableName="match_history" schemaName="tankgame">
+            <column name="played_at" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

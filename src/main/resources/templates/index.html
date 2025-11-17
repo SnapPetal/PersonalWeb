@@ -68,6 +68,9 @@
                     <a class="nav-link" href="#about">About</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="#games">Games</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="#projects">Projects</a>
                 </li>
                 <li class="nav-item">
@@ -181,23 +184,93 @@
         </div>
     </section>
 
-    <!-- Projects Section -->
-    <section class="py-5 bg-light" id="projects">
+    <!-- Interactive Games Section -->
+    <section class="py-5 bg-light" id="games">
         <div class="container">
-            <h2 class="text-center mb-4">Featured Projects</h2>
+            <h2 class="text-center mb-4">🎮 Interactive Games</h2>
+            <p class="text-center text-muted mb-5">Real-time multiplayer games built with WebSocket technology</p>
             <div class="row g-4">
-                <!-- Project Card -->
+                <!-- Foosball Tracker -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-body">
+                            <h5 class="card-title">⚽ Foosball Tracker</h5>
+                            <p class="card-text">Track table soccer game results, player statistics, and team performance. Features player management, game recording with position-based scoring, comprehensive statistics, and tournaments.</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="badge bg-primary">Java</span>
+                                <span class="badge bg-secondary">Spring Boot</span>
+                                <span class="badge bg-info">Spring Data JPA</span>
+                                <span class="badge bg-success">PostgreSQL</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <a class="btn btn-success w-100" href="/foosball">
+                                <i class="bi bi-play-fill"></i> Track Games
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trivia Game -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-body">
+                            <h5 class="card-title">🎯 AI-Powered Trivia</h5>
+                            <p class="card-text">Real-time multiplayer trivia game with WebSocket technology. Powered by AWS Bedrock AI for dynamic question generation. Compete with friends to answer questions quickly and accurately!</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="badge bg-primary">Java</span>
+                                <span class="badge bg-secondary">Spring Boot</span>
+                                <span class="badge bg-info">WebSocket</span>
+                                <span class="badge bg-success">AWS Bedrock</span>
+                                <span class="badge bg-warning">AI</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <a class="btn btn-success w-100" href="/trivia">
+                                <i class="bi bi-play-fill"></i> Play Trivia
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tank Game -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-success">
+                        <div class="card-body">
+                            <h5 class="card-title">🎮 Tank Battle Arena</h5>
+                            <p class="card-text">Real-time multiplayer tank shooter built with HTML5 Canvas. Battle other players in intense free-for-all combat. Features server-authoritative physics and smooth 60 FPS gameplay!</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="badge bg-primary">Java</span>
+                                <span class="badge bg-secondary">Spring Boot</span>
+                                <span class="badge bg-info">WebSocket</span>
+                                <span class="badge bg-success">HTML5 Canvas</span>
+                                <span class="badge bg-warning">Real-time</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <a class="btn btn-success w-100" href="/tankgame">
+                                <i class="bi bi-play-fill"></i> Play Tank Game
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section class="py-5" id="projects">
+        <div class="container">
+            <h2 class="text-center mb-4">💻 Featured Projects</h2>
+            <p class="text-center text-muted mb-5">Open-source projects and technical work</p>
+            <div class="row g-4 justify-content-center">
+                <!-- Bible Verse Project -->
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title">Bible Verse Spring Boot Cloud Function</h5>
-                            <p class="card-text">A serverless application that delivers daily Bible verses using Spring
-                                Cloud Function.
-                                Built with Maven and modern Java practices, featuring REST endpoints, caching, and
-                                automated testing.
-                                The project demonstrates clean architecture principles and cloud-native development
-                                patterns.</p>
-                            <div class="d-flex gap-2">
+                            <p class="card-text">A serverless application that delivers daily Bible verses using Spring Cloud Function. Built with Maven and modern Java practices, featuring REST endpoints, caching, and automated testing.</p>
+                            <div class="d-flex gap-2 flex-wrap">
                                 <span class="badge bg-primary">Java</span>
                                 <span class="badge bg-secondary">Spring</span>
                                 <span class="badge bg-info">Spring Cloud</span>
@@ -213,63 +286,18 @@
                     </div>
                 </div>
 
-                <!-- Foosball Tracker -->
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">⚽ Foosball Tracker</h5>
-                            <p class="card-text">A comprehensive web application for tracking table soccer game results, player statistics, and team performance. Features include player management, game recording with position-based scoring, comprehensive statistics tracking, and tournaments. Integrated into this monolith using Spring Modulith architecture.</p>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <span class="badge bg-primary">Java</span>
-                                <span class="badge bg-secondary">Spring Boot</span>
-                                <span class="badge bg-info">Spring Data JPA</span>
-                                <span class="badge bg-success">PostgreSQL</span>
-                                <span class="badge bg-warning">Liquibase</span>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-transparent border-top-0">
-                            <a class="btn btn-success w-100" href="/foosball">
-                                <i class="bi bi-play-fill"></i> Try Foosball Tracker
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Trivia Game -->
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">🎯 AI-Powered Trivia Game</h5>
-                            <p class="card-text">An interactive trivia game featuring real-time multiplayer gameplay using WebSocket technology. Powered by AWS Bedrock AI for dynamic question generation. Players compete to answer questions quickly and accurately, with live scoring and leaderboards.</p>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <span class="badge bg-primary">Java</span>
-                                <span class="badge bg-secondary">Spring Boot</span>
-                                <span class="badge bg-info">WebSocket</span>
-                                <span class="badge bg-success">AWS Bedrock</span>
-                                <span class="badge bg-warning">AI</span>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-transparent border-top-0">
-                            <a class="btn btn-success w-100" href="/trivia">
-                                <i class="bi bi-play-fill"></i> Play Trivia Game
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- PersonalWeb project card -->
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title">Personal Website & Portfolio</h5>
-                            <p class="card-text">A modern full-stack web application built with Spring Boot and Spring Modulith architecture. Features include trivia games with WebSocket support, dad jokes, Bible verses, foosball integration, and a modular monolith design with event-driven communication between modules.</p>
+                            <p class="card-text">A modern full-stack web application built with Spring Boot and Spring Modulith architecture. Features trivia games, foosball tracker, tank game, and a modular monolith design with event-driven communication.</p>
                             <div class="d-flex gap-2 flex-wrap">
                                 <span class="badge bg-primary">Java</span>
                                 <span class="badge bg-secondary">Spring Boot</span>
                                 <span class="badge bg-info">Spring Modulith</span>
                                 <span class="badge bg-success">WebSocket</span>
                                 <span class="badge bg-warning">PostgreSQL</span>
-                                <span class="badge bg-danger">Thymeleaf</span>
                             </div>
                         </div>
                         <div class="card-footer bg-transparent border-top-0">

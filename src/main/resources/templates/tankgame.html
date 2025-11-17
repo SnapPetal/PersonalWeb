@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Game - Thon Becker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .game-canvas {
+            border: 4px solid #333;
+            background-color: #2d2d2d;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: block;
+            margin: 20px auto;
+            border-radius: 8px;
+        }
+
+        .game-info {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .player-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .player-card {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            background: white;
+        }
+
+        .player-card.alive {
+            border-color: #28a745;
+        }
+
+        .player-card.dead {
+            border-color: #dc3545;
+            opacity: 0.6;
+        }
+
+        .health-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #5cb85c);
+            transition: width 0.3s ease;
+        }
+
+        .controls-help {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .game-status {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .status-waiting {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .status-playing {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-finished {
+            background: #dc3545;
+            color: white;
+        }
+
+        #lobbySection {
+            text-align: center;
+        }
+
+        .color-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            border: 2px solid #333;
+        }
+
+        #playAgainBtn {
+            margin-top: 15px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="text-center mb-4">
+        <h1 class="text-white">
+            <i class="bi bi-controller"></i>
+            Tank Battle Arena
+        </h1>
+        <a href="/" class="btn btn-light btn-sm">
+            <i class="bi bi-house"></i> Back to Home
+        </a>
+    </div>
+
+    <!-- Lobby Section -->
+    <div id="lobbySection" class="game-info">
+        <h3>Join Battle</h3>
+        <div class="mb-3">
+            <input type="text" id="playerNameInput" class="form-control" placeholder="Enter your name" maxlength="20">
+        </div>
+        <button id="joinGameBtn" class="btn btn-primary btn-lg">
+            <i class="bi bi-play-circle"></i> Join Game
+        </button>
+        <div id="lobbyStatus" class="mt-3 text-muted"></div>
+    </div>
+
+    <!-- Game Section -->
+    <div id="gameSection" style="display: none;">
+        <div class="game-info">
+            <div id="gameStatus" class="game-status status-waiting">Waiting for players...</div>
+
+            <button id="playAgainBtn" class="btn btn-success btn-lg" style="display: none;">
+                <i class="bi bi-arrow-clockwise"></i> Play Again
+            </button>
+
+            <div class="player-list" id="playerList"></div>
+        </div>
+
+        <canvas id="gameCanvas" class="game-canvas" width="800" height="600"></canvas>
+
+        <div class="controls-help">
+            <h5><i class="bi bi-info-circle"></i> Controls</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Movement:</strong> WASD or Arrow Keys<br>
+                    <strong>Aim:</strong> Move Mouse
+                </div>
+                <div class="col-md-6">
+                    <strong>Shoot:</strong> Left Click or Space<br>
+                    <strong>Objective:</strong> Last tank standing wins!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+<script th:src="@{/js/tankgame.js}"></script>
+</body>
+</html>
