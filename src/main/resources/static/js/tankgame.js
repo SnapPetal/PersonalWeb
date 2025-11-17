@@ -10,6 +10,7 @@ let ctx = null;
 let lobbySubscription = null;
 let joinedSubscription = null;
 let gameStateSubscription = null;
+let progressionSubscription = null;
 let inputInterval = null;
 
 // Input state
@@ -84,6 +85,10 @@ function cleanupSubscriptions() {
     gameStateSubscription.unsubscribe();
     gameStateSubscription = null;
   }
+  if (progressionSubscription) {
+    progressionSubscription.unsubscribe();
+    progressionSubscription = null;
+  }
   if (inputInterval) {
     clearInterval(inputInterval);
     inputInterval = null;
@@ -120,6 +125,22 @@ function joinGame() {
           if (data.playerName === playerName) {
             myTankId = data.tankId;
             console.log("Joined as tank:", myTankId);
+
+            // Subscribe to progression updates for this tank
+            progressionSubscription = stompClient.subscribe(
+              `/topic/tankgame/progression/${myTankId}`,
+              function (message) {
+                const data = JSON.parse(message.body);
+                console.log("Progression update:", data);
+
+                updateProgressionUI(data.progression);
+
+                // Show match results if available
+                if (data.matchResult) {
+                  showMatchResults(data.matchResult, data.progression);
+                }
+              }
+            );
 
             // Show game section
             document.getElementById("lobbySection").style.display = "none";
@@ -277,6 +298,75 @@ function updateGameUI() {
   });
 }
 
+function updateProgressionUI(progression) {
+  // Update level
+  document.getElementById("playerLevel").textContent = progression.level;
+
+  // Update coins
+  document.getElementById("playerCoins").textContent = progression.coins;
+
+  // Calculate XP progress
+  const currentXp = progression.currentXp;
+  const xpForNextLevel = progression.xpForNextLevel;
+  const xpProgress = (currentXp / xpForNextLevel) * 100;
+
+  // Update XP bar
+  document.getElementById("xpBarFill").style.width = xpProgress + "%";
+  document.getElementById(
+    "xpBarText"
+  ).textContent = `${currentXp} / ${xpForNextLevel} XP`;
+
+  // Update stats
+  document.getElementById("statKills").textContent = progression.totalKills;
+  document.getElementById("statDeaths").textContent = progression.totalDeaths;
+  document.getElementById("statWins").textContent = progression.totalWins;
+
+  // Calculate K/D ratio
+  const kd =
+    progression.totalDeaths > 0
+      ? (progression.totalKills / progression.totalDeaths).toFixed(2)
+      : progression.totalKills.toFixed(2);
+  document.getElementById("statKD").textContent = kd;
+}
+
+function showMatchResults(matchResult, progression) {
+  // Get the old level to detect level-ups
+  const oldLevel = parseInt(document.getElementById("playerLevel").textContent);
+  const newLevel = progression.level;
+  const leveledUp = newLevel > oldLevel;
+
+  // Update match results
+  const placementText =
+    matchResult.placement === 1
+      ? "1st Place! 🏆"
+      : matchResult.placement === 2
+      ? "2nd Place! 🥈"
+      : matchResult.placement === 3
+      ? "3rd Place! 🥉"
+      : `${matchResult.placement}th Place`;
+
+  document.getElementById("matchPlacement").textContent = placementText;
+  document.getElementById("matchXP").textContent = matchResult.xpEarned;
+  document.getElementById("matchCoins").textContent = matchResult.coinsEarned;
+
+  // Show level-up notification if applicable
+  const levelUpNotification = document.getElementById("levelUpNotification");
+  if (leveledUp) {
+    document.getElementById("newLevel").textContent = newLevel;
+    levelUpNotification.style.display = "block";
+  } else {
+    levelUpNotification.style.display = "none";
+  }
+
+  // Show the match results panel
+  document.getElementById("matchResults").classList.add("show");
+
+  // Hide match results after 8 seconds or when play again is clicked
+  setTimeout(() => {
+    document.getElementById("matchResults").classList.remove("show");
+  }, 8000);
+}
+
 function render() {
   if (!gameState || !ctx) return;
 
@@ -355,7 +445,7 @@ function render() {
     ctx.fillStyle = "#fff";
     ctx.font = "12px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(tank.playerName, centerX, tank.y - 5);
+    ctx.fillText(tank.playerName, centerX, tank.y - 20);
 
     // Health bar above tank
     const healthBarWidth = tank.width;
@@ -363,7 +453,7 @@ function render() {
     const healthPercent = tank.health / tank.maxHealth;
 
     ctx.fillStyle = "#333";
-    ctx.fillRect(tank.x, tank.y - 12, healthBarWidth, healthBarHeight);
+    ctx.fillRect(tank.x, tank.y - 10, healthBarWidth, healthBarHeight);
 
     ctx.fillStyle =
       healthPercent > 0.5
@@ -373,7 +463,7 @@ function render() {
         : "#dc3545";
     ctx.fillRect(
       tank.x,
-      tank.y - 12,
+      tank.y - 10,
       healthBarWidth * healthPercent,
       healthBarHeight
     );
@@ -416,6 +506,9 @@ function render() {
 }
 
 function playAgain() {
+  // Hide match results immediately
+  document.getElementById("matchResults").classList.remove("show");
+
   // Leave current game
   if (gameId && myTankId && stompClient) {
     stompClient.publish({

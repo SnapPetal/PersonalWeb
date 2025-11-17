@@ -1,8 +1,10 @@
 package biz.thonbecker.personal.tankgame.web;
 
+import biz.thonbecker.personal.tankgame.application.ProgressionService;
 import biz.thonbecker.personal.tankgame.application.TankGameService;
 import biz.thonbecker.personal.tankgame.domain.GameState;
 import biz.thonbecker.personal.tankgame.domain.PlayerInput;
+import biz.thonbecker.personal.tankgame.domain.PlayerProgression;
 import biz.thonbecker.personal.tankgame.domain.Tank;
 
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.Map;
 public class TankGameWebSocketController {
 
     private final TankGameService tankGameService;
+    private final ProgressionService progressionService;
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/tankgame/create")
@@ -54,6 +57,13 @@ public class TankGameWebSocketController {
                             playerName,
                             "color",
                             tank.getColor()));
+
+            // Send initial progression data to the player
+            PlayerProgression progression =
+                    progressionService.getOrCreateProgression(playerName, playerName);
+            messagingTemplate.convertAndSend(
+                    "/topic/tankgame/progression/" + tank.getId(),
+                    Map.of("progression", progression));
         } catch (Exception e) {
             log.error("Error joining game: {}", e.getMessage());
             messagingTemplate.convertAndSend("/topic/tankgame/error", e.getMessage());

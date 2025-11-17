@@ -131,6 +131,109 @@
                 transform: scale(1.05);
             }
         }
+
+        .progression-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .xp-bar-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            height: 24px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .xp-bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .match-results {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 3px solid #ffd700;
+            display: none;
+        }
+
+        .match-results.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .reward-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .level-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -159,6 +262,68 @@
 
     <!-- Game Section -->
     <div id="gameSection" style="display: none;">
+        <!-- Player Progression -->
+        <div class="progression-panel" id="progressionPanel">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="level-badge">
+                        <i class="bi bi-star-fill"></i> Level <span id="playerLevel">1</span>
+                    </span>
+                </div>
+                <div>
+                    <i class="bi bi-coin"></i> <strong id="playerCoins">0</strong> Coins
+                </div>
+            </div>
+
+            <div class="xp-bar-container">
+                <div class="xp-bar-fill" id="xpBarFill" style="width: 0%"></div>
+                <div class="xp-bar-text" id="xpBarText">0 / 100 XP</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="statKills">0</div>
+                    <div class="stat-label">Kills</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statDeaths">0</div>
+                    <div class="stat-label">Deaths</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statWins">0</div>
+                    <div class="stat-label">Wins</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statKD">0.00</div>
+                    <div class="stat-label">K/D</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Match Results -->
+        <div class="match-results" id="matchResults">
+            <h4 class="text-center mb-3">
+                <i class="bi bi-trophy-fill"></i> Match Complete!
+            </h4>
+            <div class="text-center mb-3">
+                <h5 id="matchPlacement">1st Place!</h5>
+            </div>
+            <div class="text-center">
+                <span class="reward-badge">
+                    <i class="bi bi-star-fill"></i> +<span id="matchXP">0</span> XP
+                </span>
+                <span class="reward-badge">
+                    <i class="bi bi-coin"></i> +<span id="matchCoins">0</span> Coins
+                </span>
+            </div>
+            <div id="levelUpNotification" class="text-center mt-3" style="display: none;">
+                <h4 class="text-success">
+                    <i class="bi bi-arrow-up-circle-fill"></i> Level Up!
+                </h4>
+                <p>You are now level <strong id="newLevel">2</strong>!</p>
+            </div>
+        </div>
+
         <div class="game-info">
             <div id="gameStatus" class="game-status status-waiting">Waiting for players...</div>
 
