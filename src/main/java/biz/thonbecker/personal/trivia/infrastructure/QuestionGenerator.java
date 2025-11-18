@@ -2,7 +2,6 @@ package biz.thonbecker.personal.trivia.infrastructure;
 
 import biz.thonbecker.personal.trivia.domain.Question;
 import biz.thonbecker.personal.trivia.domain.QuizDifficulty;
-
 import java.util.List;
 
 /**

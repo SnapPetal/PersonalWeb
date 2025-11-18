@@ -1,11 +1,10 @@
 package biz.thonbecker.personal.user.domain;
 
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.Instant;
 
 /**
  * User domain model representing a registered user in the system.

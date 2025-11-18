@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.tankgame.api;
 
 import biz.thonbecker.personal.tankgame.domain.GameState;
-
 import java.util.Map;
 
 /**

@@ -1,11 +1,10 @@
 package biz.thonbecker.personal.notification.domain;
 
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.Instant;
 
 /**
  * Notification domain model representing a message to be sent to a user.

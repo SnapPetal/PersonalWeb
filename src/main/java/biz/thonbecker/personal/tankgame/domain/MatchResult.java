@@ -1,9 +1,8 @@
 package biz.thonbecker.personal.tankgame.domain;
 
-import lombok.Data;
-
 import java.time.Instant;
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 public class MatchResult {

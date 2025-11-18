@@ -4,17 +4,14 @@ import biz.thonbecker.personal.foosball.api.FoosballFacade;
 import biz.thonbecker.personal.foosball.domain.Game;
 import biz.thonbecker.personal.foosball.domain.Player;
 import biz.thonbecker.personal.foosball.domain.Team;
-
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.List;
 
 /**
  * Foosball controller - handles web endpoints for foosball functionality.
@@ -93,8 +90,7 @@ public class FoosballController {
     }
 
     @PostMapping("/htmx/players")
-    public String createPlayerHtmx(
-            @RequestParam String name, @RequestParam String email, Model model) {
+    public String createPlayerHtmx(@RequestParam String name, @RequestParam String email, Model model) {
         try {
             if (name != null
                     && !name.trim().isEmpty()
@@ -152,8 +148,7 @@ public class FoosballController {
             if (createdGame != null) {
                 model.addAttribute("success", "Game recorded successfully!");
             } else {
-                model.addAttribute(
-                        "error", "Failed to record game. Server returned an empty response.");
+                model.addAttribute("error", "Failed to record game. Server returned an empty response.");
             }
         } catch (Exception e) {
             String errorMessage = "Failed to record game: " + e.getMessage();

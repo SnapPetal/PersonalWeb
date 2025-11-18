@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.trivia.api;
 
 import biz.thonbecker.personal.trivia.domain.QuizDifficulty;
-
 import java.time.Instant;
 import java.util.List;
 

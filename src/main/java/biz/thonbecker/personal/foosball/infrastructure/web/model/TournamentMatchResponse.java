@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.web.model;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentMatch;
-
 import java.time.LocalDateTime;
 
 public record TournamentMatchResponse(

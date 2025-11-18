@@ -1,15 +1,12 @@
 package biz.thonbecker.personal.tankgame.application;
 
 import biz.thonbecker.personal.tankgame.domain.*;
-
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -25,8 +22,7 @@ public class TankGameService {
     private static final String[] TANK_COLORS = {"#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A"};
     private static final int MAX_PLAYERS_PER_GAME = 4;
 
-    public TankGameService(
-            SimpMessagingTemplate messagingTemplate, ProgressionService progressionService) {
+    public TankGameService(SimpMessagingTemplate messagingTemplate, ProgressionService progressionService) {
         this.messagingTemplate = messagingTemplate;
         this.progressionService = progressionService;
     }
@@ -60,8 +56,7 @@ public class TankGameService {
         playerInputs.put(tankId, new PlayerInput());
 
         // Track game start time when status changes to PLAYING
-        if (game.getStatus() == GameState.GameStatus.PLAYING
-                && !gameStartTimes.containsKey(gameId)) {
+        if (game.getStatus() == GameState.GameStatus.PLAYING && !gameStartTimes.containsKey(gameId)) {
             gameStartTimes.put(gameId, System.currentTimeMillis());
             log.info("Game {} started with {} players", gameId, game.getTanks().size());
         }
@@ -132,8 +127,7 @@ public class TankGameService {
             tank.move(input, deltaTime);
 
             // Check collisions with walls
-            boolean wallCollision =
-                    game.getWalls().stream().anyMatch(wall -> tank.collidesWith(wall));
+            boolean wallCollision = game.getWalls().stream().anyMatch(wall -> tank.collidesWith(wall));
 
             // Check collisions with other tanks
             boolean tankCollision = game.getTanks().values().stream()
@@ -182,8 +176,7 @@ public class TankGameService {
             }
 
             // Check wall collision
-            boolean hitWall =
-                    game.getWalls().stream().anyMatch(wall -> projectile.collidesWith(wall));
+            boolean hitWall = game.getWalls().stream().anyMatch(wall -> projectile.collidesWith(wall));
 
             if (hitWall) {
                 projectileIterator.remove();
@@ -221,8 +214,7 @@ public class TankGameService {
         game.checkGameOver();
 
         // If game just finished, record match results
-        if (previousStatus == GameState.GameStatus.PLAYING
-                && game.getStatus() == GameState.GameStatus.FINISHED) {
+        if (previousStatus == GameState.GameStatus.PLAYING && game.getStatus() == GameState.GameStatus.FINISHED) {
             recordMatchResults(game);
         }
     }
@@ -247,8 +239,7 @@ public class TankGameService {
             Tank tempTank = new Tank("temp", "temp", spawn[0], spawn[1], "");
 
             // Verify not colliding with walls
-            boolean wallCollision =
-                    game.getWalls().stream().anyMatch(wall -> tempTank.collidesWith(wall));
+            boolean wallCollision = game.getWalls().stream().anyMatch(wall -> tempTank.collidesWith(wall));
 
             if (!wallCollision) {
                 return spawn;
@@ -267,13 +258,11 @@ public class TankGameService {
             Tank tempTank = new Tank("temp", "temp", x, y, "");
 
             // Check if position collides with walls
-            boolean wallCollision =
-                    game.getWalls().stream().anyMatch(wall -> tempTank.collidesWith(wall));
+            boolean wallCollision = game.getWalls().stream().anyMatch(wall -> tempTank.collidesWith(wall));
 
             // Check if too close to other tanks (increased from 100 to 200)
             boolean tankCollision = game.getTanks().values().stream().anyMatch(other -> {
-                double distance =
-                        Math.sqrt(Math.pow(other.getX() - x, 2) + Math.pow(other.getY() - y, 2));
+                double distance = Math.sqrt(Math.pow(other.getX() - x, 2) + Math.pow(other.getY() - y, 2));
                 return distance < 200; // Minimum 200px apart (was 100)
             });
 
@@ -356,11 +345,7 @@ public class TankGameService {
                                 "progression", updatedProgression,
                                 "matchResult", matchResult));
             } catch (Exception e) {
-                log.error(
-                        "Failed to record match for {}: {}",
-                        tank.getPlayerName(),
-                        e.getMessage(),
-                        e);
+                log.error("Failed to record match for {}: {}", tank.getPlayerName(), e.getMessage(), e);
             }
         }
 

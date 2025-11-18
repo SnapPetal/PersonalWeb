@@ -2,7 +2,6 @@ package biz.thonbecker.personal.notification.api;
 
 import biz.thonbecker.personal.notification.domain.Notification;
 import biz.thonbecker.personal.notification.domain.NotificationChannel;
-
 import java.util.List;
 
 /**
@@ -21,8 +20,7 @@ public interface NotificationFacade {
      * @param channel the delivery channel
      * @return the created notification
      */
-    Notification sendNotification(
-            String userId, String title, String message, NotificationChannel channel);
+    Notification sendNotification(String userId, String title, String message, NotificationChannel channel);
 
     /**
      * Send a notification to multiple users.
@@ -32,8 +30,7 @@ public interface NotificationFacade {
      * @param message the notification message
      * @param channel the delivery channel
      */
-    void sendBulkNotification(
-            List<String> userIds, String title, String message, NotificationChannel channel);
+    void sendBulkNotification(List<String> userIds, String title, String message, NotificationChannel channel);
 
     /**
      * Get all notifications for a user.

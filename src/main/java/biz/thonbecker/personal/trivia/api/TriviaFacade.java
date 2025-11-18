@@ -4,7 +4,6 @@ import biz.thonbecker.personal.trivia.domain.*;
 import biz.thonbecker.personal.trivia.domain.Player;
 import biz.thonbecker.personal.trivia.domain.Quiz;
 import biz.thonbecker.personal.trivia.domain.QuizDifficulty;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -17,8 +16,7 @@ public interface TriviaFacade {
     /**
      * Creates a new Financial Peace University trivia quiz with AI-generated questions
      */
-    Quiz createTriviaQuiz(
-            String title, int questionCount, QuizDifficulty difficulty, String creatorId);
+    Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty, String creatorId);
 
     /**
      * Retrieves a quiz by its ID

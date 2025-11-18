@@ -1,7 +1,8 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import jakarta.transaction.Transactional;
-
+import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -9,9 +10,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.data.rest.core.annotation.RestResource;
 import org.springframework.lang.NonNull;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @RepositoryRestResource(path = "games", collectionResourceRel = "games", itemResourceRel = "game")
 public interface GameRepository extends CrudRepository<Game, Long> {
@@ -25,10 +23,8 @@ public interface GameRepository extends CrudRepository<Game, Long> {
     List<Game> findByWinner(Game.TeamColor winner);
 
     @RestResource(path = "by-date-range", rel = "by-date-range")
-    @Query(
-            "SELECT g FROM Game g WHERE g.playedAt BETWEEN :startDate AND :endDate ORDER BY g.playedAt DESC")
-    List<Game> findByDateRange(
-            @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+    @Query("SELECT g FROM Game g WHERE g.playedAt BETWEEN :startDate AND :endDate ORDER BY g.playedAt DESC")
+    List<Game> findByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
     @RestResource(path = "recent", rel = "recent")
     @Query("SELECT g FROM Game g " + "LEFT JOIN FETCH g.whiteTeamPlayer1 "
@@ -39,8 +35,7 @@ public interface GameRepository extends CrudRepository<Game, Long> {
     List<GameWithPlayers> findRecentGames();
 
     @RestResource(path = "by-score", rel = "by-score")
-    @Query(
-            "SELECT g FROM Game g WHERE g.whiteTeamScore = :score OR g.blackTeamScore = :score ORDER BY g.playedAt DESC")
+    @Query("SELECT g FROM Game g WHERE g.whiteTeamScore = :score OR g.blackTeamScore = :score ORDER BY g.playedAt DESC")
     List<Game> findByScore(@Param("score") Integer score);
 
     @RestResource(path = "high-scoring", rel = "high-scoring")

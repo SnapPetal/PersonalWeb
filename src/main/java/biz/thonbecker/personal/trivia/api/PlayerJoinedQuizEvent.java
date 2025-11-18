@@ -5,5 +5,4 @@ import java.time.Instant;
 /**
  * Domain event published when a player joins a quiz.
  */
-public record PlayerJoinedQuizEvent(
-        Long quizId, String playerId, String playerName, Instant joinedAt) {}
+public record PlayerJoinedQuizEvent(Long quizId, String playerId, String playerName, Instant joinedAt) {}

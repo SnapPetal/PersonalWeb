@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.modulith;
 
 import biz.thonbecker.personal.PersonalApplication;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.modulith.docs.Documenter;
@@ -11,8 +10,7 @@ import org.springframework.modulith.docs.Documenter;
  */
 class ModuleStructureTest {
 
-    private static final ApplicationModules modules =
-            ApplicationModules.of(PersonalApplication.class);
+    private static final ApplicationModules modules = ApplicationModules.of(PersonalApplication.class);
 
     /**
      * Verifies that all modules follow the defined architectural rules.

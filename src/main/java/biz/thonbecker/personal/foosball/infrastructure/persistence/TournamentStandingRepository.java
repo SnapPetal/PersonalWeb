@@ -1,12 +1,11 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface TournamentStandingRepository extends JpaRepository<TournamentStanding, Long> {
@@ -17,12 +16,10 @@ public interface TournamentStandingRepository extends JpaRepository<TournamentSt
     // Find standings ordered by points (for recalculation)
     @Query("SELECT s FROM TournamentStanding s WHERE s.tournament.id = :tournamentId "
             + "ORDER BY s.points DESC, s.goalDifference DESC, s.goalsFor DESC, s.gamesPlayed ASC")
-    List<TournamentStanding> findByTournamentIdOrderByPointsDesc(
-            @Param("tournamentId") Long tournamentId);
+    List<TournamentStanding> findByTournamentIdOrderByPointsDesc(@Param("tournamentId") Long tournamentId);
 
     // Find standing for specific registration
-    Optional<TournamentStanding> findByTournamentIdAndRegistrationId(
-            Long tournamentId, Long registrationId);
+    Optional<TournamentStanding> findByTournamentIdAndRegistrationId(Long tournamentId, Long registrationId);
 
     // Get leaderboard view
     @Query("SELECT s.registration.id as registrationId, "
@@ -40,8 +37,7 @@ public interface TournamentStandingRepository extends JpaRepository<TournamentSt
     @Query("SELECT s FROM TournamentStanding s WHERE s.tournament.id = :tournamentId "
             + "ORDER BY s.position ASC NULLS LAST, s.points DESC, s.goalDifference DESC")
     List<TournamentStanding> findTopStandings(
-            @Param("tournamentId") Long tournamentId,
-            org.springframework.data.domain.Pageable pageable);
+            @Param("tournamentId") Long tournamentId, org.springframework.data.domain.Pageable pageable);
 
     // Find standings with games played
     @Query("SELECT s FROM TournamentStanding s WHERE s.tournament.id = :tournamentId "

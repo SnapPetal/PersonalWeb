@@ -8,9 +8,7 @@ import biz.thonbecker.personal.trivia.api.QuizStartedEvent;
 import biz.thonbecker.personal.user.api.UserLoginEvent;
 import biz.thonbecker.personal.user.api.UserProfileUpdatedEvent;
 import biz.thonbecker.personal.user.api.UserRegisteredEvent;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

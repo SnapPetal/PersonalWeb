@@ -3,18 +3,15 @@ package biz.thonbecker.personal.tankgame.application;
 import biz.thonbecker.personal.tankgame.domain.MatchResult;
 import biz.thonbecker.personal.tankgame.domain.PlayerProgression;
 import biz.thonbecker.personal.tankgame.infrastructure.persistence.*;
-
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,8 +44,7 @@ public class ProgressionService {
     @Transactional
     public PlayerProgression recordMatch(MatchResult matchResult) {
         // Get or create progression
-        PlayerProgression progression =
-                getOrCreateProgression(matchResult.getUserId(), matchResult.getUsername());
+        PlayerProgression progression = getOrCreateProgression(matchResult.getUserId(), matchResult.getUsername());
 
         // Calculate rewards if not already calculated
         if (matchResult.getXpEarned() == 0) {
@@ -79,10 +75,7 @@ public class ProgressionService {
         matchHistoryRepository.save(matchEntity);
 
         if (levelsGained > 0) {
-            log.info(
-                    "Player {} leveled up! Now level {}",
-                    progression.getUsername(),
-                    progression.getLevel());
+            log.info("Player {} leveled up! Now level {}", progression.getUsername(), progression.getLevel());
         }
 
         log.info(
@@ -113,12 +106,10 @@ public class ProgressionService {
      * Get match history for a player
      */
     public List<MatchResult> getMatchHistory(String userId, int limit) {
-        Page<MatchHistoryEntity> page = matchHistoryRepository.findByUserIdOrderByPlayedAtDesc(
-                userId, PageRequest.of(0, limit));
+        Page<MatchHistoryEntity> page =
+                matchHistoryRepository.findByUserIdOrderByPlayedAtDesc(userId, PageRequest.of(0, limit));
 
-        return page.getContent().stream()
-                .map(ProgressionMapper::toDomain)
-                .collect(Collectors.toList());
+        return page.getContent().stream().map(ProgressionMapper::toDomain).collect(Collectors.toList());
     }
 
     /**

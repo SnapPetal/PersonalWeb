@@ -2,7 +2,6 @@ package biz.thonbecker.personal.user.api;
 
 import biz.thonbecker.personal.user.domain.User;
 import biz.thonbecker.personal.user.domain.UserProfile;
-
 import java.util.List;
 import java.util.Optional;
 

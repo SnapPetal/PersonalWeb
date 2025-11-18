@@ -5,16 +5,13 @@ import biz.thonbecker.personal.user.api.UserLoginEvent;
 import biz.thonbecker.personal.user.api.UserProfileUpdatedEvent;
 import biz.thonbecker.personal.user.api.UserRegisteredEvent;
 import biz.thonbecker.personal.user.domain.*;
-
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -71,8 +68,7 @@ class UserFacadeImpl implements UserFacade {
         userProfileRepository.save(profileEntity);
 
         // Publish event
-        eventPublisher.publishEvent(
-                new UserRegisteredEvent(saved.getId(), username, email, saved.getCreatedAt()));
+        eventPublisher.publishEvent(new UserRegisteredEvent(saved.getId(), username, email, saved.getCreatedAt()));
 
         return toUser(saved);
     }
@@ -106,8 +102,7 @@ class UserFacadeImpl implements UserFacade {
             log.info("User login recorded: {}", user.getUsername());
 
             // Publish event
-            eventPublisher.publishEvent(
-                    new UserLoginEvent(userId, user.getUsername(), user.getLastLoginAt()));
+            eventPublisher.publishEvent(new UserLoginEvent(userId, user.getUsername(), user.getLastLoginAt()));
         });
     }
 
@@ -125,8 +120,7 @@ class UserFacadeImpl implements UserFacade {
 
         UserProfileEntity entity = userProfileRepository
                 .findById(profile.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "User profile not found: " + profile.getUserId()));
+                .orElseThrow(() -> new IllegalArgumentException("User profile not found: " + profile.getUserId()));
 
         entity.setDisplayName(profile.getDisplayName());
         entity.setAvatarUrl(profile.getAvatarUrl());
@@ -143,8 +137,8 @@ class UserFacadeImpl implements UserFacade {
         log.info("User profile updated: {}", profile.getUserId());
 
         // Publish event
-        eventPublisher.publishEvent(new UserProfileUpdatedEvent(
-                profile.getUserId(), profile.getDisplayName(), Instant.now()));
+        eventPublisher.publishEvent(
+                new UserProfileUpdatedEvent(profile.getUserId(), profile.getDisplayName(), Instant.now()));
 
         return toUserProfile(saved);
     }
@@ -178,10 +172,6 @@ class UserFacadeImpl implements UserFacade {
                 entity.getLanguage());
 
         return new UserProfile(
-                entity.getUserId(),
-                entity.getDisplayName(),
-                entity.getAvatarUrl(),
-                entity.getBio(),
-                preferences);
+                entity.getUserId(), entity.getDisplayName(), entity.getAvatarUrl(), entity.getBio(), preferences);
     }
 }

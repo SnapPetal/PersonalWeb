@@ -3,12 +3,10 @@ package biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.Tournament;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentMatch;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentRegistration;
-
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
 /**
  * Single Elimination Tournament Algorithm
@@ -18,11 +16,9 @@ import java.util.List;
 public class SingleEliminationAlgorithm implements TournamentAlgorithm {
 
     @Override
-    public List<TournamentMatch> generateBracket(
-            Tournament tournament, List<TournamentRegistration> registrations) {
+    public List<TournamentMatch> generateBracket(Tournament tournament, List<TournamentRegistration> registrations) {
         if (registrations.size() < getMinimumParticipants()) {
-            throw new IllegalArgumentException(
-                    "Not enough participants for single elimination tournament");
+            throw new IllegalArgumentException("Not enough participants for single elimination tournament");
         }
 
         var matches = new ArrayList<TournamentMatch>();
@@ -54,8 +50,7 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
         return matches;
     }
 
-    private List<TournamentMatch> createBracketStructure(
-            Tournament tournament, int participantCount, int roundCount) {
+    private List<TournamentMatch> createBracketStructure(Tournament tournament, int participantCount, int roundCount) {
         var matches = new ArrayList<TournamentMatch>();
 
         for (var round = 1; round <= roundCount; round++) {
@@ -99,9 +94,7 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
     }
 
     private void assignTeamsToFirstRound(
-            List<TournamentMatch> matches,
-            List<TournamentRegistration> registrations,
-            int participantCount) {
+            List<TournamentMatch> matches, List<TournamentRegistration> registrations, int participantCount) {
 
         // Get first round matches
         var firstRoundMatches = matches.stream()
@@ -181,9 +174,7 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
         var maxRound =
                 matches.stream().mapToInt(TournamentMatch::getRoundNumber).max().orElse(0);
 
-        return matches.stream()
-                .filter(m -> m.getRoundNumber() == maxRound)
-                .allMatch(TournamentMatch::isCompleted);
+        return matches.stream().filter(m -> m.getRoundNumber() == maxRound).allMatch(TournamentMatch::isCompleted);
     }
 
     @Override

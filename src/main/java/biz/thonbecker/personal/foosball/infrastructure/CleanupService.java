@@ -1,16 +1,12 @@
 package biz.thonbecker.personal.foosball.infrastructure;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.GameRepository;
-
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +19,7 @@ public class CleanupService {
     public void cleanupOldGames() {
         log.info("Starting cleanup of old games.");
         final var ninetyDaysAgo = LocalDate.now().minusDays(90);
-        final var deletedGamesCount =
-                gameRepository.deleteGamesOlderThan(ninetyDaysAgo.atStartOfDay());
+        final var deletedGamesCount = gameRepository.deleteGamesOlderThan(ninetyDaysAgo.atStartOfDay());
         log.info("Finished cleanup of old games. Deleted {} games.", deletedGamesCount);
     }
 }

@@ -1,12 +1,10 @@
 package biz.thonbecker.personal.trivia.infrastructure;
 
 import jakarta.persistence.*;
-
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "quiz_results", schema = "trivia")

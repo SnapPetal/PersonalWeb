@@ -1,8 +1,7 @@
 package biz.thonbecker.personal.shared.api;
 
-import org.springframework.modulith.NamedInterface;
-
 import java.util.Optional;
+import org.springframework.modulith.NamedInterface;
 
 /**
  * Public API for security and authentication operations across modules.

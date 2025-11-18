@@ -1,10 +1,9 @@
 package biz.thonbecker.personal.trivia.domain;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -20,11 +19,7 @@ public class Quiz {
     private String creatorId; // ID of the player who created the quiz
 
     public Quiz(
-            Long id,
-            String title,
-            List<Question> questions,
-            int timePerQuestionInSeconds,
-            QuizDifficulty difficulty) {
+            Long id, String title, List<Question> questions, int timePerQuestionInSeconds, QuizDifficulty difficulty) {
         this.id = id;
         this.title = title;
         this.questions = questions;

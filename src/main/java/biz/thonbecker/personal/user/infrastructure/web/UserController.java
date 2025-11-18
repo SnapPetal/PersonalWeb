@@ -3,13 +3,10 @@ package biz.thonbecker.personal.user.infrastructure.web;
 import biz.thonbecker.personal.user.api.UserFacade;
 import biz.thonbecker.personal.user.domain.User;
 import biz.thonbecker.personal.user.domain.UserProfile;
-
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -72,8 +69,7 @@ class UserController {
     }
 
     @PutMapping("/{userId}/enabled")
-    public ResponseEntity<Void> setUserEnabled(
-            @PathVariable String userId, @RequestParam boolean enabled) {
+    public ResponseEntity<Void> setUserEnabled(@PathVariable String userId, @RequestParam boolean enabled) {
         userFacade.setUserEnabled(userId, enabled);
         return ResponseEntity.ok().build();
     }

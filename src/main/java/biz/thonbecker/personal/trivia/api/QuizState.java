@@ -3,12 +3,10 @@ package biz.thonbecker.personal.trivia.api;
 import biz.thonbecker.personal.trivia.domain.Player;
 import biz.thonbecker.personal.trivia.domain.Question;
 import biz.thonbecker.personal.trivia.domain.QuizStatus;
-
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * Represents the current state of a quiz.

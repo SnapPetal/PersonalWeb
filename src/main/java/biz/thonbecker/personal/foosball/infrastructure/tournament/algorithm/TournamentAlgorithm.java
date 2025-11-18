@@ -3,7 +3,6 @@ package biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.Tournament;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentMatch;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentRegistration;
-
 import java.util.List;
 
 /**
@@ -17,8 +16,7 @@ public interface TournamentAlgorithm {
      * @param registrations List of active registrations
      * @return List of matches representing the bracket structure
      */
-    List<TournamentMatch> generateBracket(
-            Tournament tournament, List<TournamentRegistration> registrations);
+    List<TournamentMatch> generateBracket(Tournament tournament, List<TournamentRegistration> registrations);
 
     /**
      * Advance winners to next round after a match is completed

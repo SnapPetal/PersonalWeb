@@ -1,14 +1,11 @@
 package biz.thonbecker.personal.shared.infrastructure;
 
 import biz.thonbecker.personal.shared.api.CacheFacade;
-
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 @Slf4j

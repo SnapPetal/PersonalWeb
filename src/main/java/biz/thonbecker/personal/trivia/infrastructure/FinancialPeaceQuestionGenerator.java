@@ -2,23 +2,19 @@ package biz.thonbecker.personal.trivia.infrastructure;
 
 import biz.thonbecker.personal.trivia.domain.Question;
 import biz.thonbecker.personal.trivia.domain.QuizDifficulty;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * Generates Financial Peace trivia questions using AI.
@@ -45,10 +41,7 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
         }
 
         try {
-            log.info(
-                    "Generating {} {} questions about Financial Peace by Dave Ramsey",
-                    count,
-                    difficulty);
+            log.info("Generating {} {} questions about Financial Peace by Dave Ramsey", count, difficulty);
 
             String promptText =
                     """
@@ -97,8 +90,7 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
 
             // Parse JSON response
             List<Map<String, Object>> questionMaps = objectMapper.readValue(
-                    extractJsonFromResponse(response),
-                    new TypeReference<List<Map<String, Object>>>() {});
+                    extractJsonFromResponse(response), new TypeReference<List<Map<String, Object>>>() {});
 
             List<Question> questions = new ArrayList<>();
             for (Map<String, Object> qMap : questionMaps) {
@@ -159,12 +151,7 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
         };
 
         String[][] options = {
-            {
-                "Pay off all debt",
-                "Save $1,000 for emergencies",
-                "Invest 15% in retirement",
-                "Pay off the mortgage"
-            },
+            {"Pay off all debt", "Save $1,000 for emergencies", "Invest 15% in retirement", "Pay off the mortgage"},
             {"$1,000", "3-6 months of expenses", "$5,000", "1 year of expenses"},
             {
                 "Pay off debts largest to smallest",
@@ -173,19 +160,9 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
                 "Pay highest interest first"
             },
             {"5%", "10%", "15%", "20%"},
-            {
-                "Build emergency fund",
-                "Pay off all debt except mortgage",
-                "Save for college",
-                "Pay off mortgage"
-            },
+            {"Build emergency fund", "Pay off all debt except mortgage", "Save for college", "Pay off mortgage"},
             {"Whole life", "Term life", "Universal life", "Variable life"},
-            {
-                "Highest interest rate first",
-                "Largest balance first",
-                "Smallest balance first",
-                "Random order"
-            },
+            {"Highest interest rate first", "Largest balance first", "Smallest balance first", "Random order"},
             {"Save 3-6 months of expenses", "Pay off mortgage", "Save for college", "Invest 15%"},
             {
                 "A fund for emergencies",
@@ -196,12 +173,7 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
             {"Use them responsibly", "Only for emergencies", "Cut them up", "Get rewards cards"},
             {"Save for children's college", "Pay off mortgage", "Invest 15%", "Buy a car"},
             {"50%", "35%", "25%", "15%"},
-            {
-                "Pay off the mortgage early",
-                "Invest in real estate",
-                "Save for retirement",
-                "Build wealth"
-            },
+            {"Pay off the mortgage early", "Invest in real estate", "Save for retirement", "Build wealth"},
             {
                 "The four Baby Steps",
                 "Four types of insurance",
@@ -209,25 +181,11 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
                 "Four investment types"
             },
             {"Build wealth and give", "Retire early", "Buy vacation homes", "Start a business"},
-            {
-                "Immediately",
-                "After Baby Step 1",
-                "After paying off all debt except mortgage",
-                "After retirement"
-            },
-            {
-                "Financial Peace University",
-                "Free Public Utility",
-                "Federal Planning Unit",
-                "Financial Protection Union"
+            {"Immediately", "After Baby Step 1", "After paying off all debt except mortgage", "After retirement"},
+            {"Financial Peace University", "Free Public Utility", "Federal Planning Unit", "Financial Protection Union"
             },
             {"Lease new cars", "Buy used with cash", "Finance at 0%", "Buy new with low interest"},
-            {
-                "Have life insurance",
-                "Be debt-free except mortgage",
-                "Have $10,000 saved",
-                "Have a college degree"
-            },
+            {"Have life insurance", "Be debt-free except mortgage", "Have $10,000 saved", "Have a college degree"},
             {
                 "Using cash for all purchases",
                 "Using cash in envelopes for budget categories",
@@ -249,10 +207,7 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
         for (int i = 0; i < questionsToGenerate; i++) {
             int idx = indices.get(i);
             result.add(new Question(
-                    questionIdGenerator.incrementAndGet(),
-                    questions[idx],
-                    List.of(options[idx]),
-                    correctAnswers[idx]));
+                    questionIdGenerator.incrementAndGet(), questions[idx], List.of(options[idx]), correctAnswers[idx]));
         }
 
         return result;

@@ -1,10 +1,9 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
+import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
 
 public interface PlayerStatsRepository extends Repository<Player, Long> {
 

@@ -2,12 +2,9 @@ package biz.thonbecker.personal.tankgame.api;
 
 import biz.thonbecker.personal.tankgame.application.TankGameService;
 import biz.thonbecker.personal.tankgame.domain.GameState;
-
-import lombok.RequiredArgsConstructor;
-
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor

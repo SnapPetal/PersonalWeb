@@ -1,9 +1,8 @@
 package biz.thonbecker.personal.foosball.domain;
 
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 /**
  * Core domain entity representing a Foosball game.

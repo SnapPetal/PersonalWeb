@@ -1,22 +1,18 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.*;
-
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
@@ -130,8 +126,7 @@ public class Tournament {
     }
 
     public boolean canRegister() {
-        return isRegistrationOpen()
-                && (maxParticipants == null || registrations.size() < maxParticipants);
+        return isRegistrationOpen() && (maxParticipants == null || registrations.size() < maxParticipants);
     }
 
     public boolean canStart() {
@@ -192,8 +187,7 @@ public class Tournament {
     }
 
     public boolean isRoundBased() {
-        return tournamentType == TournamentType.ROUND_ROBIN
-                || tournamentType == TournamentType.SWISS_SYSTEM;
+        return tournamentType == TournamentType.ROUND_ROBIN || tournamentType == TournamentType.SWISS_SYSTEM;
     }
 
     // Tournament Settings class for JSON storage

@@ -1,17 +1,13 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-
-import lombok.*;
-
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.*;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
 @Setter
@@ -236,14 +232,7 @@ public class TournamentStanding {
     public String getSummary() {
         return String.format(
                 "P:%d W:%d L:%d D:%d GF:%d GA:%d GD:%d Pts:%.1f",
-                gamesPlayed,
-                wins,
-                losses,
-                draws,
-                goalsFor,
-                goalsAgainst,
-                goalDifference,
-                points.doubleValue());
+                gamesPlayed, wins, losses, draws, goalsFor, goalsAgainst, goalDifference, points.doubleValue());
     }
 
     public String getDisplayName() {

@@ -3,18 +3,15 @@ package biz.thonbecker.personal.notification.infrastructure;
 import biz.thonbecker.personal.notification.api.NotificationFacade;
 import biz.thonbecker.personal.notification.api.NotificationSentEvent;
 import biz.thonbecker.personal.notification.domain.*;
-
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -29,8 +26,7 @@ class NotificationFacadeImpl implements NotificationFacade {
     }
 
     @Override
-    public Notification sendNotification(
-            String userId, String title, String message, NotificationChannel channel) {
+    public Notification sendNotification(String userId, String title, String message, NotificationChannel channel) {
         if (userId == null || userId.trim().isEmpty()) {
             throw new IllegalArgumentException("User ID cannot be null or empty");
         }
@@ -53,15 +49,14 @@ class NotificationFacadeImpl implements NotificationFacade {
         log.info("Notification sent to user {} via {}: {}", userId, channel, title);
 
         // Publish event
-        eventPublisher.publishEvent(new NotificationSentEvent(
-                notification.getId(), userId, title, channel, notification.getSentAt()));
+        eventPublisher.publishEvent(
+                new NotificationSentEvent(notification.getId(), userId, title, channel, notification.getSentAt()));
 
         return notification;
     }
 
     @Override
-    public void sendBulkNotification(
-            List<String> userIds, String title, String message, NotificationChannel channel) {
+    public void sendBulkNotification(List<String> userIds, String title, String message, NotificationChannel channel) {
         if (userIds == null || userIds.isEmpty()) {
             log.warn("No user IDs provided for bulk notification");
             return;

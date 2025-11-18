@@ -6,17 +6,14 @@ import biz.thonbecker.personal.tankgame.domain.GameState;
 import biz.thonbecker.personal.tankgame.domain.PlayerInput;
 import biz.thonbecker.personal.tankgame.domain.PlayerProgression;
 import biz.thonbecker.personal.tankgame.domain.Tank;
-
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
-
-import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -59,11 +56,9 @@ public class TankGameWebSocketController {
                             tank.getColor()));
 
             // Send initial progression data to the player
-            PlayerProgression progression =
-                    progressionService.getOrCreateProgression(playerName, playerName);
+            PlayerProgression progression = progressionService.getOrCreateProgression(playerName, playerName);
             messagingTemplate.convertAndSend(
-                    "/topic/tankgame/progression/" + tank.getId(),
-                    Map.of("progression", progression));
+                    "/topic/tankgame/progression/" + tank.getId(), Map.of("progression", progression));
         } catch (Exception e) {
             log.error("Error joining game: {}", e.getMessage());
             messagingTemplate.convertAndSend("/topic/tankgame/error", e.getMessage());
@@ -72,9 +67,7 @@ public class TankGameWebSocketController {
 
     @MessageMapping("/tankgame/input/{gameId}/{tankId}")
     public void updateInput(
-            @DestinationVariable String gameId,
-            @DestinationVariable String tankId,
-            @Payload PlayerInput input) {
+            @DestinationVariable String gameId, @DestinationVariable String tankId, @Payload PlayerInput input) {
         tankGameService.updateInput(tankId, input);
     }
 

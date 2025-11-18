@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.foosball.api;
 
 import biz.thonbecker.personal.foosball.domain.GameResult;
-
 import java.time.Instant;
 
 /**

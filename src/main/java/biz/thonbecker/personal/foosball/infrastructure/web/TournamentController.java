@@ -4,19 +4,15 @@ import biz.thonbecker.personal.foosball.infrastructure.TournamentService;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.BracketView;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentSummary;
 import biz.thonbecker.personal.foosball.infrastructure.web.model.*;
-
 import jakarta.validation.Valid;
-
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -56,8 +52,7 @@ public class TournamentController {
     }
 
     @GetMapping("/player/{playerId}")
-    public ResponseEntity<List<TournamentResponse>> getTournamentsForPlayer(
-            @PathVariable Long playerId) {
+    public ResponseEntity<List<TournamentResponse>> getTournamentsForPlayer(@PathVariable Long playerId) {
         var tournaments = tournamentService.getTournamentsForPlayer(playerId);
         var responses =
                 tournaments.stream().map(TournamentResponse::fromEntitySummary).toList();
@@ -143,8 +138,7 @@ public class TournamentController {
     }
 
     @DeleteMapping("/{id}/register/{playerId}")
-    public ResponseEntity<Void> withdrawFromTournament(
-            @PathVariable Long id, @PathVariable Long playerId) {
+    public ResponseEntity<Void> withdrawFromTournament(@PathVariable Long id, @PathVariable Long playerId) {
         log.info("Withdrawing player {} from tournament {}", playerId, id);
 
         tournamentService.withdrawFromTournament(id, playerId);
@@ -152,8 +146,7 @@ public class TournamentController {
     }
 
     @GetMapping("/{id}/registrations")
-    public ResponseEntity<List<TournamentRegistrationResponse>> getTournamentRegistrations(
-            @PathVariable Long id) {
+    public ResponseEntity<List<TournamentRegistrationResponse>> getTournamentRegistrations(@PathVariable Long id) {
         var registrations = tournamentService.getTournamentRegistrations(id);
         var responses = registrations.stream()
                 .map(TournamentRegistrationResponse::fromEntity)
@@ -169,8 +162,7 @@ public class TournamentController {
     }
 
     @GetMapping("/{id}/matches")
-    public ResponseEntity<List<TournamentMatchResponse>> getTournamentMatches(
-            @PathVariable Long id) {
+    public ResponseEntity<List<TournamentMatchResponse>> getTournamentMatches(@PathVariable Long id) {
         var matches = tournamentService.getTournamentMatches(id);
         var responses =
                 matches.stream().map(TournamentMatchResponse::fromEntity).toList();
@@ -198,10 +190,7 @@ public class TournamentController {
     @PostMapping("/matches/{matchId}/walkover")
     public ResponseEntity<TournamentMatchResponse> recordWalkover(
             @PathVariable Long matchId, @Valid @RequestBody WalkoverRequest request) {
-        log.info(
-                "Recording walkover for match {} with winner {}",
-                matchId,
-                request.winnerRegistrationId());
+        log.info("Recording walkover for match {} with winner {}", matchId, request.winnerRegistrationId());
 
         var match = tournamentService.recordWalkover(matchId, request);
         var response = TournamentMatchResponse.fromEntity(match);

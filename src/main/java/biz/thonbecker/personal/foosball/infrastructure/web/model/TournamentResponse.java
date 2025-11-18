@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.web.model;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.Tournament;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,10 +25,9 @@ public record TournamentResponse(
         boolean canStart,
         List<TournamentRegistrationResponse> registrations) {
     public static TournamentResponse fromEntity(Tournament tournament) {
-        List<TournamentRegistrationResponse> registrationResponses =
-                tournament.getRegistrations().stream()
-                        .map(TournamentRegistrationResponse::fromEntity)
-                        .toList();
+        List<TournamentRegistrationResponse> registrationResponses = tournament.getRegistrations().stream()
+                .map(TournamentRegistrationResponse::fromEntity)
+                .toList();
 
         return new TournamentResponse(
                 tournament.getId(),

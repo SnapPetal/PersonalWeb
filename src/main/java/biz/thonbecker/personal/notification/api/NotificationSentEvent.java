@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.notification.api;
 
 import biz.thonbecker.personal.notification.domain.NotificationChannel;
-
 import java.time.Instant;
 
 /**
@@ -14,8 +13,4 @@ import java.time.Instant;
  * @param sentAt the timestamp when the notification was sent
  */
 public record NotificationSentEvent(
-        String notificationId,
-        String userId,
-        String title,
-        NotificationChannel channel,
-        Instant sentAt) {}
+        String notificationId, String userId, String title, NotificationChannel channel, Instant sentAt) {}

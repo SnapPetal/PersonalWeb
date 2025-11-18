@@ -1,8 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
-import org.springframework.beans.factory.annotation.Value;
-
 import java.time.LocalDateTime;
+import org.springframework.beans.factory.annotation.Value;
 
 public interface GameWithPlayers {
     Long getId();

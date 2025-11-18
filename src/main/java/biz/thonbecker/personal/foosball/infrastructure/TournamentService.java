@@ -4,18 +4,14 @@ import biz.thonbecker.personal.foosball.infrastructure.persistence.*;
 import biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.SingleEliminationAlgorithm;
 import biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.TournamentAlgorithm;
 import biz.thonbecker.personal.foosball.infrastructure.web.model.*;
-
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -39,13 +35,11 @@ public class TournamentService {
 
         var creator = playerRepository
                 .findById(createdById)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Player not found with id: " + createdById));
+                .orElseThrow(() -> new EntityNotFoundException("Player not found with id: " + createdById));
 
         // For now, only support single elimination
         if (request.tournamentType() != Tournament.TournamentType.SINGLE_ELIMINATION) {
-            throw new UnsupportedOperationException(
-                    "Currently only single elimination tournaments are supported");
+            throw new UnsupportedOperationException("Currently only single elimination tournaments are supported");
         }
 
         var tournament = new Tournament(request.name(), request.tournamentType(), creator);
@@ -75,17 +69,13 @@ public class TournamentService {
         if (request.description() != null) tournament.setDescription(request.description());
         if (request.tournamentType() != null) {
             if (request.tournamentType() != Tournament.TournamentType.SINGLE_ELIMINATION) {
-                throw new UnsupportedOperationException(
-                        "Currently only single elimination tournaments are supported");
+                throw new UnsupportedOperationException("Currently only single elimination tournaments are supported");
             }
             tournament.setTournamentType(request.tournamentType());
         }
-        if (request.maxParticipants() != null)
-            tournament.setMaxParticipants(request.maxParticipants());
-        if (request.registrationStart() != null)
-            tournament.setRegistrationStart(request.registrationStart());
-        if (request.registrationEnd() != null)
-            tournament.setRegistrationEnd(request.registrationEnd());
+        if (request.maxParticipants() != null) tournament.setMaxParticipants(request.maxParticipants());
+        if (request.registrationStart() != null) tournament.setRegistrationStart(request.registrationStart());
+        if (request.registrationEnd() != null) tournament.setRegistrationEnd(request.registrationEnd());
         if (request.startDate() != null) tournament.setStartDate(request.startDate());
         if (request.settings() != null) tournament.setSettings(request.settings());
 
@@ -95,22 +85,19 @@ public class TournamentService {
     public Tournament getTournamentById(Long tournamentId) {
         return tournamentRepository
                 .findById(tournamentId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Tournament not found with id: " + tournamentId));
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found with id: " + tournamentId));
     }
 
     public Tournament getTournamentWithRegistrations(Long tournamentId) {
         return tournamentRepository
                 .findByIdWithRegistrations(tournamentId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Tournament not found with id: " + tournamentId));
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found with id: " + tournamentId));
     }
 
     public Tournament getTournamentWithMatches(Long tournamentId) {
         return tournamentRepository
                 .findByIdWithMatches(tournamentId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Tournament not found with id: " + tournamentId));
+                .orElseThrow(() -> new EntityNotFoundException("Tournament not found with id: " + tournamentId));
     }
 
     public List<Tournament> getAllTournaments() {
@@ -135,8 +122,7 @@ public class TournamentService {
         // Only allow deletion if tournament hasn't started
         if (tournament.getStatus() == Tournament.TournamentStatus.IN_PROGRESS
                 || tournament.getStatus() == Tournament.TournamentStatus.COMPLETED) {
-            throw new IllegalStateException(
-                    "Cannot delete tournament that has started or completed");
+            throw new IllegalStateException("Cannot delete tournament that has started or completed");
         }
 
         log.info("Deleting tournament: {}", tournamentId);
@@ -189,8 +175,7 @@ public class TournamentService {
     }
 
     // Registration Management
-    public TournamentRegistration registerForTournament(
-            Long tournamentId, TournamentRegistrationRequest request) {
+    public TournamentRegistration registerForTournament(Long tournamentId, TournamentRegistrationRequest request) {
         log.info("Registering player {} for tournament {}", request.playerId(), tournamentId);
 
         var tournament = getTournamentById(tournamentId);
@@ -206,25 +191,22 @@ public class TournamentService {
 
         var player = playerRepository
                 .findById(request.playerId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Player not found with id: " + request.playerId()));
+                .orElseThrow(() -> new EntityNotFoundException("Player not found with id: " + request.playerId()));
 
         TournamentRegistration registration;
 
         if (request.isTeamRegistration()) {
             var partner = playerRepository
                     .findById(request.partnerId())
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Partner not found with id: " + request.partnerId()));
+                    .orElseThrow(
+                            () -> new EntityNotFoundException("Partner not found with id: " + request.partnerId()));
 
             // Check if partner is already registered
             if (registrationRepository.isPlayerRegistered(tournamentId, request.partnerId())) {
-                throw new IllegalStateException(
-                        "Partner is already registered for this tournament");
+                throw new IllegalStateException("Partner is already registered for this tournament");
             }
 
-            registration =
-                    new TournamentRegistration(tournament, player, partner, request.teamName());
+            registration = new TournamentRegistration(tournament, player, partner, request.teamName());
         } else {
             registration = new TournamentRegistration(tournament, player);
         }
@@ -243,8 +225,7 @@ public class TournamentService {
 
         if (tournament.getStatus() == Tournament.TournamentStatus.IN_PROGRESS
                 || tournament.getStatus() == Tournament.TournamentStatus.COMPLETED) {
-            throw new IllegalStateException(
-                    "Cannot withdraw from tournament that has started or completed");
+            throw new IllegalStateException("Cannot withdraw from tournament that has started or completed");
         }
 
         registration.withdraw();
@@ -252,17 +233,15 @@ public class TournamentService {
     }
 
     public List<TournamentRegistration> getTournamentRegistrations(Long tournamentId) {
-        return registrationRepository.findByTournamentIdOrderBySeedAscRegistrationDateAsc(
-                tournamentId);
+        return registrationRepository.findByTournamentIdOrderBySeedAscRegistrationDateAsc(tournamentId);
     }
 
     // Bracket and Match Management
     private void generateBracket(Tournament tournament) {
         log.info("Generating bracket for tournament: {}", tournament.getId());
 
-        var activeRegistrations =
-                registrationRepository.findByTournamentIdAndStatusOrderBySeedAscRegistrationDateAsc(
-                        tournament.getId(), TournamentRegistration.RegistrationStatus.ACTIVE);
+        var activeRegistrations = registrationRepository.findByTournamentIdAndStatusOrderBySeedAscRegistrationDateAsc(
+                tournament.getId(), TournamentRegistration.RegistrationStatus.ACTIVE);
 
         var algorithm = getTournamentAlgorithm(tournament.getTournamentType());
         var matches = algorithm.generateBracket(tournament, activeRegistrations);
@@ -276,8 +255,7 @@ public class TournamentService {
     private TournamentAlgorithm getTournamentAlgorithm(Tournament.TournamentType type) {
         return switch (type) {
             case SINGLE_ELIMINATION -> singleEliminationAlgorithm;
-            default ->
-                throw new UnsupportedOperationException("Tournament type not supported: " + type);
+            default -> throw new UnsupportedOperationException("Tournament type not supported: " + type);
         };
     }
 
@@ -292,8 +270,7 @@ public class TournamentService {
     public TournamentMatch getMatchById(Long matchId) {
         return matchRepository
                 .findByIdWithDetails(matchId)
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Match not found with id: " + matchId));
+                .orElseThrow(() -> new EntityNotFoundException("Match not found with id: " + matchId));
     }
 
     public TournamentMatch completeMatch(Long matchId, Long gameId) {
@@ -302,8 +279,7 @@ public class TournamentService {
         var match = getMatchById(matchId);
         var game = gameRepository
                 .findById(gameId)
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Game not found with id: " + gameId));
+                .orElseThrow(() -> new EntityNotFoundException("Game not found with id: " + gameId));
 
         if (!match.canStart()) {
             throw new IllegalStateException("Match is not ready to be completed");
@@ -332,10 +308,7 @@ public class TournamentService {
     }
 
     public TournamentMatch recordWalkover(Long matchId, WalkoverRequest request) {
-        log.info(
-                "Recording walkover for match {} with winner {}",
-                matchId,
-                request.winnerRegistrationId());
+        log.info("Recording walkover for match {} with winner {}", matchId, request.winnerRegistrationId());
 
         var match = getMatchById(matchId);
         var winner = registrationRepository
@@ -362,9 +335,7 @@ public class TournamentService {
     // Standings Management
     private void updateStandingsForMatch(TournamentMatch match) {
         if (!match.isCompleted() || match.getGame() == null) {
-            log.debug(
-                    "Match {} is not completed or has no game, skipping standings update",
-                    match.getId());
+            log.debug("Match {} is not completed or has no game, skipping standings update", match.getId());
             return;
         }
 
@@ -377,10 +348,7 @@ public class TournamentService {
             return;
         }
 
-        log.info(
-                "Updating standings for match {} in tournament {}",
-                match.getId(),
-                tournament.getId());
+        log.info("Updating standings for match {} in tournament {}", match.getId(), tournament.getId());
 
         // Get or create standings for both teams
         var team1Standing = standingRepository

@@ -198,9 +198,7 @@
         <version>${spotless.version}</version>
         <configuration>
           <java>
-            <palantirJavaFormat>
-              <style>AOSP</style>
-            </palantirJavaFormat>
+            <palantirJavaFormat/>
           </java>
           <pom>
             <sortPom>

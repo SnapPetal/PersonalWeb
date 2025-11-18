@@ -1,11 +1,9 @@
 package biz.thonbecker.personal.tankgame.infrastructure.persistence;
 
 import jakarta.persistence.*;
-
+import java.time.Instant;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "match_history", schema = "tankgame")

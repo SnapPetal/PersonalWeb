@@ -10,5 +10,4 @@ import java.time.Instant;
  * @param email the user's email
  * @param registeredAt the timestamp when the user registered
  */
-public record UserRegisteredEvent(
-        String userId, String username, String email, Instant registeredAt) {}
+public record UserRegisteredEvent(String userId, String username, String email, Instant registeredAt) {}

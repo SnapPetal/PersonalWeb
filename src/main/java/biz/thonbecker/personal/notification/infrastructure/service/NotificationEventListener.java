@@ -6,14 +6,11 @@ import biz.thonbecker.personal.notification.domain.NotificationChannel;
 import biz.thonbecker.personal.trivia.api.QuizCompletedEvent;
 import biz.thonbecker.personal.trivia.api.QuizStartedEvent;
 import biz.thonbecker.personal.user.api.UserRegisteredEvent;
-
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Event listener that sends notifications in response to domain events from other modules.
@@ -57,8 +54,7 @@ class NotificationEventListener {
                 event.winnerId(),
                 "Quiz Victory!",
                 String.format(
-                        "Congratulations! You won '%s' with a score of %d points!",
-                        event.title(), event.finalScore()),
+                        "Congratulations! You won '%s' with a score of %d points!", event.title(), event.finalScore()),
                 NotificationChannel.WEBSOCKET);
 
         // Notify all participants

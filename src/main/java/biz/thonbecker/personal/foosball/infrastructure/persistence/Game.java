@@ -1,22 +1,17 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-
+import java.time.LocalDateTime;
 import lombok.*;
-
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
-@ToString(
-        exclude = {"whiteTeamPlayer1", "whiteTeamPlayer2", "blackTeamPlayer1", "blackTeamPlayer2"})
+@ToString(exclude = {"whiteTeamPlayer1", "whiteTeamPlayer2", "blackTeamPlayer1", "blackTeamPlayer2"})
 @EqualsAndHashCode(of = "id")
 @NoArgsConstructor
 @Entity
@@ -76,11 +71,7 @@ public class Game {
         BLACK
     }
 
-    public Game(
-            Player whiteTeamPlayer1,
-            Player whiteTeamPlayer2,
-            Player blackTeamPlayer1,
-            Player blackTeamPlayer2) {
+    public Game(Player whiteTeamPlayer1, Player whiteTeamPlayer2, Player blackTeamPlayer1, Player blackTeamPlayer2) {
         this.whiteTeamPlayer1 = whiteTeamPlayer1;
         this.whiteTeamPlayer2 = whiteTeamPlayer2;
         this.blackTeamPlayer1 = blackTeamPlayer1;

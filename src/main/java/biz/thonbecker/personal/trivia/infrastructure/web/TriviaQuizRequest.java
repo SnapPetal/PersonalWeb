@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.trivia.infrastructure.web;
 
 import biz.thonbecker.personal.trivia.domain.QuizDifficulty;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

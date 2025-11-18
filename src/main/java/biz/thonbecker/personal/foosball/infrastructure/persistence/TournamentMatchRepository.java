@@ -1,12 +1,11 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface TournamentMatchRepository extends JpaRepository<TournamentMatch, Long> {
@@ -15,8 +14,7 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
     List<TournamentMatch> findByTournamentIdOrderByRoundNumberAscMatchNumberAsc(Long tournamentId);
 
     // Find matches for specific round
-    List<TournamentMatch> findByTournamentIdAndRoundNumberOrderByMatchNumberAsc(
-            Long tournamentId, Integer roundNumber);
+    List<TournamentMatch> findByTournamentIdAndRoundNumberOrderByMatchNumberAsc(Long tournamentId, Integer roundNumber);
 
     // Find matches by status
     List<TournamentMatch> findByTournamentIdAndStatusOrderByRoundNumberAscMatchNumberAsc(
@@ -98,8 +96,7 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
     Optional<TournamentMatch> findByIdWithDetails(@Param("id") Long id);
 
     // Count matches by status for tournament
-    @Query(
-            "SELECT m.status, COUNT(m) FROM TournamentMatch m WHERE m.tournament.id = :tournamentId GROUP BY m.status")
+    @Query("SELECT m.status, COUNT(m) FROM TournamentMatch m WHERE m.tournament.id = :tournamentId GROUP BY m.status")
     List<Object[]> countMatchesByStatus(@Param("tournamentId") Long tournamentId);
 
     // Find matches in current round
@@ -111,7 +108,6 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
     List<TournamentMatch> findCurrentRoundMatches(@Param("tournamentId") Long tournamentId);
 
     // Get max round number for tournament
-    @Query(
-            "SELECT COALESCE(MAX(m.roundNumber), 0) FROM TournamentMatch m WHERE m.tournament.id = :tournamentId")
+    @Query("SELECT COALESCE(MAX(m.roundNumber), 0) FROM TournamentMatch m WHERE m.tournament.id = :tournamentId")
     Integer getMaxRoundNumber(@Param("tournamentId") Long tournamentId);
 }

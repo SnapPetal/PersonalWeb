@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.web.model;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentStanding;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

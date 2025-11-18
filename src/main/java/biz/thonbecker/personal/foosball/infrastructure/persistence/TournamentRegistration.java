@@ -1,16 +1,12 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-
+import java.time.LocalDateTime;
 import lombok.*;
-
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -82,8 +78,7 @@ public class TournamentRegistration {
         generateTeamName();
     }
 
-    public TournamentRegistration(
-            Tournament tournament, Player player, Player partner, String teamName) {
+    public TournamentRegistration(Tournament tournament, Player player, Player partner, String teamName) {
         this(tournament, player, partner);
         this.teamName = teamName;
     }

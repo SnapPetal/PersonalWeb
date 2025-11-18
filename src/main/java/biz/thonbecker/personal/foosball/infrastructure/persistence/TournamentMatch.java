@@ -1,22 +1,16 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-
+import java.time.LocalDateTime;
 import lombok.*;
-
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
-@ToString(
-        exclude = {"tournament", "team1", "team2", "winner", "game", "nextMatch", "consolationMatch"
-        })
+@ToString(exclude = {"tournament", "team1", "team2", "winner", "game", "nextMatch", "consolationMatch"})
 @EqualsAndHashCode(of = "id")
 @NoArgsConstructor
 @Entity
@@ -173,8 +167,7 @@ public class TournamentMatch {
     }
 
     public void walkover(TournamentRegistration walkoverWinner) {
-        if (walkoverWinner != null
-                && (walkoverWinner.equals(team1) || walkoverWinner.equals(team2))) {
+        if (walkoverWinner != null && (walkoverWinner.equals(team1) || walkoverWinner.equals(team2))) {
             this.winner = walkoverWinner;
             this.status = MatchStatus.WALKOVER;
             this.completedAt = LocalDateTime.now();
@@ -192,10 +185,8 @@ public class TournamentMatch {
         }
 
         // Match players from game to tournament registrations
-        boolean team1IsWhite = matchesTeam(
-                team1, gameResult.getWhiteTeamPlayer1(), gameResult.getWhiteTeamPlayer2());
-        boolean team1IsBlack = matchesTeam(
-                team1, gameResult.getBlackTeamPlayer1(), gameResult.getBlackTeamPlayer2());
+        boolean team1IsWhite = matchesTeam(team1, gameResult.getWhiteTeamPlayer1(), gameResult.getWhiteTeamPlayer2());
+        boolean team1IsBlack = matchesTeam(team1, gameResult.getBlackTeamPlayer1(), gameResult.getBlackTeamPlayer2());
 
         if (team1IsWhite && gameResult.isWhiteTeamWinner()) {
             this.winner = team1;
@@ -206,8 +197,7 @@ public class TournamentMatch {
         }
     }
 
-    private boolean matchesTeam(
-            TournamentRegistration registration, Player player1, Player player2) {
+    private boolean matchesTeam(TournamentRegistration registration, Player player1, Player player2) {
         if (registration.isTeam()) {
             return (registration.getPlayer().equals(player1)
                             && registration.getPartner().equals(player2))
@@ -227,9 +217,8 @@ public class TournamentMatch {
     }
 
     public String getDisplayName() {
-        String bracket = bracketType == BracketType.MAIN
-                ? ""
-                : " (" + bracketType.name().toLowerCase() + ")";
+        String bracket =
+                bracketType == BracketType.MAIN ? "" : " (" + bracketType.name().toLowerCase() + ")";
         return "Round " + roundNumber + ", Match " + matchNumber + bracket;
     }
 

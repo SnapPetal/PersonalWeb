@@ -28,13 +28,7 @@ public class PlayerStats {
      * @param goalsAgainst Total goals against
      */
     public PlayerStats(
-            String playerName,
-            int totalGames,
-            int wins,
-            int losses,
-            int draws,
-            int goalsScored,
-            int goalsAgainst) {
+            String playerName, int totalGames, int wins, int losses, int draws, int goalsScored, int goalsAgainst) {
         this.playerName = playerName;
         this.totalGames = totalGames;
         this.wins = wins;

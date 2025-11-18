@@ -4,7 +4,6 @@ import biz.thonbecker.personal.foosball.domain.Game;
 import biz.thonbecker.personal.foosball.domain.Player;
 import biz.thonbecker.personal.foosball.domain.PlayerStats;
 import biz.thonbecker.personal.foosball.domain.TeamStats;
-
 import java.util.List;
 
 /**

@@ -1,15 +1,12 @@
 package biz.thonbecker.personal.shared.infrastructure;
 
 import biz.thonbecker.personal.shared.api.SecurityFacade;
-
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -30,8 +27,7 @@ class SecurityFacadeImpl implements SecurityFacade {
         return getAuthentication()
                 .map(auth -> auth.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
-                        .anyMatch(authority ->
-                                authority.equals("ROLE_" + role) || authority.equals(role)))
+                        .anyMatch(authority -> authority.equals("ROLE_" + role) || authority.equals(role)))
                 .orElse(false);
     }
 

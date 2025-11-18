@@ -5,19 +5,16 @@ import biz.thonbecker.personal.trivia.api.QuizResult;
 import biz.thonbecker.personal.trivia.api.QuizState;
 import biz.thonbecker.personal.trivia.api.TriviaFacade;
 import biz.thonbecker.personal.trivia.domain.*;
-
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Internal implementation of the Trivia Facade.
@@ -47,8 +44,7 @@ class TriviaFacadeImpl implements TriviaFacade {
     }
 
     @Override
-    public Quiz createTriviaQuiz(
-            String title, int questionCount, QuizDifficulty difficulty, String creatorId) {
+    public Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty, String creatorId) {
         // Input validation
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Quiz title cannot be null or empty");
@@ -73,15 +69,11 @@ class TriviaFacadeImpl implements TriviaFacade {
         Long quizId = quizIdGenerator.incrementAndGet();
         List<Question> questions = questionGenerator.generateQuestions(questionCount, difficulty);
 
-        Quiz quiz =
-                new Quiz(quizId, title, questions, DEFAULT_TIME_PER_QUESTION_SECONDS, difficulty);
+        Quiz quiz = new Quiz(quizId, title, questions, DEFAULT_TIME_PER_QUESTION_SECONDS, difficulty);
         quiz.setCreatorId(creatorId);
         quizzes.put(quizId, quiz);
 
-        log.info(
-                "Quiz created with ID: {} with {} AI-generated questions",
-                quizId,
-                questions.size());
+        log.info("Quiz created with ID: {} with {} AI-generated questions", quizId, questions.size());
         return quiz;
     }
 
@@ -117,8 +109,8 @@ class TriviaFacadeImpl implements TriviaFacade {
                 log.info("Player {} joined quiz {}", player.getName(), quizId);
 
                 // Publish event
-                eventPublisher.publishEvent(new PlayerJoinedQuizEvent(
-                        quizId, player.getId(), player.getName(), Instant.now()));
+                eventPublisher.publishEvent(
+                        new PlayerJoinedQuizEvent(quizId, player.getId(), player.getName(), Instant.now()));
             }
         }
     }
@@ -165,8 +157,7 @@ class TriviaFacadeImpl implements TriviaFacade {
     }
 
     @Override
-    public QuizState submitAnswer(
-            Long quizId, String playerId, Long questionId, int selectedOption) {
+    public QuizState submitAnswer(Long quizId, String playerId, Long questionId, int selectedOption) {
         Quiz quiz = quizzes.get(quizId);
         if (quiz == null) {
             return null;
@@ -183,9 +174,7 @@ class TriviaFacadeImpl implements TriviaFacade {
                         .ifPresent(player -> {
                             player.setScore(player.getScore() + POINTS_PER_CORRECT_ANSWER);
                             log.info(
-                                    "Player {} answered correctly! New score: {}",
-                                    player.getName(),
-                                    player.getScore());
+                                    "Player {} answered correctly! New score: {}", player.getName(), player.getScore());
                         });
             }
         }
@@ -256,10 +245,7 @@ class TriviaFacadeImpl implements TriviaFacade {
                     quiz.getDifficulty() != null ? quiz.getDifficulty().name() : "MEDIUM");
 
             quizResultRepository.save(result);
-            log.info(
-                    "Saved quiz result for player {} with score {}",
-                    player.getName(),
-                    player.getScore());
+            log.info("Saved quiz result for player {} with score {}", player.getName(), player.getScore());
         }
     }
 
@@ -331,9 +317,6 @@ class TriviaFacadeImpl implements TriviaFacade {
                 playerResults,
                 Instant.now()));
 
-        log.info(
-                "Published QuizCompletedEvent for quiz {} with winner {}",
-                quiz.getId(),
-                winner.getName());
+        log.info("Published QuizCompletedEvent for quiz {} with winner {}", quiz.getId(), winner.getName());
     }
 }

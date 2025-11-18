@@ -1,9 +1,8 @@
 package biz.thonbecker.personal.tankgame.domain;
 
+import java.time.Instant;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 @Data
 @NoArgsConstructor

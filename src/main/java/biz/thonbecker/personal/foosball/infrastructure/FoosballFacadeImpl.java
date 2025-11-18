@@ -7,17 +7,14 @@ import biz.thonbecker.personal.foosball.domain.PlayerStats;
 import biz.thonbecker.personal.foosball.domain.Team;
 import biz.thonbecker.personal.foosball.domain.TeamStats;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.GameWithPlayers;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Implementation of the Foosball facade.
@@ -107,8 +104,7 @@ class FoosballFacadeImpl implements FoosballFacade {
                 game.getWhiteTeamScore(),
                 game.getBlackTeamScore());
 
-        var gameDomain =
-                toGameDomainFromEntity(createdGame, game.getWhiteTeam(), game.getBlackTeam());
+        var gameDomain = toGameDomainFromEntity(createdGame, game.getWhiteTeam(), game.getBlackTeam());
 
         // Publish event
         String winnerTeamName = determineWinnerTeamName(gameDomain);
@@ -148,9 +144,7 @@ class FoosballFacadeImpl implements FoosballFacade {
     @Override
     public List<Game> getRecentGames() {
         log.debug("Retrieving recent games");
-        return foosballService.getRecentGames().stream()
-                .map(this::toGameDomain)
-                .collect(Collectors.toList());
+        return foosballService.getRecentGames().stream().map(this::toGameDomain).collect(Collectors.toList());
     }
 
     @Override
@@ -159,8 +153,7 @@ class FoosballFacadeImpl implements FoosballFacade {
     }
 
     // Mapper methods
-    private Player toPlayerDomain(
-            biz.thonbecker.personal.foosball.infrastructure.persistence.Player entity) {
+    private Player toPlayerDomain(biz.thonbecker.personal.foosball.infrastructure.persistence.Player entity) {
         return new Player(entity.getId().toString(), entity.getName());
     }
 
@@ -191,18 +184,11 @@ class FoosballFacadeImpl implements FoosballFacade {
     }
 
     private Game toGameDomain(GameWithPlayers gameWithPlayers) {
-        Team whiteTeam = new Team(
-                gameWithPlayers.getWhiteTeamPlayer1Name(),
-                gameWithPlayers.getWhiteTeamPlayer2Name());
-        Team blackTeam = new Team(
-                gameWithPlayers.getBlackTeamPlayer1Name(),
-                gameWithPlayers.getBlackTeamPlayer2Name());
+        Team whiteTeam = new Team(gameWithPlayers.getWhiteTeamPlayer1Name(), gameWithPlayers.getWhiteTeamPlayer2Name());
+        Team blackTeam = new Team(gameWithPlayers.getBlackTeamPlayer1Name(), gameWithPlayers.getBlackTeamPlayer2Name());
 
         var gameDomain = new Game(
-                whiteTeam,
-                blackTeam,
-                gameWithPlayers.getWhiteTeamScore(),
-                gameWithPlayers.getBlackTeamScore());
+                whiteTeam, blackTeam, gameWithPlayers.getWhiteTeamScore(), gameWithPlayers.getBlackTeamScore());
         gameDomain.setId(gameWithPlayers.getId());
         gameDomain.setPlayedAt(gameWithPlayers.getPlayedAt());
 
@@ -210,11 +196,8 @@ class FoosballFacadeImpl implements FoosballFacade {
     }
 
     private Game toGameDomainFromEntity(
-            biz.thonbecker.personal.foosball.infrastructure.persistence.Game entity,
-            Team whiteTeam,
-            Team blackTeam) {
-        var gameDomain = new Game(
-                whiteTeam, blackTeam, entity.getWhiteTeamScore(), entity.getBlackTeamScore());
+            biz.thonbecker.personal.foosball.infrastructure.persistence.Game entity, Team whiteTeam, Team blackTeam) {
+        var gameDomain = new Game(whiteTeam, blackTeam, entity.getWhiteTeamScore(), entity.getBlackTeamScore());
         gameDomain.setId(entity.getId());
         gameDomain.setPlayedAt(entity.getPlayedAt());
 
