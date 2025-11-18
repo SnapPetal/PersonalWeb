@@ -47,12 +47,15 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             + "t.tournamentType as tournamentType, t.status as status, "
             + "t.maxParticipants as maxParticipants, t.registrationStart as registrationStart, "
             + "t.registrationEnd as registrationEnd, t.startDate as startDate, "
-            + "t.endDate as endDate, t.createdBy.name as createdByName, "
+            + "t.endDate as endDate, MAX(t.createdBy.name) as createdByName, "
             + "t.createdAt as createdAt, "
             + "COUNT(r) as registrationsCount, "
-            + "COUNT(CASE WHEN r.status = 'ACTIVE' THEN r END) as activeRegistrationsCount "
+            + "COUNT(CASE WHEN r.status = 'ACTIVE' THEN 1 END) as activeRegistrationsCount "
             + "FROM Tournament t LEFT JOIN t.registrations r "
-            + "GROUP BY t.id ORDER BY t.createdAt DESC")
+            + "GROUP BY t.id, t.name, t.description, t.tournamentType, t.status, "
+            + "t.maxParticipants, t.registrationStart, t.registrationEnd, "
+            + "t.startDate, t.endDate, t.createdAt "
+            + "ORDER BY t.createdAt DESC")
     Page<TournamentSummary> findTournamentSummaries(Pageable pageable);
 
     // Search tournaments by name

@@ -4,11 +4,13 @@ import biz.thonbecker.personal.foosball.api.FoosballFacade;
 import biz.thonbecker.personal.foosball.domain.Game;
 import biz.thonbecker.personal.foosball.domain.Player;
 import biz.thonbecker.personal.foosball.domain.Team;
+import biz.thonbecker.personal.foosball.infrastructure.TournamentService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,9 +25,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class FoosballController {
 
     private final FoosballFacade foosballFacade;
+    private final TournamentService tournamentService;
 
-    public FoosballController(FoosballFacade foosballFacade) {
+    public FoosballController(FoosballFacade foosballFacade, TournamentService tournamentService) {
         this.foosballFacade = foosballFacade;
+        this.tournamentService = tournamentService;
     }
 
     @GetMapping
@@ -57,6 +61,28 @@ public class FoosballController {
     public String getRecentGames(Model model) {
         model.addAttribute("games", foosballFacade.getRecentGames());
         return "foosball-recent-games";
+    }
+
+    @GetMapping("/tournaments")
+    public String tournaments(Model model) {
+        model.addAttribute("players", foosballFacade.getAllPlayers());
+        return "foosball-tournaments";
+    }
+
+    @GetMapping("/tournaments/{id}")
+    public String tournamentDetail(@PathVariable Long id, Model model) {
+        var tournament = tournamentService.getTournamentWithRegistrations(id);
+        var bracket = tournamentService.getBracketView(id);
+        var registrations = tournamentService.getTournamentRegistrations(id);
+        var matches = tournamentService.getTournamentMatches(id);
+
+        model.addAttribute("tournament", tournament);
+        model.addAttribute("bracket", bracket);
+        model.addAttribute("registrations", registrations);
+        model.addAttribute("matches", matches);
+        model.addAttribute("players", foosballFacade.getAllPlayers());
+
+        return "foosball-tournament-detail";
     }
 
     // HTMX Fragment Endpoints

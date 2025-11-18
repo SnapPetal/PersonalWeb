@@ -8,7 +8,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,9 +37,9 @@ public class TournamentController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<TournamentSummary>> getAllTournaments(Pageable pageable) {
+    public ResponseEntity<List<TournamentSummary>> getAllTournaments(Pageable pageable) {
         var tournaments = tournamentService.getTournamentSummaries(pageable);
-        return ResponseEntity.ok(tournaments);
+        return ResponseEntity.ok(tournaments.getContent());
     }
 
     @GetMapping("/active")
