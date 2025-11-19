@@ -20,7 +20,7 @@
     <java.version>25</java.version>
     <lombok.version>1.18.42</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
-    <shedlock.version>6.10.0</shedlock.version>
+    <shedlock.version>7.0.0</shedlock.version>
     <sockjs-client.version>1.5.1</sockjs-client.version>
     <spotless.version>3.1.0</spotless.version>
     <stomp-websocket.version>2.3.4</stomp-websocket.version>
