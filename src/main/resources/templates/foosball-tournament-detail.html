@@ -288,16 +288,16 @@
                 <div class="modal-body">
                     <form id="registerForm">
                         <div class="mb-3">
-                            <label for="regPlayer1" class="form-label">Player 1</label>
+                            <label for="regPlayer1" class="form-label">Player <span class="text-danger">*</span></label>
                             <select class="form-select" id="regPlayer1" name="playerId" required>
                                 <option value="">Select Player</option>
                                 <option th:each="player : ${players}" th:value="${player.id}" th:text="${player.name}"></option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="regPlayer2" class="form-label">Player 2 (Partner) <span class="text-danger">*</span></label>
-                            <select class="form-select" id="regPlayer2" name="partnerId" required>
-                                <option value="">Select Partner</option>
+                            <label for="regPlayer2" class="form-label">Partner (Optional for 1v1)</label>
+                            <select class="form-select" id="regPlayer2" name="partnerId">
+                                <option value="">None (Singles)</option>
                                 <option th:each="player : ${players}" th:value="${player.id}" th:text="${player.name}"></option>
                             </select>
                         </div>
@@ -423,14 +423,14 @@
             const playerId = formData.get('playerId');
             const partnerId = formData.get('partnerId');
 
-            if (!playerId || !partnerId) {
-                alert('Both players are required for team registration');
+            if (!playerId) {
+                alert('Player is required');
                 return;
             }
 
             const request = {
                 playerId: parseInt(playerId),
-                partnerId: parseInt(partnerId),
+                partnerId: partnerId ? parseInt(partnerId) : null,
                 teamName: formData.get('teamName') || null,
                 seed: formData.get('seed') ? parseInt(formData.get('seed')) : null
             };
