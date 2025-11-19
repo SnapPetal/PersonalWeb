@@ -11,10 +11,19 @@ public record CreateTournamentRequest(
         @NotBlank(message = "Tournament name is required") String name,
         String description,
         @NotNull(message = "Tournament type is required") Tournament.TournamentType tournamentType,
-        @Positive(message = "Maximum participants must be positive") Integer maxParticipants,
-        @Future(message = "Registration start must be in the future") LocalDateTime registrationStart,
-        @Future(message = "Registration end must be in the future") LocalDateTime registrationEnd,
-        @Future(message = "Start date must be in the future") LocalDateTime startDate,
+
+        @Positive(message = "Maximum participants must be positive")
+        Integer maxParticipants,
+
+        @Future(message = "Registration start must be in the future")
+        LocalDateTime registrationStart,
+
+        @Future(message = "Registration end must be in the future")
+        LocalDateTime registrationEnd,
+
+        @Future(message = "Start date must be in the future")
+        LocalDateTime startDate,
+
         Tournament.TournamentSettings settings) {
     public CreateTournamentRequest {
         // Validation: registrationEnd should be after registrationStart

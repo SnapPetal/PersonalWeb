@@ -43,8 +43,7 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
         try {
             log.info("Generating {} {} questions about Financial Peace by Dave Ramsey", count, difficulty);
 
-            String promptText =
-                    """
+            String promptText = """
                 You are a financial literacy expert specializing in Dave Ramsey's Financial Peace principles.
                 Generate {count} multiple-choice trivia questions about Dave Ramsey's Financial Peace teachings.
 
