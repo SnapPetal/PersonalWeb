@@ -16,9 +16,6 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/tournaments")
-@CrossOrigin(
-        origins = {"http://localhost:3000", "http://localhost:8080"},
-        allowCredentials = "false")
 @RequiredArgsConstructor
 public class TournamentController {
 
