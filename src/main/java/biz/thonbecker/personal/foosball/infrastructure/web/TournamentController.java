@@ -193,4 +193,15 @@ public class TournamentController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/matches/{matchId}/score")
+    public ResponseEntity<TournamentMatchResponse> recordScore(
+            @PathVariable Long matchId, @Valid @RequestBody MatchScoreRequest request) {
+        log.info("Recording score for match {}: {} - {}", matchId, request.team1Score(), request.team2Score());
+
+        var match = tournamentService.recordMatchScore(matchId, request.team1Score(), request.team2Score());
+        var response = TournamentMatchResponse.fromEntity(match);
+
+        return ResponseEntity.ok(response);
+    }
 }

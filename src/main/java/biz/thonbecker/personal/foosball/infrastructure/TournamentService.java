@@ -243,11 +243,32 @@ public class TournamentService {
         var activeRegistrations = registrationRepository.findByTournamentIdAndStatusOrderBySeedAscRegistrationDateAsc(
                 tournament.getId(), TournamentRegistration.RegistrationStatus.ACTIVE);
 
+        log.info("Found {} active registrations for tournament {}", activeRegistrations.size(), tournament.getId());
+        for (var reg : activeRegistrations) {
+            log.info("  Registration: {} (ID: {}, Status: {})", reg.getDisplayName(), reg.getId(), reg.getStatus());
+        }
+
+        if (activeRegistrations.isEmpty()) {
+            log.error("No active registrations found! Cannot generate bracket.");
+            throw new IllegalStateException("No active registrations found for tournament");
+        }
+
         var algorithm = getTournamentAlgorithm(tournament.getTournamentType());
         var matches = algorithm.generateBracket(tournament, activeRegistrations);
 
+        log.info("Algorithm generated {} matches", matches.size());
+        for (var match : matches) {
+            log.info(
+                    "  Match {}-{}: {} vs {}",
+                    match.getRoundNumber(),
+                    match.getMatchNumber(),
+                    match.getTeam1() != null ? match.getTeam1().getDisplayName() : "TBD",
+                    match.getTeam2() != null ? match.getTeam2().getDisplayName() : "TBD");
+        }
+
         // Save all matches
-        matchRepository.saveAll(matches);
+        var savedMatches = matchRepository.saveAll(matches);
+        log.info("Saved {} matches to database", savedMatches.size());
 
         log.info("Generated {} matches for tournament {}", matches.size(), tournament.getId());
     }
@@ -264,7 +285,10 @@ public class TournamentService {
     }
 
     public List<BracketView> getBracketView(Long tournamentId) {
-        return matchRepository.findBracketView(tournamentId);
+        log.info("Fetching bracket view for tournament: {}", tournamentId);
+        var bracket = matchRepository.findBracketView(tournamentId);
+        log.info("Found {} matches in bracket for tournament {}", bracket.size(), tournamentId);
+        return bracket;
     }
 
     public TournamentMatch getMatchById(Long matchId) {
@@ -330,6 +354,57 @@ public class TournamentService {
         matchRepository.saveAll(updatedMatches);
 
         return match;
+    }
+
+    public TournamentMatch recordMatchScore(Long matchId, Integer team1Score, Integer team2Score) {
+        log.info("Recording score for match {}: {} - {}", matchId, team1Score, team2Score);
+
+        var match = getMatchById(matchId);
+
+        if (!match.canStart()) {
+            throw new IllegalStateException("Match is not ready to have score recorded");
+        }
+
+        if (team1Score.equals(team2Score)) {
+            throw new IllegalArgumentException("Tournament matches cannot end in a tie");
+        }
+
+        // Get the teams
+        var team1 = match.getTeam1();
+        var team2 = match.getTeam2();
+
+        // Create a game from the match
+        var game = createGameFromMatch(team1, team2, team1Score, team2Score);
+        gameRepository.save(game);
+
+        log.info("Created game {} for match {}", game.getId(), matchId);
+
+        // Complete the match with the game
+        return completeMatch(matchId, game.getId());
+    }
+
+    private Game createGameFromMatch(
+            TournamentRegistration team1, TournamentRegistration team2, Integer team1Score, Integer team2Score) {
+
+        // For singles, duplicate the player in both slots
+        var whitePlayer1 = team1.getPlayer();
+        var whitePlayer2 = team1.getPartner() != null ? team1.getPartner() : team1.getPlayer();
+
+        var blackPlayer1 = team2.getPlayer();
+        var blackPlayer2 = team2.getPartner() != null ? team2.getPartner() : team2.getPlayer();
+
+        var game = new Game(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2);
+        game.setWhiteTeamScore(team1Score);
+        game.setBlackTeamScore(team2Score);
+
+        // Determine winner
+        if (team1Score > team2Score) {
+            game.setWinner(Game.TeamColor.WHITE);
+        } else {
+            game.setWinner(Game.TeamColor.BLACK);
+        }
+
+        return game;
     }
 
     // Standings Management
