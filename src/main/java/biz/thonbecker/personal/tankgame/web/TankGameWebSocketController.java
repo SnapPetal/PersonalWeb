@@ -43,22 +43,14 @@ public class TankGameWebSocketController {
             log.info("Player {} joined game {} as tank {}", playerName, gameId, tank.getId());
 
             // Broadcast tank join info to the game topic
-            messagingTemplate.convertAndSend(
-                    "/topic/tankgame/joined/" + gameId,
-                    Map.of(
-                            "tankId",
-                            tank.getId(),
-                            "gameId",
-                            gameId,
-                            "playerName",
-                            playerName,
-                            "color",
-                            tank.getColor()));
+            Object joinPayload = Map.of(
+                    "tankId", tank.getId(), "gameId", gameId, "playerName", playerName, "color", tank.getColor());
+            messagingTemplate.convertAndSend("/topic/tankgame/joined/" + gameId, joinPayload);
 
             // Send initial progression data to the player
             PlayerProgression progression = progressionService.getOrCreateProgression(playerName, playerName);
-            messagingTemplate.convertAndSend(
-                    "/topic/tankgame/progression/" + tank.getId(), Map.of("progression", progression));
+            Object progressionPayload = Map.of("progression", progression);
+            messagingTemplate.convertAndSend("/topic/tankgame/progression/" + tank.getId(), progressionPayload);
         } catch (Exception e) {
             log.error("Error joining game: {}", e.getMessage());
             messagingTemplate.convertAndSend("/topic/tankgame/error", e.getMessage());

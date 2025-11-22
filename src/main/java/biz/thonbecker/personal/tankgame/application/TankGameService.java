@@ -339,11 +339,10 @@ public class TankGameService {
                         matchResult.getCoinsEarned());
 
                 // Broadcast progression update to the player
-                messagingTemplate.convertAndSend(
-                        "/topic/tankgame/progression/" + tank.getId(),
-                        Map.of(
-                                "progression", updatedProgression,
-                                "matchResult", matchResult));
+                Object payload = Map.of(
+                        "progression", updatedProgression,
+                        "matchResult", matchResult);
+                messagingTemplate.convertAndSend("/topic/tankgame/progression/" + tank.getId(), payload);
             } catch (Exception e) {
                 log.error("Failed to record match for {}: {}", tank.getPlayerName(), e.getMessage(), e);
             }
