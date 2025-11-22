@@ -56,7 +56,11 @@ public class ProgressionService {
         for (int i = 0; i < matchResult.getKills(); i++) {
             progression.addKill();
         }
-        progression.addDeath(); // Everyone dies once per game
+
+        // Only add death if player didn't win (winner survives)
+        if (matchResult.getPlacement() != 1) {
+            progression.addDeath();
+        }
 
         if (matchResult.getPlacement() == 1) {
             progression.addWin();
