@@ -1,6 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure.config;
 
 import biz.thonbecker.personal.foosball.infrastructure.FoosballService;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.Game;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.Player;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,46 +71,46 @@ public class DataLoader {
         // Record varied sample games with different outcomes
 
         // Close competitive games
-        foosballService.recordGame(alice, bob, charlie, diana, 5, 4);
-        foosballService.recordGame(eve, frank, grace, henry, 5, 3);
-        foosballService.recordGame(iris, jack, kate, liam, 5, 5); // Draw
+        foosballService.recordGame(alice, bob, charlie, diana, Game.TeamColor.WHITE); // 5-4 -> WHITE wins
+        foosballService.recordGame(eve, frank, grace, henry, Game.TeamColor.WHITE); // 5-3 -> WHITE wins
+        foosballService.recordGame(iris, jack, kate, liam, null); // 5-5 -> DRAW
 
         // Some dominant victories
-        foosballService.recordGame(alice, charlie, bob, diana, 5, 1);
-        foosballService.recordGame(grace, iris, eve, frank, 5, 0);
+        foosballService.recordGame(alice, charlie, bob, diana, Game.TeamColor.WHITE); // 5-1 -> WHITE wins
+        foosballService.recordGame(grace, iris, eve, frank, Game.TeamColor.WHITE); // 5-0 -> WHITE wins
 
         // Mixed matchups
-        foosballService.recordGame(bob, henry, alice, kate, 5, 4);
-        foosballService.recordGame(charlie, jack, diana, liam, 5, 3);
-        foosballService.recordGame(eve, kate, frank, iris, 5, 5); // Draw
+        foosballService.recordGame(bob, henry, alice, kate, Game.TeamColor.WHITE); // 5-4 -> WHITE wins
+        foosballService.recordGame(charlie, jack, diana, liam, Game.TeamColor.WHITE); // 5-3 -> WHITE wins
+        foosballService.recordGame(eve, kate, frank, iris, null); // 5-5 -> DRAW
 
         // Upset victories (weaker players beating stronger ones)
-        foosballService.recordGame(liam, diana, alice, bob, 5, 4);
-        foosballService.recordGame(frank, henry, charlie, grace, 5, 3);
+        foosballService.recordGame(liam, diana, alice, bob, Game.TeamColor.WHITE); // 5-4 -> WHITE wins
+        foosballService.recordGame(frank, henry, charlie, grace, Game.TeamColor.WHITE); // 5-3 -> WHITE wins
 
         // High-scoring games
-        foosballService.recordGame(alice, iris, eve, jack, 8, 6);
-        foosballService.recordGame(bob, kate, henry, liam, 7, 5);
+        foosballService.recordGame(alice, iris, eve, jack, Game.TeamColor.WHITE); // 8-6 -> WHITE wins
+        foosballService.recordGame(bob, kate, henry, liam, Game.TeamColor.WHITE); // 7-5 -> WHITE wins
 
         // Low-scoring defensive games
-        foosballService.recordGame(charlie, frank, diana, grace, 3, 1);
-        foosballService.recordGame(alice, liam, bob, iris, 2, 1);
+        foosballService.recordGame(charlie, frank, diana, grace, Game.TeamColor.WHITE); // 3-1 -> WHITE wins
+        foosballService.recordGame(alice, liam, bob, iris, Game.TeamColor.WHITE); // 2-1 -> WHITE wins
 
         // More draws for variety
-        foosballService.recordGame(eve, henry, charlie, kate, 4, 4);
-        foosballService.recordGame(frank, jack, diana, iris, 6, 6);
+        foosballService.recordGame(eve, henry, charlie, kate, null); // 4-4 -> DRAW
+        foosballService.recordGame(frank, jack, diana, iris, null); // 6-6 -> DRAW
 
         // Tournament-style progression games
-        foosballService.recordGame(alice, charlie, bob, diana, 5, 2);
-        foosballService.recordGame(eve, grace, frank, henry, 5, 3);
-        foosballService.recordGame(iris, kate, jack, liam, 5, 4);
+        foosballService.recordGame(alice, charlie, bob, diana, Game.TeamColor.WHITE); // 5-2 -> WHITE wins
+        foosballService.recordGame(eve, grace, frank, henry, Game.TeamColor.WHITE); // 5-3 -> WHITE wins
+        foosballService.recordGame(iris, kate, jack, liam, Game.TeamColor.WHITE); // 5-4 -> WHITE wins
 
         // Championship-style games
-        foosballService.recordGame(alice, eve, charlie, grace, 5, 4);
-        foosballService.recordGame(bob, iris, diana, kate, 5, 3);
+        foosballService.recordGame(alice, eve, charlie, grace, Game.TeamColor.WHITE); // 5-4 -> WHITE wins
+        foosballService.recordGame(bob, iris, diana, kate, Game.TeamColor.WHITE); // 5-3 -> WHITE wins
 
         // Final championship
-        foosballService.recordGame(alice, bob, eve, iris, 6, 5);
+        foosballService.recordGame(alice, bob, eve, iris, Game.TeamColor.WHITE); // 6-5 -> WHITE wins
 
         log.info("Sample data loaded successfully!");
         log.info("Total players: {}", foosballService.getTotalPlayers());

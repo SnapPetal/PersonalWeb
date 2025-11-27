@@ -74,13 +74,18 @@ public class FoosballRestController {
             return ResponseEntity.badRequest().build();
         }
 
+        // Determine winner from scores (scores no longer stored)
+        Game.TeamColor winner;
+        if (request.whiteTeamScore() > request.blackTeamScore()) {
+            winner = Game.TeamColor.WHITE;
+        } else if (request.blackTeamScore() > request.whiteTeamScore()) {
+            winner = Game.TeamColor.BLACK;
+        } else {
+            winner = null; // Draw
+        }
+
         final var game = foosballService.recordGame(
-                whiteTeamPlayer1,
-                whiteTeamPlayer2,
-                blackTeamPlayer1,
-                blackTeamPlayer2,
-                request.whiteTeamScore(),
-                request.blackTeamScore());
+                whiteTeamPlayer1, whiteTeamPlayer2, blackTeamPlayer1, blackTeamPlayer2, winner);
         return ResponseEntity.ok(game);
     }
 

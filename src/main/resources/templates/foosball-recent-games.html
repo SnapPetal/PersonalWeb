@@ -45,7 +45,6 @@
                   <tr>
                     <th>Players</th>
                     <th>Date</th>
-                    <th class="text-center">Score</th>
                     <th>Winner</th>
                   </tr>
                 </thead>
@@ -64,7 +63,6 @@
                       </div>
                     </td>
                     <td th:text="${game.playedAt != null ? #temporals.format(game.playedAt.atZone(T(java.time.ZoneId).of('UTC')).withZoneSameInstant(T(java.time.ZoneId).of('America/Chicago')), 'yyyy-MM-dd HH:mm z') : 'N/A'}"></td>
-                    <td class="text-center" th:text="${game.whiteTeamScore} + ' - ' + ${game.blackTeamScore}"></td>
                     <td>
                       <span th:if="${game.whiteTeamWinner}" class="badge bg-light text-dark border">White</span>
                       <span th:if="${game.blackTeamWinner}" class="badge bg-dark">Black</span>

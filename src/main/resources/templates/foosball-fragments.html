@@ -141,4 +141,39 @@
     </div>
 </div>
 
+<!-- Last Game Teams Fragment -->
+<script th:fragment="lastGameTeams" type="text/javascript">
+    (function() {
+        const whitePlayer1 = /*[[${whiteTeamPlayer1}]]*/ null;
+        const whitePlayer2 = /*[[${whiteTeamPlayer2}]]*/ null;
+        const blackPlayer1 = /*[[${blackTeamPlayer1}]]*/ null;
+        const blackPlayer2 = /*[[${blackTeamPlayer2}]]*/ null;
+
+        if (whitePlayer1) {
+            setTimeout(() => {
+                const select = document.getElementById('whiteTeamPlayer1');
+                if (select) select.value = whitePlayer1;
+            }, 100);
+        }
+        if (whitePlayer2) {
+            setTimeout(() => {
+                const select = document.getElementById('whiteTeamPlayer2');
+                if (select) select.value = whitePlayer2;
+            }, 100);
+        }
+        if (blackPlayer1) {
+            setTimeout(() => {
+                const select = document.getElementById('blackTeamPlayer1');
+                if (select) select.value = blackPlayer1;
+            }, 100);
+        }
+        if (blackPlayer2) {
+            setTimeout(() => {
+                const select = document.getElementById('blackTeamPlayer2');
+                if (select) select.value = blackPlayer2;
+            }, 100);
+        }
+    })();
+</script>
+
 </html>

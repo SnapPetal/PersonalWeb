@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="009-foosball-drop-scores" author="thonbecker">
+        <comment>Drop score columns from games table - scores no longer tracked</comment>
+
+        <!-- Drop the team stats view first -->
+        <sql>DROP VIEW IF EXISTS foosball.team_stats CASCADE;</sql>
+
+        <!-- Drop score columns -->
+        <dropColumn tableName="games" schemaName="foosball">
+            <column name="white_team_score"/>
+        </dropColumn>
+        <dropColumn tableName="games" schemaName="foosball">
+            <column name="black_team_score"/>
+        </dropColumn>
+
+        <!-- Recreate team stats view without scores -->
+        <sql><![CDATA[
+            CREATE OR REPLACE VIEW foosball.team_stats AS
+            SELECT
+                p1.id as player1_id,
+                p1.name as player1_name,
+                p2.id as player2_id,
+                p2.name as player2_name,
+                COUNT(DISTINCT g.id) as games_played_together,
+                COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p1.id AND g.white_team_player2_id = p2.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p1.id AND g.black_team_player2_id = p2.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p2.id AND g.white_team_player2_id = p1.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p2.id AND g.black_team_player2_id = p1.id) THEN 1 END) as wins,
+                (COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p1.id AND g.white_team_player2_id = p2.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p1.id AND g.black_team_player2_id = p2.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p2.id AND g.white_team_player2_id = p1.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p2.id AND g.black_team_player2_id = p1.id) THEN 1 END)) * 100.0 /
+                NULLIF(COUNT(DISTINCT g.id), 0) as win_percentage,
+                0 as avg_team_score
+            FROM foosball.players p1
+            CROSS JOIN foosball.players p2
+            LEFT JOIN foosball.games g ON (g.white_team_player1_id = p1.id AND g.white_team_player2_id = p2.id)
+                             OR (g.black_team_player1_id = p1.id AND g.black_team_player2_id = p2.id)
+                             OR (g.white_team_player1_id = p2.id AND g.white_team_player2_id = p1.id)
+                             OR (g.black_team_player1_id = p2.id AND g.black_team_player2_id = p1.id)
+            WHERE p1.id < p2.id
+            GROUP BY p1.id, p1.name, p2.id, p2.name
+            HAVING COUNT(DISTINCT g.id) > 0;
+        ]]></sql>
+
+    </changeSet>
+
+</databaseChangeLog>

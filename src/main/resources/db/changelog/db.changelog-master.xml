@@ -13,4 +13,5 @@
     <include file="classpath:db/changelog/changes/006-add-shedlock-table.xml"/>
     <include file="classpath:db/changelog/changes/007-tournament-schema.xml"/>
     <include file="classpath:db/changelog/changes/008-tankgame-progression.xml"/>
+    <include file="classpath:db/changelog/changes/009-foosball-winner-only.xml"/>
 </databaseChangeLog>

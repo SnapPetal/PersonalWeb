@@ -124,20 +124,10 @@ public class TournamentStanding {
         }
 
         Game game = match.getGame();
-        boolean isRegistrationTeam1 = match.getTeam1().equals(registration);
 
-        int teamGoals, opponentGoals;
-        if (isRegistrationTeam1) {
-            // Determine which team color this registration played as
-            boolean isWhiteTeam = matchesWhiteTeam(registration, game);
-            teamGoals = isWhiteTeam ? game.getWhiteTeamScore() : game.getBlackTeamScore();
-            opponentGoals = isWhiteTeam ? game.getBlackTeamScore() : game.getWhiteTeamScore();
-        } else {
-            // This registration is team2
-            boolean isWhiteTeam = matchesWhiteTeam(registration, game);
-            teamGoals = isWhiteTeam ? game.getWhiteTeamScore() : game.getBlackTeamScore();
-            opponentGoals = isWhiteTeam ? game.getBlackTeamScore() : game.getWhiteTeamScore();
-        }
+        // Scores no longer tracked - goals for/against set to 0
+        int teamGoals = 0;
+        int opponentGoals = 0;
 
         if (match.getWinner() != null) {
             if (match.getWinner().equals(registration)) {

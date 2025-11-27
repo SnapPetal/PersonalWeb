@@ -96,13 +96,18 @@ class FoosballFacadeImpl implements FoosballFacade {
                 .orElseGet(
                         () -> foosballService.createPlayer(game.getBlackTeam().getPlayer2()));
 
-        var createdGame = foosballService.recordGame(
-                whitePlayer1,
-                whitePlayer2,
-                blackPlayer1,
-                blackPlayer2,
-                game.getWhiteTeamScore(),
-                game.getBlackTeamScore());
+        // Convert GameResult to TeamColor
+        var winner = game.getResult() != null
+                ? switch (game.getResult()) {
+                    case WHITE_TEAM_WIN ->
+                        biz.thonbecker.personal.foosball.infrastructure.persistence.Game.TeamColor.WHITE;
+                    case BLACK_TEAM_WIN ->
+                        biz.thonbecker.personal.foosball.infrastructure.persistence.Game.TeamColor.BLACK;
+                    case DRAW -> null;
+                }
+                : null;
+
+        var createdGame = foosballService.recordGame(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2, winner);
 
         var gameDomain = toGameDomainFromEntity(createdGame, game.getWhiteTeam(), game.getBlackTeam());
 
@@ -112,10 +117,10 @@ class FoosballFacadeImpl implements FoosballFacade {
                 gameDomain.getId(),
                 gameDomain.getWhiteTeam().getPlayer1() + " & "
                         + gameDomain.getWhiteTeam().getPlayer2(),
-                gameDomain.getWhiteTeamScore(),
+                0, // Scores not tracked anymore
                 gameDomain.getBlackTeam().getPlayer1() + " & "
                         + gameDomain.getBlackTeam().getPlayer2(),
-                gameDomain.getBlackTeamScore(),
+                0, // Scores not tracked anymore
                 gameDomain.getResult(),
                 winnerTeamName,
                 Instant.now()));
@@ -187,8 +192,8 @@ class FoosballFacadeImpl implements FoosballFacade {
         Team whiteTeam = new Team(gameWithPlayers.getWhiteTeamPlayer1Name(), gameWithPlayers.getWhiteTeamPlayer2Name());
         Team blackTeam = new Team(gameWithPlayers.getBlackTeamPlayer1Name(), gameWithPlayers.getBlackTeamPlayer2Name());
 
-        var gameDomain = new Game(
-                whiteTeam, blackTeam, gameWithPlayers.getWhiteTeamScore(), gameWithPlayers.getBlackTeamScore());
+        var result = convertTeamColorToGameResult(gameWithPlayers.getWinner());
+        var gameDomain = new Game(whiteTeam, blackTeam, result);
         gameDomain.setId(gameWithPlayers.getId());
         gameDomain.setPlayedAt(gameWithPlayers.getPlayedAt());
 
@@ -197,10 +202,22 @@ class FoosballFacadeImpl implements FoosballFacade {
 
     private Game toGameDomainFromEntity(
             biz.thonbecker.personal.foosball.infrastructure.persistence.Game entity, Team whiteTeam, Team blackTeam) {
-        var gameDomain = new Game(whiteTeam, blackTeam, entity.getWhiteTeamScore(), entity.getBlackTeamScore());
+        var result = convertTeamColorToGameResult(entity.getWinner());
+        var gameDomain = new Game(whiteTeam, blackTeam, result);
         gameDomain.setId(entity.getId());
         gameDomain.setPlayedAt(entity.getPlayedAt());
 
         return gameDomain;
+    }
+
+    private biz.thonbecker.personal.foosball.domain.GameResult convertTeamColorToGameResult(
+            biz.thonbecker.personal.foosball.infrastructure.persistence.Game.TeamColor winner) {
+        if (winner == null) {
+            return biz.thonbecker.personal.foosball.domain.GameResult.DRAW;
+        }
+        return switch (winner) {
+            case WHITE -> biz.thonbecker.personal.foosball.domain.GameResult.WHITE_TEAM_WIN;
+            case BLACK -> biz.thonbecker.personal.foosball.domain.GameResult.BLACK_TEAM_WIN;
+        };
     }
 }

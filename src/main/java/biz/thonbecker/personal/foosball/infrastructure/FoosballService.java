@@ -62,10 +62,9 @@ public class FoosballService {
             Player whiteTeamPlayer2,
             Player blackTeamPlayer1,
             Player blackTeamPlayer2,
-            int whiteTeamScore,
-            int blackTeamScore) {
+            Game.TeamColor winner) {
         final var game = new Game(whiteTeamPlayer1, whiteTeamPlayer2, blackTeamPlayer1, blackTeamPlayer2);
-        game.setScores(whiteTeamScore, blackTeamScore);
+        game.setWinner(winner);
         return gameRepository.save(game);
     }
 

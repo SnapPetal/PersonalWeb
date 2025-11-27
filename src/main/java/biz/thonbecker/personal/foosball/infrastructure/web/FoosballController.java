@@ -109,6 +109,23 @@ public class FoosballController {
         return "foosball-fragments :: playerOptions";
     }
 
+    @GetMapping("/fragments/last-game-teams")
+    public String getLastGameTeamsFragment(Model model) {
+        try {
+            var recentGames = foosballFacade.getRecentGames();
+            if (!recentGames.isEmpty()) {
+                var lastGame = recentGames.get(0);
+                model.addAttribute("whiteTeamPlayer1", lastGame.getWhiteTeam().getPlayer1());
+                model.addAttribute("whiteTeamPlayer2", lastGame.getWhiteTeam().getPlayer2());
+                model.addAttribute("blackTeamPlayer1", lastGame.getBlackTeam().getPlayer1());
+                model.addAttribute("blackTeamPlayer2", lastGame.getBlackTeam().getPlayer2());
+            }
+        } catch (Exception e) {
+            // If service is unavailable or no games, return empty
+        }
+        return "foosball-fragments :: lastGameTeams";
+    }
+
     @GetMapping("/fragments/player-table")
     public String getPlayerTableFragment(Model model) {
         model.addAttribute("players", foosballFacade.getAllPlayers());
@@ -141,8 +158,7 @@ public class FoosballController {
             @RequestParam String whiteTeamPlayer2,
             @RequestParam String blackTeamPlayer1,
             @RequestParam String blackTeamPlayer2,
-            @RequestParam int whiteTeamScore,
-            @RequestParam int blackTeamScore,
+            @RequestParam(required = false) String winner,
             @RequestParam(required = false) String notes,
             Model model) {
 
@@ -160,15 +176,33 @@ public class FoosballController {
                 return "foosball-fragments :: alert";
             }
 
-            if (whiteTeamScore < 0 || blackTeamScore < 0) {
-                model.addAttribute("error", "Scores must be non-negative.");
+            if (winner == null || winner.isEmpty()) {
+                model.addAttribute("error", "Please select a winner.");
                 return "foosball-fragments :: alert";
             }
 
             // Create game using new domain model
             Team whiteTeam = new Team(whiteTeamPlayer1, whiteTeamPlayer2);
             Team blackTeam = new Team(blackTeamPlayer1, blackTeamPlayer2);
-            Game game = new Game(whiteTeam, blackTeam, whiteTeamScore, blackTeamScore);
+
+            // Map winner string to GameResult
+            biz.thonbecker.personal.foosball.domain.GameResult result;
+            switch (winner) {
+                case "TEAM1":
+                    result = biz.thonbecker.personal.foosball.domain.GameResult.WHITE_TEAM_WIN;
+                    break;
+                case "TEAM2":
+                    result = biz.thonbecker.personal.foosball.domain.GameResult.BLACK_TEAM_WIN;
+                    break;
+                case "DRAW":
+                    result = biz.thonbecker.personal.foosball.domain.GameResult.DRAW;
+                    break;
+                default:
+                    model.addAttribute("error", "Invalid winner value.");
+                    return "foosball-fragments :: alert";
+            }
+
+            Game game = new Game(whiteTeam, blackTeam, result);
 
             Game createdGame = foosballFacade.createGame(game);
             if (createdGame != null) {

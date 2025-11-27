@@ -34,15 +34,6 @@ public interface GameRepository extends CrudRepository<Game, Long> {
             + "ORDER BY g.playedAt DESC LIMIT 10")
     List<GameWithPlayers> findRecentGames();
 
-    @RestResource(path = "by-score", rel = "by-score")
-    @Query("SELECT g FROM Game g WHERE g.whiteTeamScore = :score OR g.blackTeamScore = :score ORDER BY g.playedAt DESC")
-    List<Game> findByScore(@Param("score") Integer score);
-
-    @RestResource(path = "high-scoring", rel = "high-scoring")
-    @Query(
-            "SELECT g FROM Game g WHERE g.whiteTeamScore + g.blackTeamScore >= :minTotalScore ORDER BY (g.whiteTeamScore + g.blackTeamScore) DESC")
-    List<Game> findHighScoringGames(@Param("minTotalScore") Integer minTotalScore);
-
     // Statistics queries
     @Query("SELECT COUNT(g) FROM Game g WHERE g.winner IS NOT NULL")
     Long countGamesWithWinner();
@@ -50,14 +41,18 @@ public interface GameRepository extends CrudRepository<Game, Long> {
     @Query("SELECT COUNT(g) FROM Game g WHERE g.winner IS NULL")
     Long countDraws();
 
-    @Query("SELECT AVG(g.whiteTeamScore + g.blackTeamScore) FROM Game g")
-    Double getAverageTotalScore();
+    // Score statistics - no longer tracked, returning 0
+    default Double getAverageTotalScore() {
+        return 0.0;
+    }
 
-    @Query("SELECT MAX(g.whiteTeamScore + g.blackTeamScore) FROM Game g")
-    Integer getHighestTotalScore();
+    default Integer getHighestTotalScore() {
+        return 0;
+    }
 
-    @Query("SELECT MIN(g.whiteTeamScore + g.blackTeamScore) FROM Game g")
-    Integer getLowestTotalScore();
+    default Integer getLowestTotalScore() {
+        return 0;
+    }
 
     @Override
     @RestResource(exported = false)

@@ -394,14 +394,14 @@ public class TournamentService {
         var blackPlayer2 = team2.getPartner() != null ? team2.getPartner() : team2.getPlayer();
 
         var game = new Game(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2);
-        game.setWhiteTeamScore(team1Score);
-        game.setBlackTeamScore(team2Score);
 
-        // Determine winner
+        // Determine winner from scores (scores no longer stored)
         if (team1Score > team2Score) {
             game.setWinner(Game.TeamColor.WHITE);
-        } else {
+        } else if (team2Score > team1Score) {
             game.setWinner(Game.TeamColor.BLACK);
+        } else {
+            game.setWinner(null); // Draw
         }
 
         return game;

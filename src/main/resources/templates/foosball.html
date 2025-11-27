@@ -226,6 +226,10 @@
                     <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div id="lastGameScript"
+                         hx-get="/foosball/fragments/last-game-teams"
+                         hx-trigger="load"
+                         hx-swap="innerHTML"></div>
                     <form id="addGameForm"
                           hx-post="/foosball/htmx/games"
                           hx-target="#main-alerts"
@@ -272,10 +276,6 @@
                                             <option value="">Select Player...</option>
                                         </select>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="whiteTeamScore" class="form-label">Score</label>
-                                        <input type="number" class="form-control" id="whiteTeamScore" name="whiteTeamScore" min="0" required>
-                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -307,16 +307,16 @@
                                             <option value="">Select Player...</option>
                                         </select>
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="blackTeamScore" class="form-label">Score</label>
-                                        <input type="number" class="form-control" id="blackTeamScore" name="blackTeamScore" min="0" required>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="gameNotes" class="form-label">Notes (Optional)</label>
-                            <textarea class="form-control" id="gameNotes" name="notes" rows="3"></textarea>
+                            <label for="winner" class="form-label">Winner</label>
+                            <select class="form-select" id="winner" name="winner" required>
+                                <option value="">Select Winner...</option>
+                                <option value="TEAM1">Team 1</option>
+                                <option value="TEAM2">Team 2</option>
+                            </select>
                         </div>
                     </form>
                 </div>

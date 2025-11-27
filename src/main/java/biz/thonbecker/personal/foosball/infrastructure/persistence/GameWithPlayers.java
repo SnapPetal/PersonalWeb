@@ -6,15 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 public interface GameWithPlayers {
     Long getId();
 
-    Integer getWhiteTeamScore();
-
-    Integer getBlackTeamScore();
-
     Game.TeamColor getWinner();
 
     LocalDateTime getPlayedAt();
-
-    String getNotes();
 
     @Value("#{target.whiteTeamPlayer1.name}")
     String getWhiteTeamPlayer1Name();

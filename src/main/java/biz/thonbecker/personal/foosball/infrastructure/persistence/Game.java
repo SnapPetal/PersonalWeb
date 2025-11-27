@@ -2,7 +2,6 @@ package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.*;
@@ -47,14 +46,6 @@ public class Game {
     @JsonBackReference
     private Player blackTeamPlayer2;
 
-    @Min(value = 0, message = "White team score cannot be negative")
-    @Column(name = "white_team_score", nullable = false)
-    private Integer whiteTeamScore = 0;
-
-    @Min(value = 0, message = "Black team score cannot be negative")
-    @Column(name = "black_team_score", nullable = false)
-    private Integer blackTeamScore = 0;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "winner", length = 10)
     private TeamColor winner;
@@ -79,20 +70,8 @@ public class Game {
     }
 
     // Business logic methods
-    public void setScores(int whiteTeamScore, int blackTeamScore) {
-        this.whiteTeamScore = whiteTeamScore;
-        this.blackTeamScore = blackTeamScore;
-        determineWinner();
-    }
-
-    private void determineWinner() {
-        if (whiteTeamScore > blackTeamScore) {
-            this.winner = TeamColor.WHITE;
-        } else if (blackTeamScore > whiteTeamScore) {
-            this.winner = TeamColor.BLACK;
-        } else {
-            this.winner = null; // Draw
-        }
+    public void setWinner(TeamColor winner) {
+        this.winner = winner;
     }
 
     public boolean isDraw() {
