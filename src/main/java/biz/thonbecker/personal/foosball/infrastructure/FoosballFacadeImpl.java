@@ -72,6 +72,9 @@ class FoosballFacadeImpl implements FoosballFacade {
         if (game.getWhiteTeam() == null || game.getBlackTeam() == null) {
             throw new IllegalArgumentException("Both teams must be specified");
         }
+        if (game.getResult() == null) {
+            throw new IllegalArgumentException("Game result must be specified - draws are not allowed");
+        }
 
         log.info(
                 "Creating game: {} vs {}",
@@ -97,14 +100,13 @@ class FoosballFacadeImpl implements FoosballFacade {
                         () -> foosballService.createPlayer(game.getBlackTeam().getPlayer2()));
 
         // Convert GameResult to TeamColor
-        var winner = game.getResult() != null
-                ? switch (game.getResult()) {
+        var winner =
+                switch (game.getResult()) {
                     case WHITE_TEAM_WIN ->
                         biz.thonbecker.personal.foosball.infrastructure.persistence.Game.TeamColor.WHITE;
                     case BLACK_TEAM_WIN ->
                         biz.thonbecker.personal.foosball.infrastructure.persistence.Game.TeamColor.BLACK;
-                }
-                : null;
+                };
 
         var createdGame = foosballService.recordGame(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2, winner);
 

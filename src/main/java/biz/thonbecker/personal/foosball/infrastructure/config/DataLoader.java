@@ -96,9 +96,9 @@ public class DataLoader {
         foosballService.recordGame(charlie, frank, diana, grace, Game.TeamColor.WHITE); // 3-1 -> WHITE wins
         foosballService.recordGame(alice, liam, bob, iris, Game.TeamColor.WHITE); // 2-1 -> WHITE wins
 
-        // More draws for variety
-        foosballService.recordGame(eve, henry, charlie, kate, null); // 4-4 -> DRAW
-        foosballService.recordGame(frank, jack, diana, iris, null); // 6-6 -> DRAW
+        // Close games for variety
+        foosballService.recordGame(eve, henry, charlie, kate, Game.TeamColor.BLACK); // 4-5 -> BLACK wins
+        foosballService.recordGame(frank, jack, diana, iris, Game.TeamColor.WHITE); // 6-5 -> WHITE wins
 
         // Tournament-style progression games
         foosballService.recordGame(alice, charlie, bob, diana, Game.TeamColor.WHITE); // 5-2 -> WHITE wins

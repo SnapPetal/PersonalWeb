@@ -3,7 +3,7 @@ package biz.thonbecker.personal.foosball.infrastructure.persistence;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -46,13 +46,14 @@ public class Game {
     @JsonBackReference
     private Player blackTeamPlayer2;
 
+    @NotNull(message = "Winner is required")
     @Enumerated(EnumType.STRING)
-    @Column(name = "winner", length = 10)
+    @Column(name = "winner", length = 10, nullable = false)
     private TeamColor winner;
 
     @CreatedDate
     @Column(name = "played_at", nullable = false, updatable = false)
-    private LocalDateTime playedAt;
+    private Instant playedAt;
 
     public enum TeamColor {
         WHITE,
@@ -68,11 +69,10 @@ public class Game {
 
     // Business logic methods
     public void setWinner(TeamColor winner) {
+        if (winner == null) {
+            throw new IllegalArgumentException("Winner cannot be null - draws are not allowed");
+        }
         this.winner = winner;
-    }
-
-    public boolean isDraw() {
-        return winner == null;
     }
 
     public boolean isWhiteTeamWinner() {

@@ -15,4 +15,5 @@
     <include file="classpath:db/changelog/changes/008-tankgame-progression.xml"/>
     <include file="classpath:db/changelog/changes/009-foosball-winner-only.xml"/>
     <include file="classpath:db/changelog/changes/010-drop-notes-column.xml"/>
+    <include file="classpath:db/changelog/changes/011-remove-draw-games.xml"/>
 </databaseChangeLog>

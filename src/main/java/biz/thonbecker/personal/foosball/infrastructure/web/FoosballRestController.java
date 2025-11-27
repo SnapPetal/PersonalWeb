@@ -161,7 +161,6 @@ public class FoosballRestController {
                 Map.entry("totalGames", foosballService.getTotalGames()),
                 Map.entry("totalPlayers", foosballService.getTotalPlayers()),
                 Map.entry("gamesWithWinner", foosballService.getGamesWithWinner()),
-                Map.entry("draws", foosballService.getDraws()),
                 Map.entry("averageTotalScore", foosballService.getAverageTotalScore()),
                 Map.entry("highestTotalScore", foosballService.getHighestTotalScore()),
                 Map.entry("lowestTotalScore", foosballService.getLowestTotalScore()));

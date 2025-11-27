@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import org.springframework.beans.factory.annotation.Value;
 
 public interface GameWithPlayers {
@@ -8,7 +8,7 @@ public interface GameWithPlayers {
 
     Game.TeamColor getWinner();
 
-    LocalDateTime getPlayedAt();
+    Instant getPlayedAt();
 
     @Value("#{target.whiteTeamPlayer1.name}")
     String getWhiteTeamPlayer1Name();

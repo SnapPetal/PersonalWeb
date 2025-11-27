@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.foosball.domain;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,10 +15,11 @@ public class Game {
     private Team whiteTeam;
     private Team blackTeam;
     private GameResult result;
-    private LocalDateTime playedAt;
+    private Instant playedAt;
 
     /**
      * Creates a new game with the specified teams.
+     * Note: A result must be set after creation - draws are not allowed.
      *
      * @param whiteTeam The white team
      * @param blackTeam The black team
@@ -32,7 +33,6 @@ public class Game {
         }
         this.whiteTeam = whiteTeam;
         this.blackTeam = blackTeam;
-        this.result = null;
     }
 
     /**
@@ -40,23 +40,40 @@ public class Game {
      *
      * @param whiteTeam White team
      * @param blackTeam Black team
-     * @param result The game result
+     * @param result The game result (cannot be null)
      */
     public Game(Team whiteTeam, Team blackTeam, GameResult result) {
         this(whiteTeam, blackTeam);
+        if (result == null) {
+            throw new IllegalArgumentException("Game result cannot be null - draws are not allowed");
+        }
         this.result = result;
     }
 
     /**
-     * Returns the winning team name or "Draw" if no winner.
+     * Sets the game result.
+     *
+     * @param result The game result (cannot be null)
+     */
+    public void setResult(GameResult result) {
+        if (result == null) {
+            throw new IllegalArgumentException("Game result cannot be null - draws are not allowed");
+        }
+        this.result = result;
+    }
+
+    /**
+     * Returns the winning team name.
      *
      * @return Winner description
      */
     public String getWinner() {
+        if (result == null) {
+            throw new IllegalStateException("Game result has not been set");
+        }
         return switch (result) {
             case WHITE_TEAM_WIN -> "White Team";
             case BLACK_TEAM_WIN -> "Black Team";
-            default -> "Draw";
         };
     }
 }

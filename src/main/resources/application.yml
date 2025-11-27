@@ -28,6 +28,8 @@ spring:
       hibernate:
         format_sql: true
         default_schema: trivia
+        jdbc:
+          time_zone: UTC
 
   # Spring AI Bedrock Configuration
   ai:

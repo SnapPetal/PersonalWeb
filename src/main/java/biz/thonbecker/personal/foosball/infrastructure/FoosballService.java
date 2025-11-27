@@ -145,10 +145,6 @@ public class FoosballService {
         return gameRepository.countGamesWithWinner();
     }
 
-    public Long getDraws() {
-        return gameRepository.countDraws();
-    }
-
     public Double getAverageTotalScore() {
         return gameRepository.getAverageTotalScore();
     }

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="011-remove-draw-games" author="thonbecker">
+        <comment>Delete games with null winners (draws) and make winner column NOT NULL</comment>
+
+        <!-- Delete any games where winner is null (draw games) -->
+        <delete tableName="games" schemaName="foosball">
+            <where>winner IS NULL</where>
+        </delete>
+
+        <!-- Make winner column NOT NULL -->
+        <addNotNullConstraint
+            tableName="games"
+            schemaName="foosball"
+            columnName="winner"
+            columnDataType="VARCHAR(10)"/>
+
+    </changeSet>
+
+</databaseChangeLog>

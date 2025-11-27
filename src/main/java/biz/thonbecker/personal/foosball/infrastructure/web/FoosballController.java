@@ -160,7 +160,7 @@ public class FoosballController {
             @RequestParam String whiteTeamPlayer2,
             @RequestParam String blackTeamPlayer1,
             @RequestParam String blackTeamPlayer2,
-            @RequestParam(required = false) String winner,
+            @RequestParam String winner,
             Model model) {
 
         try {
