@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.trivia.infrastructure;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,7 +38,7 @@ public class QuizResultEntity {
     private Integer correctAnswers;
 
     @Column(nullable = false)
-    private LocalDateTime completedAt;
+    private Instant completedAt;
 
     @Column(nullable = false)
     private Boolean isWinner;

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
@@ -49,16 +49,16 @@ public class Tournament {
     private Integer maxParticipants;
 
     @Column(name = "registration_start")
-    private LocalDateTime registrationStart;
+    private Instant registrationStart;
 
     @Column(name = "registration_end")
-    private LocalDateTime registrationEnd;
+    private Instant registrationEnd;
 
     @Column(name = "start_date")
-    private LocalDateTime startDate;
+    private Instant startDate;
 
     @Column(name = "end_date")
-    private LocalDateTime endDate;
+    private Instant endDate;
 
     @NotNull(message = "Tournament creator is required")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -71,11 +71,11 @@ public class Tournament {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     // Relationships
     @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -119,7 +119,7 @@ public class Tournament {
 
     // Business logic methods
     public boolean isRegistrationOpen() {
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
         return status == TournamentStatus.REGISTRATION_OPEN
                 && (registrationStart == null || !now.isBefore(registrationStart))
                 && (registrationEnd == null || !now.isAfter(registrationEnd));
@@ -164,7 +164,7 @@ public class Tournament {
     public void complete() {
         if (status == TournamentStatus.IN_PROGRESS) {
             this.status = TournamentStatus.COMPLETED;
-            this.endDate = LocalDateTime.now();
+            this.endDate = Instant.now();
         }
     }
 

@@ -6,7 +6,6 @@ import biz.thonbecker.personal.trivia.api.QuizState;
 import biz.thonbecker.personal.trivia.api.TriviaFacade;
 import biz.thonbecker.personal.trivia.domain.*;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -240,7 +239,7 @@ class TriviaFacadeImpl implements TriviaFacade {
                     player.getScore(),
                     quiz.getQuestions().size(),
                     correctAnswers,
-                    LocalDateTime.now(),
+                    Instant.now(),
                     player.getId().equals(winner.getId()),
                     quiz.getDifficulty() != null ? quiz.getDifficulty().name() : "MEDIUM");
 

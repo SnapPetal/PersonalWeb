@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -24,7 +24,7 @@ public interface GameRepository extends CrudRepository<Game, Long> {
 
     @RestResource(path = "by-date-range", rel = "by-date-range")
     @Query("SELECT g FROM Game g WHERE g.playedAt BETWEEN :startDate AND :endDate ORDER BY g.playedAt DESC")
-    List<Game> findByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+    List<Game> findByDateRange(@Param("startDate") Instant startDate, @Param("endDate") Instant endDate);
 
     @RestResource(path = "recent", rel = "recent")
     @Query("SELECT g FROM Game g " + "LEFT JOIN FETCH g.whiteTeamPlayer1 "
@@ -73,5 +73,5 @@ public interface GameRepository extends CrudRepository<Game, Long> {
     @Modifying
     @Transactional
     @Query("DELETE FROM Game g WHERE g.playedAt < :ninetyDaysAgo")
-    int deleteGamesOlderThan(@Param("ninetyDaysAgo") LocalDateTime ninetyDaysAgo);
+    int deleteGamesOlderThan(@Param("ninetyDaysAgo") Instant ninetyDaysAgo);
 }

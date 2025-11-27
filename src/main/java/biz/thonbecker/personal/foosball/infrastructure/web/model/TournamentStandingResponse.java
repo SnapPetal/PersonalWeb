@@ -2,7 +2,7 @@ package biz.thonbecker.personal.foosball.infrastructure.web.model;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentStanding;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record TournamentStandingResponse(
         Long id,
@@ -22,7 +22,7 @@ public record TournamentStandingResponse(
         Double goalsPerGame,
         String form,
         String summary,
-        LocalDateTime updatedAt) {
+        Instant updatedAt) {
     public static TournamentStandingResponse fromEntity(TournamentStanding standing) {
         return new TournamentStandingResponse(
                 standing.getId(),

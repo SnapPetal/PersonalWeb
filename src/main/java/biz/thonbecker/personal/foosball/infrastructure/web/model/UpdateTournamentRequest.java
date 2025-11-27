@@ -3,7 +3,7 @@ package biz.thonbecker.personal.foosball.infrastructure.web.model;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.Tournament;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Positive;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record UpdateTournamentRequest(
         String name,
@@ -14,13 +14,13 @@ public record UpdateTournamentRequest(
         Integer maxParticipants,
 
         @Future(message = "Registration start must be in the future")
-        LocalDateTime registrationStart,
+        Instant registrationStart,
 
         @Future(message = "Registration end must be in the future")
-        LocalDateTime registrationEnd,
+        Instant registrationEnd,
 
         @Future(message = "Start date must be in the future")
-        LocalDateTime startDate,
+        Instant startDate,
 
         Tournament.TournamentSettings settings) {
     public UpdateTournamentRequest {

@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Projection for tournament summary information
@@ -18,17 +18,17 @@ public interface TournamentSummary {
 
     Integer getMaxParticipants();
 
-    LocalDateTime getRegistrationStart();
+    Instant getRegistrationStart();
 
-    LocalDateTime getRegistrationEnd();
+    Instant getRegistrationEnd();
 
-    LocalDateTime getStartDate();
+    Instant getStartDate();
 
-    LocalDateTime getEndDate();
+    Instant getEndDate();
 
     String getCreatedByName();
 
-    LocalDateTime getCreatedAt();
+    Instant getCreatedAt();
 
     Integer getRegistrationsCount();
 

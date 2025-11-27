@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure.web.model;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentRegistration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record TournamentRegistrationResponse(
         Long id,
@@ -11,7 +11,7 @@ public record TournamentRegistrationResponse(
         String partnerName,
         String teamName,
         String displayName,
-        LocalDateTime registrationDate,
+        Instant registrationDate,
         Integer seed,
         TournamentRegistration.RegistrationStatus status,
         boolean isTeam,

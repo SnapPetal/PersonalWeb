@@ -3,7 +3,7 @@ package biz.thonbecker.personal.foosball.infrastructure.persistence;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -49,7 +49,7 @@ public class TournamentRegistration {
 
     @CreatedDate
     @Column(name = "registration_date", nullable = false, updatable = false)
-    private LocalDateTime registrationDate;
+    private Instant registrationDate;
 
     @Column(name = "seed")
     private Integer seed;

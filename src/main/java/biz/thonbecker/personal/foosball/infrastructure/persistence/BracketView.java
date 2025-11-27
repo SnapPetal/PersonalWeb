@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Projection for tournament bracket information
@@ -22,9 +22,9 @@ public interface BracketView {
 
     TournamentMatch.MatchStatus getStatus();
 
-    LocalDateTime getScheduledTime();
+    Instant getScheduledTime();
 
-    LocalDateTime getCompletedAt();
+    Instant getCompletedAt();
 
     Long getNextMatchId();
 

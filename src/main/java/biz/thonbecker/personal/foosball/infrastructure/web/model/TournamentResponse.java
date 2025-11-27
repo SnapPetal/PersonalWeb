@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure.web.model;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.Tournament;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record TournamentResponse(
@@ -11,14 +11,14 @@ public record TournamentResponse(
         Tournament.TournamentType tournamentType,
         Tournament.TournamentStatus status,
         Integer maxParticipants,
-        LocalDateTime registrationStart,
-        LocalDateTime registrationEnd,
-        LocalDateTime startDate,
-        LocalDateTime endDate,
+        Instant registrationStart,
+        Instant registrationEnd,
+        Instant startDate,
+        Instant endDate,
         String createdBy,
         Tournament.TournamentSettings settings,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt,
+        Instant createdAt,
+        Instant updatedAt,
         int registrationsCount,
         int activeRegistrationsCount,
         boolean canRegister,

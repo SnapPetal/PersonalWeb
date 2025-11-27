@@ -1,7 +1,8 @@
 package biz.thonbecker.personal.foosball.infrastructure;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.GameRepository;
-import java.time.LocalDate;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -18,8 +19,8 @@ public class CleanupService {
     @SchedulerLock(name = "cleanupOldGames", lockAtLeastFor = "PT5M", lockAtMostFor = "PT1H")
     public void cleanupOldGames() {
         log.info("Starting cleanup of old games.");
-        final var ninetyDaysAgo = LocalDate.now().minusDays(90);
-        final var deletedGamesCount = gameRepository.deleteGamesOlderThan(ninetyDaysAgo.atStartOfDay());
+        final var ninetyDaysAgo = Instant.now().minus(90, ChronoUnit.DAYS);
+        final var deletedGamesCount = gameRepository.deleteGamesOlderThan(ninetyDaysAgo);
         log.info("Finished cleanup of old games. Deleted {} games.", deletedGamesCount);
     }
 }

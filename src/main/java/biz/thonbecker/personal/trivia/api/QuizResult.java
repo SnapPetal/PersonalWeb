@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.trivia.api;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,7 +21,7 @@ public class QuizResult {
     private int score;
     private int totalQuestions;
     private int correctAnswers;
-    private LocalDateTime completedAt;
+    private Instant completedAt;
     private boolean isWinner;
     private String difficulty;
 }

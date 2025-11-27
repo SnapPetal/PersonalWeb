@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure.web.model;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentMatch;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record TournamentMatchResponse(
         Long id,
@@ -15,8 +15,8 @@ public record TournamentMatchResponse(
         String winnerDisplayName,
         Long gameId,
         TournamentMatch.MatchStatus status,
-        LocalDateTime scheduledTime,
-        LocalDateTime completedAt,
+        Instant scheduledTime,
+        Instant completedAt,
         String displayName,
         String matchDescription,
         boolean isReady,

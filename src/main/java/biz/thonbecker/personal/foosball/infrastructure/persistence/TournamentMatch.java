@@ -3,7 +3,7 @@ package biz.thonbecker.personal.foosball.infrastructure.persistence;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -68,10 +68,10 @@ public class TournamentMatch {
     private MatchStatus status = MatchStatus.PENDING;
 
     @Column(name = "scheduled_time")
-    private LocalDateTime scheduledTime;
+    private Instant scheduledTime;
 
     @Column(name = "completed_at")
-    private LocalDateTime completedAt;
+    private Instant completedAt;
 
     // Navigation for bracket progression
     @ManyToOne(fetch = FetchType.LAZY)
@@ -84,7 +84,7 @@ public class TournamentMatch {
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     // Enums
     public enum MatchStatus {
@@ -159,7 +159,7 @@ public class TournamentMatch {
         if (gameResult != null && gameResult.getWinner() != null) {
             this.game = gameResult;
             this.status = MatchStatus.COMPLETED;
-            this.completedAt = LocalDateTime.now();
+            this.completedAt = Instant.now();
 
             // Determine winner based on game result
             determineWinner(gameResult);
@@ -170,7 +170,7 @@ public class TournamentMatch {
         if (walkoverWinner != null && (walkoverWinner.equals(team1) || walkoverWinner.equals(team2))) {
             this.winner = walkoverWinner;
             this.status = MatchStatus.WALKOVER;
-            this.completedAt = LocalDateTime.now();
+            this.completedAt = Instant.now();
         }
     }
 

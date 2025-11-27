@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -30,11 +30,11 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     @Query("SELECT t FROM Tournament t WHERE t.status = 'REGISTRATION_OPEN' "
             + "AND (t.registrationStart IS NULL OR t.registrationStart <= :now) "
             + "AND (t.registrationEnd IS NULL OR t.registrationEnd > :now)")
-    List<Tournament> findTournamentsWithOpenRegistration(@Param("now") LocalDateTime now);
+    List<Tournament> findTournamentsWithOpenRegistration(@Param("now") Instant now);
 
     // Find upcoming tournaments
     @Query("SELECT t FROM Tournament t WHERE t.startDate > :now ORDER BY t.startDate ASC")
-    List<Tournament> findUpcomingTournaments(@Param("now") LocalDateTime now);
+    List<Tournament> findUpcomingTournaments(@Param("now") Instant now);
 
     // Find tournaments a player is registered for
     @Query("SELECT DISTINCT t FROM Tournament t JOIN t.registrations r "
