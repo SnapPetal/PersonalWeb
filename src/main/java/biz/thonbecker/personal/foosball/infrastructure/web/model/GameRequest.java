@@ -6,5 +6,4 @@ public record GameRequest(
         String blackTeamPlayer1,
         String blackTeamPlayer2,
         int whiteTeamScore,
-        int blackTeamScore,
-        String notes) {}
+        int blackTeamScore) {}

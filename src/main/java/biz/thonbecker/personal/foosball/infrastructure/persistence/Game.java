@@ -54,9 +54,6 @@ public class Game {
     @Column(name = "played_at", nullable = false, updatable = false)
     private LocalDateTime playedAt;
 
-    @Column(name = "notes", length = 500)
-    private String notes;
-
     public enum TeamColor {
         WHITE,
         BLACK
