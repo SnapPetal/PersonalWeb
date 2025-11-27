@@ -5,18 +5,25 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
     <changeSet id="010-drop-notes-column" author="thonbecker">
-        <comment>Drop notes and game_duration_minutes columns from games table - no longer needed</comment>
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="games" columnName="notes" schemaName="foosball"/>
+        </preConditions>
+        <comment>Drop notes column from games table - no longer needed</comment>
 
-        <!-- Drop notes column -->
         <dropColumn tableName="games" schemaName="foosball">
             <column name="notes"/>
         </dropColumn>
+    </changeSet>
 
-        <!-- Drop game_duration_minutes column -->
+    <changeSet id="010-drop-game-duration-column" author="thonbecker">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="games" columnName="game_duration_minutes" schemaName="foosball"/>
+        </preConditions>
+        <comment>Drop game_duration_minutes column from games table - no longer needed</comment>
+
         <dropColumn tableName="games" schemaName="foosball">
             <column name="game_duration_minutes"/>
         </dropColumn>
-
     </changeSet>
 
 </databaseChangeLog>
