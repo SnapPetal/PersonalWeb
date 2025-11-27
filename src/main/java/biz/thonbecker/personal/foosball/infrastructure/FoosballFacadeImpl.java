@@ -103,7 +103,6 @@ class FoosballFacadeImpl implements FoosballFacade {
                         biz.thonbecker.personal.foosball.infrastructure.persistence.Game.TeamColor.WHITE;
                     case BLACK_TEAM_WIN ->
                         biz.thonbecker.personal.foosball.infrastructure.persistence.Game.TeamColor.BLACK;
-                    case DRAW -> null;
                 }
                 : null;
 
@@ -134,7 +133,6 @@ class FoosballFacadeImpl implements FoosballFacade {
                 game.getWhiteTeam().getPlayer1() + " & " + game.getWhiteTeam().getPlayer2();
             case BLACK_TEAM_WIN ->
                 game.getBlackTeam().getPlayer1() + " & " + game.getBlackTeam().getPlayer2();
-            case DRAW -> "Draw";
         };
     }
 
@@ -212,9 +210,6 @@ class FoosballFacadeImpl implements FoosballFacade {
 
     private biz.thonbecker.personal.foosball.domain.GameResult convertTeamColorToGameResult(
             biz.thonbecker.personal.foosball.infrastructure.persistence.Game.TeamColor winner) {
-        if (winner == null) {
-            return biz.thonbecker.personal.foosball.domain.GameResult.DRAW;
-        }
         return switch (winner) {
             case WHITE -> biz.thonbecker.personal.foosball.domain.GameResult.WHITE_TEAM_WIN;
             case BLACK -> biz.thonbecker.personal.foosball.domain.GameResult.BLACK_TEAM_WIN;

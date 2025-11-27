@@ -2,6 +2,7 @@ package biz.thonbecker.personal.foosball.infrastructure.web;
 
 import biz.thonbecker.personal.foosball.api.FoosballFacade;
 import biz.thonbecker.personal.foosball.domain.Game;
+import biz.thonbecker.personal.foosball.domain.GameResult;
 import biz.thonbecker.personal.foosball.domain.Player;
 import biz.thonbecker.personal.foosball.domain.Team;
 import biz.thonbecker.personal.foosball.infrastructure.TournamentService;
@@ -60,6 +61,7 @@ public class FoosballController {
     @GetMapping("/recent-games")
     public String getRecentGames(Model model) {
         model.addAttribute("games", foosballFacade.getRecentGames());
+        model.addAttribute("ResultStatus", GameResult.class);
         return "foosball-recent-games";
     }
 
@@ -114,7 +116,7 @@ public class FoosballController {
         try {
             var recentGames = foosballFacade.getRecentGames();
             if (!recentGames.isEmpty()) {
-                var lastGame = recentGames.get(0);
+                var lastGame = recentGames.getFirst();
                 model.addAttribute("whiteTeamPlayer1", lastGame.getWhiteTeam().getPlayer1());
                 model.addAttribute("whiteTeamPlayer2", lastGame.getWhiteTeam().getPlayer2());
                 model.addAttribute("blackTeamPlayer1", lastGame.getBlackTeam().getPlayer1());
@@ -193,9 +195,6 @@ public class FoosballController {
                     break;
                 case "TEAM2":
                     result = biz.thonbecker.personal.foosball.domain.GameResult.BLACK_TEAM_WIN;
-                    break;
-                case "DRAW":
-                    result = biz.thonbecker.personal.foosball.domain.GameResult.DRAW;
                     break;
                 default:
                     model.addAttribute("error", "Invalid winner value.");
