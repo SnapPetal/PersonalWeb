@@ -114,16 +114,22 @@ public class FoosballController {
     @GetMapping("/fragments/last-game-teams")
     public String getLastGameTeamsFragment(Model model) {
         try {
-            var recentGames = foosballFacade.getRecentGames();
-            if (!recentGames.isEmpty()) {
-                var lastGame = recentGames.getFirst();
-                model.addAttribute("whiteTeamPlayer1", lastGame.getWhiteTeam().getPlayer1());
-                model.addAttribute("whiteTeamPlayer2", lastGame.getWhiteTeam().getPlayer2());
-                model.addAttribute("blackTeamPlayer1", lastGame.getBlackTeam().getPlayer1());
-                model.addAttribute("blackTeamPlayer2", lastGame.getBlackTeam().getPlayer2());
+            var lastGame = foosballFacade.getLastGame();
+            if (lastGame != null) {
+                String wp1 = lastGame.getWhiteTeam().getPlayer1();
+                String wp2 = lastGame.getWhiteTeam().getPlayer2();
+                String bp1 = lastGame.getBlackTeam().getPlayer1();
+                String bp2 = lastGame.getBlackTeam().getPlayer2();
+
+                log.info("Last game teams - White: {} & {}, Black: {} & {}", wp1, wp2, bp1, bp2);
+
+                model.addAttribute("whiteTeamPlayer1", wp1);
+                model.addAttribute("whiteTeamPlayer2", wp2);
+                model.addAttribute("blackTeamPlayer1", bp1);
+                model.addAttribute("blackTeamPlayer2", bp2);
             }
         } catch (Exception e) {
-            // If service is unavailable or no games, return empty
+            log.error("Error loading last game teams", e);
         }
         return "foosball-fragments :: lastGameTeams";
     }

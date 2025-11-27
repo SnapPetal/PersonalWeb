@@ -12,12 +12,14 @@ import biz.thonbecker.personal.foosball.infrastructure.persistence.TeamStatsRepo
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
+@Slf4j
 public class FoosballService {
 
     private final PlayerRepository playerRepository;
@@ -84,6 +86,21 @@ public class FoosballService {
 
     public List<GameWithPlayers> getRecentGames() {
         return gameRepository.findRecentGames();
+    }
+
+    public List<GameWithPlayers> getLastGame() {
+        var result = gameRepository.findLastGame();
+        if (!result.isEmpty()) {
+            var game = result.getFirst();
+            log.info(
+                    "Repository returned GameWithPlayers: id={}, wp1={}, wp2={}, bp1={}, bp2={}",
+                    game.getId(),
+                    game.getWhiteTeamPlayer1Name(),
+                    game.getWhiteTeamPlayer2Name(),
+                    game.getBlackTeamPlayer1Name(),
+                    game.getBlackTeamPlayer2Name());
+        }
+        return result;
     }
 
     // Player statistics

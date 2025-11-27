@@ -59,6 +59,13 @@ public interface FoosballFacade {
     List<Game> getRecentGames();
 
     /**
+     * Retrieves the last recorded game.
+     *
+     * @return The most recent game, or null if no games exist
+     */
+    Game getLastGame();
+
+    /**
      * Checks if the Foosball service is available.
      * Useful for health checks and graceful degradation.
      *

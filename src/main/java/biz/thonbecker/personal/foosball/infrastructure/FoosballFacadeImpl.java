@@ -153,6 +153,23 @@ class FoosballFacadeImpl implements FoosballFacade {
     }
 
     @Override
+    public Game getLastGame() {
+        log.debug("Retrieving last game");
+        var lastGames = foosballService.getLastGame();
+        if (!lastGames.isEmpty()) {
+            var gameWithPlayers = lastGames.getFirst();
+            log.info(
+                    "GameWithPlayers raw data - WP1: {}, WP2: {}, BP1: {}, BP2: {}",
+                    gameWithPlayers.getWhiteTeamPlayer1Name(),
+                    gameWithPlayers.getWhiteTeamPlayer2Name(),
+                    gameWithPlayers.getBlackTeamPlayer1Name(),
+                    gameWithPlayers.getBlackTeamPlayer2Name());
+            return toGameDomain(gameWithPlayers);
+        }
+        return null;
+    }
+
+    @Override
     public boolean isServiceAvailable() {
         return true; // Local service is always available
     }

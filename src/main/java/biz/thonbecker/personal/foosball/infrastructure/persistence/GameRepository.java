@@ -1,5 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
+import jakarta.annotation.Nonnull;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
@@ -9,7 +10,6 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.data.rest.core.annotation.RestResource;
-import org.springframework.lang.NonNull;
 
 @RepositoryRestResource(path = "games", collectionResourceRel = "games", itemResourceRel = "game")
 public interface GameRepository extends CrudRepository<Game, Long> {
@@ -34,6 +34,14 @@ public interface GameRepository extends CrudRepository<Game, Long> {
             + "ORDER BY g.playedAt DESC LIMIT 10")
     List<GameWithPlayers> findRecentGames();
 
+    @RestResource(path = "last", rel = "last")
+    @Query("SELECT g FROM Game g " + "LEFT JOIN FETCH g.whiteTeamPlayer1 "
+            + "LEFT JOIN FETCH g.whiteTeamPlayer2 "
+            + "LEFT JOIN FETCH g.blackTeamPlayer1 "
+            + "LEFT JOIN FETCH g.blackTeamPlayer2 "
+            + "ORDER BY g.playedAt DESC LIMIT 1")
+    List<GameWithPlayers> findLastGame();
+
     // Statistics queries
     @Query("SELECT COUNT(g) FROM Game g WHERE g.winner IS NOT NULL")
     Long countGamesWithWinner();
@@ -56,15 +64,15 @@ public interface GameRepository extends CrudRepository<Game, Long> {
 
     @Override
     @RestResource(exported = false)
-    void deleteById(@NonNull Long id);
+    void deleteById(@Nonnull Long id);
 
     @Override
     @RestResource(exported = false)
-    void delete(@NonNull Game entity);
+    void delete(@Nonnull Game entity);
 
     @Override
     @RestResource(exported = false)
-    void deleteAll(@NonNull Iterable<? extends Game> entities);
+    void deleteAll(@Nonnull Iterable<? extends Game> entities);
 
     @Override
     @RestResource(exported = false)
