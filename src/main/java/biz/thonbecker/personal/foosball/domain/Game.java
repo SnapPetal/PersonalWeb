@@ -49,31 +49,4 @@ public class Game {
         }
         this.result = result;
     }
-
-    /**
-     * Sets the game result.
-     *
-     * @param result The game result (cannot be null)
-     */
-    public void setResult(GameResult result) {
-        if (result == null) {
-            throw new IllegalArgumentException("Game result cannot be null - draws are not allowed");
-        }
-        this.result = result;
-    }
-
-    /**
-     * Returns the winning team name.
-     *
-     * @return Winner description
-     */
-    public String getWinner() {
-        if (result == null) {
-            throw new IllegalStateException("Game result has not been set");
-        }
-        return switch (result) {
-            case WHITE_TEAM_WIN -> "White Team";
-            case BLACK_TEAM_WIN -> "Black Team";
-        };
-    }
 }

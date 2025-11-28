@@ -48,22 +48,4 @@ public class TeamStats {
         this.goalsAgainst = goalsAgainst;
         this.winPercentage = gamesPlayed > 0 ? (double) wins / gamesPlayed * 100 : 0.0;
     }
-
-    /**
-     * Calculates the goal difference.
-     *
-     * @return Goals scored minus goals against
-     */
-    public int getGoalDifference() {
-        return goalsScored - goalsAgainst;
-    }
-
-    /**
-     * Gets the team name as "player1 & player2".
-     *
-     * @return Team name
-     */
-    public String getTeamName() {
-        return player1 + " & " + player2;
-    }
 }

@@ -123,9 +123,6 @@ public class TournamentStanding {
             return;
         }
 
-        Game game = match.getGame();
-
-        // Scores no longer tracked - goals for/against set to 0
         int teamGoals = 0;
         int opponentGoals = 0;
 
@@ -137,18 +134,6 @@ public class TournamentStanding {
             }
         } else {
             recordDraw(teamGoals, opponentGoals);
-        }
-    }
-
-    private boolean matchesWhiteTeam(TournamentRegistration reg, Game game) {
-        if (reg.isTeam()) {
-            return (reg.getPlayer().equals(game.getWhiteTeamPlayer1())
-                            && reg.getPartner().equals(game.getWhiteTeamPlayer2()))
-                    || (reg.getPlayer().equals(game.getWhiteTeamPlayer2())
-                            && reg.getPartner().equals(game.getWhiteTeamPlayer1()));
-        } else {
-            return reg.getPlayer().equals(game.getWhiteTeamPlayer1())
-                    || reg.getPlayer().equals(game.getWhiteTeamPlayer2());
         }
     }
 
@@ -181,41 +166,6 @@ public class TournamentStanding {
         if (winRate >= 50) return "Good";
         if (winRate >= 25) return "Fair";
         return "Poor";
-    }
-
-    // Comparison methods for sorting standings
-    public int compareByPoints(TournamentStanding other) {
-        // Primary: Points (descending)
-        int pointsComparison = other.points.compareTo(this.points);
-        if (pointsComparison != 0) return pointsComparison;
-
-        // Secondary: Goal difference (descending)
-        int goalDiffComparison = Integer.compare(other.goalDifference, this.goalDifference);
-        if (goalDiffComparison != 0) return goalDiffComparison;
-
-        // Tertiary: Goals for (descending)
-        int goalsForComparison = Integer.compare(other.goalsFor, this.goalsFor);
-        if (goalsForComparison != 0) return goalsForComparison;
-
-        // Quaternary: Games played (ascending - fewer games played is better if points are equal)
-        int gamesComparison = Integer.compare(this.gamesPlayed, other.gamesPlayed);
-        if (gamesComparison != 0) return gamesComparison;
-
-        // Final: Team name (alphabetical)
-        return this.registration.getDisplayName().compareTo(other.registration.getDisplayName());
-    }
-
-    public int compareByWins(TournamentStanding other) {
-        // Primary: Wins (descending)
-        int winsComparison = Integer.compare(other.wins, this.wins);
-        if (winsComparison != 0) return winsComparison;
-
-        // Secondary: Goal difference (descending)
-        int goalDiffComparison = Integer.compare(other.goalDifference, this.goalDifference);
-        if (goalDiffComparison != 0) return goalDiffComparison;
-
-        // Tertiary: Goals for (descending)
-        return Integer.compare(other.goalsFor, this.goalsFor);
     }
 
     // Display methods
