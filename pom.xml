@@ -25,6 +25,7 @@
     <spotless.version>3.1.0</spotless.version>
     <spring-retry.version>2.0.12</spring-retry.version>
     <stomp-websocket.version>2.3.4</stomp-websocket.version>
+      <jspecify.version>1.0.0</jspecify.version>
   </properties>
 
   <dependencyManagement>
@@ -173,6 +174,11 @@
       <groupId>org.webjars.npm</groupId>
       <artifactId>htmx.org</artifactId>
       <version>${htmx.org.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>${jspecify.version}</version>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>

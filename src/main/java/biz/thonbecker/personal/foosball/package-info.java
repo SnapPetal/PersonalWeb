@@ -119,5 +119,5 @@
         displayName = "Foosball",
         allowedDependencies = {"shared"},
         type = org.springframework.modulith.ApplicationModule.Type.OPEN)
-@org.springframework.lang.NonNullApi
+@org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.foosball;

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.*;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -28,7 +29,7 @@ public class TournamentStanding {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private @Nullable Long id;
 
     @NotNull(message = "Tournament is required")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,7 +43,7 @@ public class TournamentStanding {
     private TournamentRegistration registration;
 
     @Column(name = "position")
-    private Integer position;
+    private @Nullable Integer position;
 
     @Column(name = "points", precision = 10, scale = 2, nullable = false)
     private BigDecimal points = BigDecimal.ZERO;
@@ -70,7 +71,7 @@ public class TournamentStanding {
 
     @LastModifiedDate
     @Column(name = "updated_at")
-    private Instant updatedAt;
+    private @Nullable Instant updatedAt;
 
     // Constructors
     public TournamentStanding(Tournament tournament, TournamentRegistration registration) {
