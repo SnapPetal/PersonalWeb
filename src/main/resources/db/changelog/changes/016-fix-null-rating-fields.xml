@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="016-fix-null-rating-fields" author="claude">
+        <comment>Ensure all rating fields are properly initialized for existing players</comment>
+
+        <!-- Update all NULL rating fields in a single statement -->
+        <sql>
+            UPDATE foosball.players
+            SET
+                rating = COALESCE(rating, 1000),
+                current_streak = COALESCE(current_streak, 0),
+                peak_rating = COALESCE(peak_rating, rating, 1000),
+                best_streak = COALESCE(best_streak, 0),
+                games_played = COALESCE(games_played, (
+                    SELECT COUNT(DISTINCT g.id)
+                    FROM foosball.games g
+                    WHERE g.white_team_player1_id = players.id
+                       OR g.white_team_player2_id = players.id
+                       OR g.black_team_player1_id = players.id
+                       OR g.black_team_player2_id = players.id
+                ), 0)
+            WHERE rating IS NULL
+               OR current_streak IS NULL
+               OR peak_rating IS NULL
+               OR best_streak IS NULL
+               OR games_played IS NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -19,4 +19,5 @@
     <include file="classpath:db/changelog/changes/012-add-rating-system.xml"/>
     <include file="classpath:db/changelog/changes/013-update-player-stats-view-with-rating.xml"/>
     <include file="classpath:db/changelog/changes/015-backfill-player-ratings.xml"/>
+    <include file="classpath:db/changelog/changes/016-fix-null-rating-fields.xml"/>
 </databaseChangeLog>
