@@ -1,8 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.web;
 
 import biz.thonbecker.personal.foosball.infrastructure.TournamentService;
-import biz.thonbecker.personal.foosball.infrastructure.persistence.BracketView;
-import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentSummary;
 import biz.thonbecker.personal.foosball.infrastructure.web.model.*;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -34,7 +32,7 @@ public class TournamentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TournamentSummary>> getAllTournaments(Pageable pageable) {
+    public ResponseEntity<List<TournamentSummaryDto>> getAllTournaments(Pageable pageable) {
         var tournaments = tournamentService.getTournamentSummaries(pageable);
         return ResponseEntity.ok(tournaments.getContent());
     }
@@ -152,7 +150,8 @@ public class TournamentController {
 
     // Bracket and Match Management
     @GetMapping("/{id}/bracket")
-    public ResponseEntity<List<BracketView>> getBracket(@PathVariable Long id) {
+    public ResponseEntity<List<biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto>> getBracket(
+            @PathVariable Long id) {
         var bracket = tournamentService.getBracketView(id);
         return ResponseEntity.ok(bracket);
     }

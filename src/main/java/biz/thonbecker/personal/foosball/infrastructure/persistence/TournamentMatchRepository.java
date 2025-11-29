@@ -32,26 +32,26 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
     List<TournamentMatch> findMatchesAdvancingTo(@Param("matchId") Long matchId);
 
     // Find bracket view for tournament
-    @Query("SELECT m.id as matchId, m.roundNumber as roundNumber, m.matchNumber as matchNumber, "
-            + "m.bracketType as bracketType, "
+    @Query("SELECT new biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto("
+            + "m.id, m.roundNumber, m.matchNumber, m.bracketType, "
             + "CASE WHEN m.team1 IS NOT NULL THEN "
             + "  CASE WHEN m.team1.teamName IS NOT NULL AND TRIM(m.team1.teamName) <> '' THEN m.team1.teamName "
             + "       WHEN m.team1.partner IS NOT NULL THEN CONCAT(t1p.name, ' & ', t1partner.name) "
             + "       ELSE t1p.name END "
-            + "ELSE NULL END as team1DisplayName, "
+            + "ELSE NULL END, "
             + "CASE WHEN m.team2 IS NOT NULL THEN "
             + "  CASE WHEN m.team2.teamName IS NOT NULL AND TRIM(m.team2.teamName) <> '' THEN m.team2.teamName "
             + "       WHEN m.team2.partner IS NOT NULL THEN CONCAT(t2p.name, ' & ', t2partner.name) "
             + "       ELSE t2p.name END "
-            + "ELSE NULL END as team2DisplayName, "
+            + "ELSE NULL END, "
             + "CASE WHEN m.winner IS NOT NULL THEN "
             + "  CASE WHEN m.winner.teamName IS NOT NULL AND TRIM(m.winner.teamName) <> '' THEN m.winner.teamName "
             + "       WHEN m.winner.partner IS NOT NULL THEN CONCAT(wp.name, ' & ', wpartner.name) "
             + "       ELSE wp.name END "
-            + "ELSE NULL END as winnerDisplayName, "
-            + "m.status as status, m.scheduledTime as scheduledTime, m.completedAt as completedAt, "
-            + "CASE WHEN m.nextMatch IS NOT NULL THEN m.nextMatch.id ELSE NULL END as nextMatchId, "
-            + "CASE WHEN m.consolationMatch IS NOT NULL THEN m.consolationMatch.id ELSE NULL END as consolationMatchId "
+            + "ELSE NULL END, "
+            + "m.status, m.scheduledTime, m.completedAt, "
+            + "CASE WHEN m.nextMatch IS NOT NULL THEN m.nextMatch.id ELSE NULL END, "
+            + "CASE WHEN m.consolationMatch IS NOT NULL THEN m.consolationMatch.id ELSE NULL END) "
             + "FROM TournamentMatch m "
             + "LEFT JOIN m.team1 t1 "
             + "LEFT JOIN t1.player t1p "
@@ -64,7 +64,8 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
             + "LEFT JOIN w.partner wpartner "
             + "WHERE m.tournament.id = :tournamentId "
             + "ORDER BY m.roundNumber ASC, m.matchNumber ASC")
-    List<BracketView> findBracketView(@Param("tournamentId") Long tournamentId);
+    List<biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto> findBracketView(
+            @Param("tournamentId") Long tournamentId);
 
     // Find matches by bracket type
     List<TournamentMatch> findByTournamentIdAndBracketTypeOrderByRoundNumberAscMatchNumberAsc(

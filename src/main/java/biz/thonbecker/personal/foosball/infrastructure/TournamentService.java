@@ -110,7 +110,7 @@ public class TournamentService {
         return tournamentRepository.findAll();
     }
 
-    public Page<TournamentSummary> getTournamentSummaries(Pageable pageable) {
+    public Page<TournamentSummaryDto> getTournamentSummaries(Pageable pageable) {
         return tournamentRepository.findTournamentSummaries(pageable);
     }
 
@@ -291,7 +291,8 @@ public class TournamentService {
         return matchRepository.findByTournamentIdOrderByRoundNumberAscMatchNumberAsc(tournamentId);
     }
 
-    public List<BracketView> getBracketView(Long tournamentId) {
+    public List<biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto> getBracketView(
+            Long tournamentId) {
         log.info("Fetching bracket view for tournament: {}", tournamentId);
         var bracket = matchRepository.findBracketView(tournamentId);
         log.info("Found {} matches in bracket for tournament {}", bracket.size(), tournamentId);

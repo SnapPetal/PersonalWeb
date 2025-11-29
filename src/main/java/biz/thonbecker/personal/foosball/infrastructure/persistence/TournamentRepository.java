@@ -43,20 +43,20 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     List<Tournament> findTournamentsForPlayer(@Param("playerId") Long playerId);
 
     // Tournament summary projection
-    @Query("SELECT t.id as id, t.name as name, t.description as description, "
-            + "t.tournamentType as tournamentType, t.status as status, "
-            + "t.maxParticipants as maxParticipants, t.registrationStart as registrationStart, "
-            + "t.registrationEnd as registrationEnd, t.startDate as startDate, "
-            + "t.endDate as endDate, MAX(t.createdBy.name) as createdByName, "
-            + "t.createdAt as createdAt, "
-            + "COUNT(r) as registrationsCount, "
-            + "COUNT(CASE WHEN r.status = 'ACTIVE' THEN 1 END) as activeRegistrationsCount "
+    @Query("SELECT new biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentSummaryDto("
+            + "t.id, t.name, t.description, t.tournamentType, t.status, "
+            + "t.maxParticipants, t.registrationStart, t.registrationEnd, "
+            + "t.startDate, t.endDate, cb.name, t.createdAt, "
+            + "COUNT(r), "
+            + "COUNT(CASE WHEN r.status = 'ACTIVE' THEN 1 END)) "
             + "FROM Tournament t LEFT JOIN t.registrations r "
+            + "LEFT JOIN t.createdBy cb "
             + "GROUP BY t.id, t.name, t.description, t.tournamentType, t.status, "
             + "t.maxParticipants, t.registrationStart, t.registrationEnd, "
-            + "t.startDate, t.endDate, t.createdAt "
+            + "t.startDate, t.endDate, cb.name, t.createdAt "
             + "ORDER BY t.createdAt DESC")
-    Page<TournamentSummary> findTournamentSummaries(Pageable pageable);
+    Page<biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentSummaryDto> findTournamentSummaries(
+            Pageable pageable);
 
     // Search tournaments by name
     @Query("SELECT t FROM Tournament t WHERE LOWER(t.name) LIKE LOWER(CONCAT('%', :search, '%')) "
