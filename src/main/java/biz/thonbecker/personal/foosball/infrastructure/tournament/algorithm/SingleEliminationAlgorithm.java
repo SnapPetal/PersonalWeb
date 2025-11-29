@@ -21,8 +21,8 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
             throw new IllegalArgumentException("Not enough participants for single elimination tournament");
         }
 
-        var matches = new ArrayList<TournamentMatch>();
-        var shuffledRegistrations = new ArrayList<>(registrations);
+        final var matches = new ArrayList<TournamentMatch>();
+        final var shuffledRegistrations = new ArrayList<>(registrations);
 
         // Shuffle if no seeding
         if (registrations.stream().noneMatch(r -> r.getSeed() != null)) {
@@ -38,8 +38,8 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
         }
 
         // Calculate number of rounds needed
-        var participantCount = shuffledRegistrations.size();
-        var roundCount = (int) Math.ceil(Math.log(participantCount) / Math.log(2));
+        final var participantCount = shuffledRegistrations.size();
+        final var roundCount = (int) Math.ceil(Math.log(participantCount) / Math.log(2));
 
         // Create bracket structure
         matches.addAll(createBracketStructure(tournament, participantCount, roundCount));
@@ -51,13 +51,13 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
     }
 
     private List<TournamentMatch> createBracketStructure(Tournament tournament, int participantCount, int roundCount) {
-        var matches = new ArrayList<TournamentMatch>();
+        final var matches = new ArrayList<TournamentMatch>();
 
         for (var round = 1; round <= roundCount; round++) {
-            var matchesInRound = (int) Math.pow(2, roundCount - round);
+            final var matchesInRound = (int) Math.pow(2, roundCount - round);
 
             for (var matchNum = 1; matchNum <= matchesInRound; matchNum++) {
-                var match = new TournamentMatch(tournament, round, matchNum);
+                final var match = new TournamentMatch(tournament, round, matchNum);
                 match.setBracketType(TournamentMatch.BracketType.MAIN);
                 matches.add(match);
             }
@@ -71,17 +71,17 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
 
     private void setupAdvancementPaths(List<TournamentMatch> matches, int roundCount) {
         for (var match : matches) {
-            var currentRound = match.getRoundNumber();
-            var currentMatch = match.getMatchNumber();
+            final var currentRound = match.getRoundNumber();
+            final var currentMatch = match.getMatchNumber();
 
             // Skip final match
             if (currentRound == roundCount) continue;
 
             // Find next match for winner
-            var nextRound = currentRound + 1;
-            var nextMatch = (currentMatch + 1) / 2; // Integer division for pairing
+            final var nextRound = currentRound + 1;
+            final var nextMatch = (currentMatch + 1) / 2; // Integer division for pairing
 
-            var nextTournamentMatch = matches.stream()
+            final var nextTournamentMatch = matches.stream()
                     .filter(m -> m.getRoundNumber().equals(nextRound)
                             && m.getMatchNumber().equals(nextMatch))
                     .findFirst()
@@ -97,7 +97,7 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
             List<TournamentMatch> matches, List<TournamentRegistration> registrations, int participantCount) {
 
         // Get first round matches
-        var firstRoundMatches = matches.stream()
+        final var firstRoundMatches = matches.stream()
                 .filter(m -> m.getRoundNumber() == 1)
                 .sorted((m1, m2) -> Integer.compare(m1.getMatchNumber(), m2.getMatchNumber()))
                 .toList();
@@ -142,15 +142,15 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
 
     @Override
     public List<TournamentMatch> advanceWinner(TournamentMatch completedMatch) {
-        var updatedMatches = new ArrayList<TournamentMatch>();
+        final var updatedMatches = new ArrayList<TournamentMatch>();
 
         if (completedMatch.getWinner() == null || !completedMatch.isCompleted()) {
             return updatedMatches;
         }
 
-        var nextMatch = completedMatch.getNextMatch();
+        final var nextMatch = completedMatch.getNextMatch();
         if (nextMatch != null) {
-            var winner = completedMatch.getWinner();
+            final var winner = completedMatch.getWinner();
 
             // Determine which slot in next match to fill
             if (nextMatch.getTeam1() == null) {
@@ -168,10 +168,10 @@ public class SingleEliminationAlgorithm implements TournamentAlgorithm {
 
     @Override
     public boolean isTournamentComplete(Tournament tournament) {
-        var matches = tournament.getMatches();
+        final var matches = tournament.getMatches();
 
         // Find the final match (highest round number)
-        var maxRound =
+        final var maxRound =
                 matches.stream().mapToInt(TournamentMatch::getRoundNumber).max().orElse(0);
 
         return matches.stream().filter(m -> m.getRoundNumber() == maxRound).allMatch(TournamentMatch::isCompleted);

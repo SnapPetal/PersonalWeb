@@ -34,38 +34,38 @@ public class TournamentController {
             @Valid @RequestBody CreateTournamentRequest request, @RequestParam Long createdById) {
         log.info("Creating tournament: {} by player: {}", request.name(), createdById);
 
-        var tournament = tournamentService.createTournament(request, createdById);
-        var response = TournamentResponse.fromEntity(tournament);
+        final var tournament = tournamentService.createTournament(request, createdById);
+        final var response = TournamentResponse.fromEntity(tournament);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
     public ResponseEntity<List<TournamentSummaryDto>> getAllTournaments(Pageable pageable) {
-        var tournaments = tournamentService.getTournamentSummaries(pageable);
+        final var tournaments = tournamentService.getTournamentSummaries(pageable);
         return ResponseEntity.ok(tournaments.getContent());
     }
 
     @GetMapping("/active")
     public ResponseEntity<List<TournamentResponse>> getActiveTournaments() {
-        var tournaments = tournamentService.getActiveTournaments();
-        var responses =
+        final var tournaments = tournamentService.getActiveTournaments();
+        final var responses =
                 tournaments.stream().map(TournamentResponse::fromEntitySummary).toList();
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/player/{playerId}")
     public ResponseEntity<List<TournamentResponse>> getTournamentsForPlayer(@PathVariable Long playerId) {
-        var tournaments = tournamentService.getTournamentsForPlayer(playerId);
-        var responses =
+        final var tournaments = tournamentService.getTournamentsForPlayer(playerId);
+        final var responses =
                 tournaments.stream().map(TournamentResponse::fromEntitySummary).toList();
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TournamentResponse> getTournamentById(@PathVariable Long id) {
-        var tournament = tournamentService.getTournamentWithRegistrations(id);
-        var response = TournamentResponse.fromEntity(tournament);
+        final var tournament = tournamentService.getTournamentWithRegistrations(id);
+        final var response = TournamentResponse.fromEntity(tournament);
         return ResponseEntity.ok(response);
     }
 
@@ -74,8 +74,8 @@ public class TournamentController {
             @PathVariable Long id, @Valid @RequestBody UpdateTournamentRequest request) {
         log.info("Updating tournament: {}", id);
 
-        var tournament = tournamentService.updateTournament(id, request);
-        var response = TournamentResponse.fromEntity(tournament);
+        final var tournament = tournamentService.updateTournament(id, request);
+        final var response = TournamentResponse.fromEntity(tournament);
 
         return ResponseEntity.ok(response);
     }
@@ -92,8 +92,8 @@ public class TournamentController {
     public ResponseEntity<TournamentResponse> openRegistration(@PathVariable Long id) {
         log.info("Opening registration for tournament: {}", id);
 
-        var tournament = tournamentService.openRegistration(id);
-        var response = TournamentResponse.fromEntitySummary(tournament);
+        final var tournament = tournamentService.openRegistration(id);
+        final var response = TournamentResponse.fromEntitySummary(tournament);
 
         return ResponseEntity.ok(response);
     }
@@ -102,8 +102,8 @@ public class TournamentController {
     public ResponseEntity<TournamentResponse> closeRegistration(@PathVariable Long id) {
         log.info("Closing registration for tournament: {}", id);
 
-        var tournament = tournamentService.closeRegistration(id);
-        var response = TournamentResponse.fromEntitySummary(tournament);
+        final var tournament = tournamentService.closeRegistration(id);
+        final var response = TournamentResponse.fromEntitySummary(tournament);
 
         return ResponseEntity.ok(response);
     }
@@ -112,8 +112,8 @@ public class TournamentController {
     public ResponseEntity<TournamentResponse> startTournament(@PathVariable Long id) {
         log.info("Starting tournament: {}", id);
 
-        var tournament = tournamentService.startTournament(id);
-        var response = TournamentResponse.fromEntitySummary(tournament);
+        final var tournament = tournamentService.startTournament(id);
+        final var response = TournamentResponse.fromEntitySummary(tournament);
 
         return ResponseEntity.ok(response);
     }
@@ -122,8 +122,8 @@ public class TournamentController {
     public ResponseEntity<TournamentResponse> cancelTournament(@PathVariable Long id) {
         log.info("Cancelling tournament: {}", id);
 
-        var tournament = tournamentService.cancelTournament(id);
-        var response = TournamentResponse.fromEntitySummary(tournament);
+        final var tournament = tournamentService.cancelTournament(id);
+        final var response = TournamentResponse.fromEntitySummary(tournament);
 
         return ResponseEntity.ok(response);
     }
@@ -134,8 +134,8 @@ public class TournamentController {
             @PathVariable Long id, @Valid @RequestBody TournamentRegistrationRequest request) {
         log.info("Registering player {} for tournament {}", request.playerId(), id);
 
-        var registration = tournamentService.registerForTournament(id, request);
-        var response = TournamentRegistrationResponse.fromEntity(registration);
+        final var registration = tournamentService.registerForTournament(id, request);
+        final var response = TournamentRegistrationResponse.fromEntity(registration);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -150,8 +150,8 @@ public class TournamentController {
 
     @GetMapping("/{id}/registrations")
     public ResponseEntity<List<TournamentRegistrationResponse>> getTournamentRegistrations(@PathVariable Long id) {
-        var registrations = tournamentService.getTournamentRegistrations(id);
-        var responses = registrations.stream()
+        final var registrations = tournamentService.getTournamentRegistrations(id);
+        final var responses = registrations.stream()
                 .map(TournamentRegistrationResponse::fromEntity)
                 .toList();
         return ResponseEntity.ok(responses);
@@ -160,22 +160,22 @@ public class TournamentController {
     // Bracket and Match Management
     @GetMapping("/{id}/bracket")
     public ResponseEntity<List<BracketViewDto>> getBracket(@PathVariable Long id) {
-        var bracket = tournamentService.getBracketView(id);
+        final var bracket = tournamentService.getBracketView(id);
         return ResponseEntity.ok(bracket);
     }
 
     @GetMapping("/{id}/matches")
     public ResponseEntity<List<TournamentMatchResponse>> getTournamentMatches(@PathVariable Long id) {
-        var matches = tournamentService.getTournamentMatches(id);
-        var responses =
+        final var matches = tournamentService.getTournamentMatches(id);
+        final var responses =
                 matches.stream().map(TournamentMatchResponse::fromEntity).toList();
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/matches/{matchId}")
     public ResponseEntity<TournamentMatchResponse> getMatchById(@PathVariable Long matchId) {
-        var match = tournamentService.getMatchById(matchId);
-        var response = TournamentMatchResponse.fromEntity(match);
+        final var match = tournamentService.getMatchById(matchId);
+        final var response = TournamentMatchResponse.fromEntity(match);
         return ResponseEntity.ok(response);
     }
 
@@ -184,8 +184,8 @@ public class TournamentController {
             @PathVariable Long matchId, @RequestParam Long gameId) {
         log.info("Completing match {} with game {}", matchId, gameId);
 
-        var match = tournamentService.completeMatch(matchId, gameId);
-        var response = TournamentMatchResponse.fromEntity(match);
+        final var match = tournamentService.completeMatch(matchId, gameId);
+        final var response = TournamentMatchResponse.fromEntity(match);
 
         return ResponseEntity.ok(response);
     }
@@ -195,8 +195,8 @@ public class TournamentController {
             @PathVariable Long matchId, @Valid @RequestBody WalkoverRequest request) {
         log.info("Recording walkover for match {} with winner {}", matchId, request.winnerRegistrationId());
 
-        var match = tournamentService.recordWalkover(matchId, request);
-        var response = TournamentMatchResponse.fromEntity(match);
+        final var match = tournamentService.recordWalkover(matchId, request);
+        final var response = TournamentMatchResponse.fromEntity(match);
 
         return ResponseEntity.ok(response);
     }
@@ -206,8 +206,8 @@ public class TournamentController {
             @PathVariable Long matchId, @Valid @RequestBody MatchScoreRequest request) {
         log.info("Recording score for match {}: {} - {}", matchId, request.team1Score(), request.team2Score());
 
-        var match = tournamentService.recordMatchScore(matchId, request.team1Score(), request.team2Score());
-        var response = TournamentMatchResponse.fromEntity(match);
+        final var match = tournamentService.recordMatchScore(matchId, request.team1Score(), request.team2Score());
+        final var response = TournamentMatchResponse.fromEntity(match);
 
         return ResponseEntity.ok(response);
     }

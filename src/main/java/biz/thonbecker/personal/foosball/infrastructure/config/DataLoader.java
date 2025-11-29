@@ -35,7 +35,7 @@ public class DataLoader {
 
         // If player doesn't exist, create new one with specific rating
         log.info("Creating new player: {} with rating {}", name, rating);
-        var player = foosballService.createPlayer(name);
+        final var player = foosballService.createPlayer(name);
         player.setRating(rating);
         player.setGamesPlayed(gamesPlayed);
         player.setPeakRating(rating);

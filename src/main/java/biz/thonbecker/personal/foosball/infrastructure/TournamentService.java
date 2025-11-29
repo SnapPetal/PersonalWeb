@@ -49,7 +49,7 @@ public class TournamentService {
     public Tournament createTournament(CreateTournamentRequest request, Long createdById) {
         log.info("Creating tournament: {} by player: {}", request.name(), createdById);
 
-        var creator = playerRepository
+        final var creator = playerRepository
                 .findById(createdById)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found with id: " + createdById));
 
@@ -60,7 +60,7 @@ public class TournamentService {
                     "Currently only single and double elimination tournaments are supported");
         }
 
-        var tournament = new Tournament(request.name(), request.tournamentType(), creator);
+        final var tournament = new Tournament(request.name(), request.tournamentType(), creator);
         tournament.setDescription(request.description());
         tournament.setMaxParticipants(request.maxParticipants());
         tournament.setRegistrationStart(request.registrationStart());
@@ -74,7 +74,7 @@ public class TournamentService {
     public Tournament updateTournament(Long tournamentId, UpdateTournamentRequest request) {
         log.info("Updating tournament: {}", tournamentId);
 
-        var tournament = getTournamentById(tournamentId);
+        final var tournament = getTournamentById(tournamentId);
 
         // Only allow updates if tournament is still in draft or registration phase
         if (tournament.getStatus() != Tournament.TournamentStatus.DRAFT
@@ -127,7 +127,7 @@ public class TournamentService {
     }
 
     public void deleteTournament(Long tournamentId) {
-        var tournament = getTournamentById(tournamentId);
+        final var tournament = getTournamentById(tournamentId);
 
         // Only allow deletion if tournament hasn't started
         if (tournament.getStatus() == Tournament.TournamentStatus.IN_PROGRESS
@@ -143,7 +143,7 @@ public class TournamentService {
     public Tournament openRegistration(Long tournamentId) {
         log.info("Opening registration for tournament: {}", tournamentId);
 
-        var tournament = getTournamentById(tournamentId);
+        final var tournament = getTournamentById(tournamentId);
         tournament.openRegistration();
 
         return tournamentRepository.save(tournament);
@@ -152,7 +152,7 @@ public class TournamentService {
     public Tournament closeRegistration(Long tournamentId) {
         log.info("Closing registration for tournament: {}", tournamentId);
 
-        var tournament = getTournamentById(tournamentId);
+        final var tournament = getTournamentById(tournamentId);
         tournament.closeRegistration();
 
         return tournamentRepository.save(tournament);
@@ -161,7 +161,7 @@ public class TournamentService {
     public Tournament startTournament(Long tournamentId) {
         log.info("Starting tournament: {}", tournamentId);
 
-        var tournament = getTournamentWithRegistrations(tournamentId);
+        final var tournament = getTournamentWithRegistrations(tournamentId);
 
         if (!tournament.canStart()) {
             throw new IllegalStateException(
@@ -178,7 +178,7 @@ public class TournamentService {
     public Tournament cancelTournament(Long tournamentId) {
         log.info("Cancelling tournament: {}", tournamentId);
 
-        var tournament = getTournamentById(tournamentId);
+        final var tournament = getTournamentById(tournamentId);
         tournament.cancel();
 
         return tournamentRepository.save(tournament);
@@ -188,7 +188,7 @@ public class TournamentService {
     public TournamentRegistration registerForTournament(Long tournamentId, TournamentRegistrationRequest request) {
         log.info("Registering player {} for tournament {}", request.playerId(), tournamentId);
 
-        var tournament = getTournamentById(tournamentId);
+        final var tournament = getTournamentById(tournamentId);
 
         if (!tournament.canRegister()) {
             throw new IllegalStateException("Registration is not open for this tournament");
@@ -199,14 +199,14 @@ public class TournamentService {
             throw new IllegalStateException("Player is already registered for this tournament");
         }
 
-        var player = playerRepository
+        final var player = playerRepository
                 .findById(request.playerId())
                 .orElseThrow(() -> new EntityNotFoundException("Player not found with id: " + request.playerId()));
 
         TournamentRegistration registration;
 
         if (request.isTeamRegistration()) {
-            var partner = playerRepository
+            final var partner = playerRepository
                     .findById(request.partnerId())
                     .orElseThrow(
                             () -> new EntityNotFoundException("Partner not found with id: " + request.partnerId()));
@@ -227,11 +227,11 @@ public class TournamentService {
     public void withdrawFromTournament(Long tournamentId, Long playerId) {
         log.info("Withdrawing player {} from tournament {}", playerId, tournamentId);
 
-        var registration = registrationRepository
+        final var registration = registrationRepository
                 .findByTournamentIdAndPlayerId(tournamentId, playerId)
                 .orElseThrow(() -> new EntityNotFoundException("Registration not found"));
 
-        var tournament = getTournamentById(tournamentId);
+        final var tournament = getTournamentById(tournamentId);
 
         if (tournament.getStatus() == Tournament.TournamentStatus.IN_PROGRESS
                 || tournament.getStatus() == Tournament.TournamentStatus.COMPLETED) {
@@ -250,8 +250,9 @@ public class TournamentService {
     private void generateBracket(Tournament tournament) {
         log.info("Generating bracket for tournament: {}", tournament.getId());
 
-        var activeRegistrations = registrationRepository.findByTournamentIdAndStatusOrderBySeedAscRegistrationDateAsc(
-                tournament.getId(), TournamentRegistration.RegistrationStatus.ACTIVE);
+        final var activeRegistrations =
+                registrationRepository.findByTournamentIdAndStatusOrderBySeedAscRegistrationDateAsc(
+                        tournament.getId(), TournamentRegistration.RegistrationStatus.ACTIVE);
 
         log.info("Found {} active registrations for tournament {}", activeRegistrations.size(), tournament.getId());
         for (var reg : activeRegistrations) {
@@ -263,8 +264,8 @@ public class TournamentService {
             throw new IllegalStateException("No active registrations found for tournament");
         }
 
-        var algorithm = getTournamentAlgorithm(tournament.getTournamentType());
-        var matches = algorithm.generateBracket(tournament, activeRegistrations);
+        final var algorithm = getTournamentAlgorithm(tournament.getTournamentType());
+        final var matches = algorithm.generateBracket(tournament, activeRegistrations);
 
         log.info("Algorithm generated {} matches", matches.size());
         for (var match : matches) {
@@ -277,7 +278,7 @@ public class TournamentService {
         }
 
         // Save all matches
-        var savedMatches = matchRepository.saveAll(matches);
+        final var savedMatches = matchRepository.saveAll(matches);
         log.info("Saved {} matches to database", savedMatches.size());
 
         log.info("Generated {} matches for tournament {}", matches.size(), tournament.getId());
@@ -298,7 +299,7 @@ public class TournamentService {
     public List<biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto> getBracketView(
             Long tournamentId) {
         log.info("Fetching bracket view for tournament: {}", tournamentId);
-        var bracket = matchRepository.findBracketView(tournamentId);
+        final var bracket = matchRepository.findBracketView(tournamentId);
         log.info("Found {} matches in bracket for tournament {}", bracket.size(), tournamentId);
         return bracket;
     }
@@ -312,8 +313,8 @@ public class TournamentService {
     public TournamentMatch completeMatch(Long matchId, Long gameId) {
         log.info("Completing match {} with game {}", matchId, gameId);
 
-        var match = getMatchById(matchId);
-        var game = gameRepository
+        final var match = getMatchById(matchId);
+        final var game = gameRepository
                 .findById(gameId)
                 .orElseThrow(() -> new EntityNotFoundException("Game not found with id: " + gameId));
 
@@ -328,13 +329,13 @@ public class TournamentService {
         updateStandingsForMatch(match);
 
         // Advance winner to next round
-        var algorithm = getTournamentAlgorithm(match.getTournament().getTournamentType());
-        var updatedMatches = algorithm.advanceWinner(match);
+        final var algorithm = getTournamentAlgorithm(match.getTournament().getTournamentType());
+        final var updatedMatches = algorithm.advanceWinner(match);
         matchRepository.saveAll(updatedMatches);
 
         // Check if tournament is complete
         if (algorithm.isTournamentComplete(match.getTournament())) {
-            var tournament = match.getTournament();
+            final var tournament = match.getTournament();
             tournament.complete();
             tournamentRepository.save(tournament);
             log.info("Tournament {} completed", tournament.getId());
@@ -346,8 +347,8 @@ public class TournamentService {
     public TournamentMatch recordWalkover(Long matchId, WalkoverRequest request) {
         log.info("Recording walkover for match {} with winner {}", matchId, request.winnerRegistrationId());
 
-        var match = getMatchById(matchId);
-        var winner = registrationRepository
+        final var match = getMatchById(matchId);
+        final var winner = registrationRepository
                 .findById(request.winnerRegistrationId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Registration not found with id: " + request.winnerRegistrationId()));
@@ -371,7 +372,7 @@ public class TournamentService {
     public TournamentMatch recordMatchScore(Long matchId, Integer team1Score, Integer team2Score) {
         log.info("Recording score for match {}: {} - {}", matchId, team1Score, team2Score);
 
-        var match = getMatchById(matchId);
+        final var match = getMatchById(matchId);
 
         if (!match.canStart()) {
             throw new IllegalStateException("Match is not ready to have score recorded");
@@ -382,11 +383,11 @@ public class TournamentService {
         }
 
         // Get the teams
-        var team1 = match.getTeam1();
-        var team2 = match.getTeam2();
+        final var team1 = match.getTeam1();
+        final var team2 = match.getTeam2();
 
         // Create a game from the match
-        var game = createGameFromMatch(team1, team2, team1Score, team2Score);
+        final var game = createGameFromMatch(team1, team2, team1Score, team2Score);
         gameRepository.save(game);
 
         log.info("Created game {} for match {}", game.getId(), matchId);
@@ -399,13 +400,13 @@ public class TournamentService {
             TournamentRegistration team1, TournamentRegistration team2, Integer team1Score, Integer team2Score) {
 
         // For singles, duplicate the player in both slots
-        var whitePlayer1 = team1.getPlayer();
-        var whitePlayer2 = team1.getPartner();
+        final var whitePlayer1 = team1.getPlayer();
+        final var whitePlayer2 = team1.getPartner();
 
-        var blackPlayer1 = team2.getPlayer();
-        var blackPlayer2 = team2.getPartner();
+        final var blackPlayer1 = team2.getPlayer();
+        final var blackPlayer2 = team2.getPartner();
 
-        var game = new Game(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2);
+        final var game = new Game(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2);
 
         // Determine winner from scores (scores no longer stored)
         if (team1Score > team2Score) {
@@ -426,24 +427,24 @@ public class TournamentService {
             return;
         }
 
-        var tournament = match.getTournament();
-        var team1 = match.getTeam1();
-        var team2 = match.getTeam2();
+        final var tournament = match.getTournament();
+        final var team1 = match.getTeam1();
+        final var team2 = match.getTeam2();
 
         log.info("Updating standings for match {} in tournament {}", match.getId(), tournament.getId());
 
         // Get or create standings for both teams
-        var team1Standing = standingRepository
+        final var team1Standing = standingRepository
                 .findByTournamentIdAndRegistrationId(tournament.getId(), team1.getId())
                 .orElseGet(() -> {
-                    var standing = new TournamentStanding(tournament, team1);
+                    final var standing = new TournamentStanding(tournament, team1);
                     return standingRepository.save(standing);
                 });
 
-        var team2Standing = standingRepository
+        final var team2Standing = standingRepository
                 .findByTournamentIdAndRegistrationId(tournament.getId(), team2.getId())
                 .orElseGet(() -> {
-                    var standing = new TournamentStanding(tournament, team2);
+                    final var standing = new TournamentStanding(tournament, team2);
                     return standingRepository.save(standing);
                 });
 
@@ -462,7 +463,7 @@ public class TournamentService {
     }
 
     private void recalculateStandingPositions(Long tournamentId) {
-        var standings = standingRepository.findByTournamentIdOrderByPointsDesc(tournamentId);
+        final var standings = standingRepository.findByTournamentIdOrderByPointsDesc(tournamentId);
 
         for (int i = 0; i < standings.size(); i++) {
             standings.get(i).setPosition(i + 1);

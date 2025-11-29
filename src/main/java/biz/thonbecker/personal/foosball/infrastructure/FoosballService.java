@@ -89,9 +89,9 @@ public class FoosballService {
     }
 
     public List<GameWithPlayers> getLastGame() {
-        var result = gameRepository.findLastGame();
+        final var result = gameRepository.findLastGame();
         if (!result.isEmpty()) {
-            var game = result.getFirst();
+            final var game = result.getFirst();
             log.info(
                     "Repository returned GameWithPlayers: id={}, wp1={}, wp2={}, bp1={}, bp2={}",
                     game.getId(),

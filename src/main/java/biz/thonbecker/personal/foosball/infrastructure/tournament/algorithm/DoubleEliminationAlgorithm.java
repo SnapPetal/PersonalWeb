@@ -23,8 +23,8 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
             throw new IllegalArgumentException("Not enough participants for double elimination tournament");
         }
 
-        var matches = new ArrayList<TournamentMatch>();
-        var shuffledRegistrations = new ArrayList<>(registrations);
+        final var matches = new ArrayList<TournamentMatch>();
+        final var shuffledRegistrations = new ArrayList<>(registrations);
 
         // Shuffle if no seeding
         if (registrations.stream().noneMatch(r -> r.getSeed() != null)) {
@@ -39,19 +39,19 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
             });
         }
 
-        var participantCount = shuffledRegistrations.size();
-        var winnersBracketRounds = (int) Math.ceil(Math.log(participantCount) / Math.log(2));
+        final var participantCount = shuffledRegistrations.size();
+        final var winnersBracketRounds = (int) Math.ceil(Math.log(participantCount) / Math.log(2));
 
         // Create winner's bracket (like single elimination)
-        var winnersBracketMatches = createWinnersBracket(tournament, participantCount, winnersBracketRounds);
+        final var winnersBracketMatches = createWinnersBracket(tournament, participantCount, winnersBracketRounds);
         matches.addAll(winnersBracketMatches);
 
         // Create loser's bracket
-        var losersBracketMatches = createLosersBracket(tournament, participantCount, winnersBracketRounds);
+        final var losersBracketMatches = createLosersBracket(tournament, participantCount, winnersBracketRounds);
         matches.addAll(losersBracketMatches);
 
         // Create grand finals
-        var grandFinalsMatches = createGrandFinals(tournament, winnersBracketRounds);
+        final var grandFinalsMatches = createGrandFinals(tournament, winnersBracketRounds);
         matches.addAll(grandFinalsMatches);
 
         // Link brackets together
@@ -64,13 +64,13 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
     }
 
     private List<TournamentMatch> createWinnersBracket(Tournament tournament, int participantCount, int roundCount) {
-        var matches = new ArrayList<TournamentMatch>();
+        final var matches = new ArrayList<TournamentMatch>();
 
         for (var round = 1; round <= roundCount; round++) {
-            var matchesInRound = (int) Math.pow(2, roundCount - round);
+            final var matchesInRound = (int) Math.pow(2, roundCount - round);
 
             for (var matchNum = 1; matchNum <= matchesInRound; matchNum++) {
-                var match = new TournamentMatch(tournament, round, matchNum);
+                final var match = new TournamentMatch(tournament, round, matchNum);
                 match.setBracketType(TournamentMatch.BracketType.MAIN);
                 matches.add(match);
             }
@@ -84,18 +84,18 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
 
     private List<TournamentMatch> createLosersBracket(
             Tournament tournament, int participantCount, int winnersBracketRounds) {
-        var matches = new ArrayList<TournamentMatch>();
+        final var matches = new ArrayList<TournamentMatch>();
 
         // Loser's bracket has (2 * winnersBracketRounds - 1) rounds
         // Each round alternates between receiving new losers and playing among existing losers
-        var losersBracketRounds = 2 * winnersBracketRounds - 1;
+        final var losersBracketRounds = 2 * winnersBracketRounds - 1;
 
         for (var round = 1; round <= losersBracketRounds; round++) {
             // Calculate matches in this round
-            var matchesInRound = calculateLosersBracketMatches(round, winnersBracketRounds, participantCount);
+            final var matchesInRound = calculateLosersBracketMatches(round, winnersBracketRounds, participantCount);
 
             for (var matchNum = 1; matchNum <= matchesInRound; matchNum++) {
-                var match = new TournamentMatch(tournament, round, matchNum);
+                final var match = new TournamentMatch(tournament, round, matchNum);
                 match.setBracketType(TournamentMatch.BracketType.LOSERS);
                 matches.add(match);
             }
@@ -110,14 +110,14 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
     private int calculateLosersBracketMatches(int round, int winnersBracketRounds, int participantCount) {
         // Round 1: Half of initial participants (losers from WB round 1)
         if (round == 1) {
-            var winnersR1Matches = (int) Math.pow(2, winnersBracketRounds - 1);
+            final var winnersR1Matches = (int) Math.pow(2, winnersBracketRounds - 1);
             return winnersR1Matches / 2;
         }
 
         // Odd rounds: Same as previous round (playing among existing losers)
         // Even rounds: Receive new losers from winner's bracket
-        var winnersRoundEquivalent = (round + 1) / 2;
-        var matchesFromWinners = (int) Math.pow(2, winnersBracketRounds - winnersRoundEquivalent - 1);
+        final var winnersRoundEquivalent = (round + 1) / 2;
+        final var matchesFromWinners = (int) Math.pow(2, winnersBracketRounds - winnersRoundEquivalent - 1);
 
         if (round % 2 == 0) {
             // Even round: new losers join
@@ -129,10 +129,10 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
     }
 
     private List<TournamentMatch> createGrandFinals(Tournament tournament, int winnersBracketRounds) {
-        var matches = new ArrayList<TournamentMatch>();
+        final var matches = new ArrayList<TournamentMatch>();
 
         // Grand Finals (single match)
-        var grandFinals = new TournamentMatch(tournament, winnersBracketRounds + 1, 1);
+        final var grandFinals = new TournamentMatch(tournament, winnersBracketRounds + 1, 1);
         grandFinals.setBracketType(TournamentMatch.BracketType.MAIN);
         matches.add(grandFinals);
 
@@ -141,17 +141,17 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
 
     private void setupWinnersBracketPaths(List<TournamentMatch> winnersBracket, int roundCount) {
         for (var match : winnersBracket) {
-            var currentRound = match.getRoundNumber();
-            var currentMatch = match.getMatchNumber();
+            final var currentRound = match.getRoundNumber();
+            final var currentMatch = match.getMatchNumber();
 
             // Skip final match of winner's bracket
             if (currentRound == roundCount) continue;
 
             // Find next match for winner
-            var nextRound = currentRound + 1;
-            var nextMatch = (currentMatch + 1) / 2;
+            final var nextRound = currentRound + 1;
+            final var nextMatch = (currentMatch + 1) / 2;
 
-            var nextTournamentMatch = winnersBracket.stream()
+            final var nextTournamentMatch = winnersBracket.stream()
                     .filter(m -> m.getRoundNumber().equals(nextRound)
                             && m.getMatchNumber().equals(nextMatch))
                     .findFirst()
@@ -165,17 +165,17 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
 
     private void setupLosersBracketPaths(List<TournamentMatch> losersBracket, int roundCount) {
         for (var match : losersBracket) {
-            var currentRound = match.getRoundNumber();
-            var currentMatch = match.getMatchNumber();
+            final var currentRound = match.getRoundNumber();
+            final var currentMatch = match.getMatchNumber();
 
             // Skip final match of loser's bracket
             if (currentRound == roundCount) continue;
 
             // Find next match in loser's bracket
-            var nextRound = currentRound + 1;
-            var nextMatch = calculateNextLosersBracketMatch(currentRound, currentMatch);
+            final var nextRound = currentRound + 1;
+            final var nextMatch = calculateNextLosersBracketMatch(currentRound, currentMatch);
 
-            var nextTournamentMatch = losersBracket.stream()
+            final var nextTournamentMatch = losersBracket.stream()
                     .filter(m -> m.getRoundNumber().equals(nextRound)
                             && m.getMatchNumber().equals(nextMatch))
                     .findFirst()
@@ -203,7 +203,7 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
             List<TournamentMatch> grandFinals) {
 
         // Link winner's bracket final to grand finals
-        var winnersFinal = winnersBracket.stream()
+        final var winnersFinal = winnersBracket.stream()
                 .filter(m -> m.getNextMatch() == null)
                 .findFirst()
                 .orElse(null);
@@ -213,7 +213,7 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
         }
 
         // Link loser's bracket final to grand finals
-        var losersFinal = losersBracket.stream()
+        final var losersFinal = losersBracket.stream()
                 .filter(m -> m.getNextMatch() == null)
                 .findFirst()
                 .orElse(null);
@@ -230,14 +230,14 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
             List<TournamentMatch> winnersBracket, List<TournamentMatch> losersBracket) {
 
         for (var wbMatch : winnersBracket) {
-            var wbRound = wbMatch.getRoundNumber();
-            var wbMatchNum = wbMatch.getMatchNumber();
+            final var wbRound = wbMatch.getRoundNumber();
+            final var wbMatchNum = wbMatch.getMatchNumber();
 
             // Calculate which loser's bracket match receives this loser
-            var lbRound = calculateLosersBracketRoundForLoser(wbRound);
-            var lbMatchNum = calculateLosersBracketMatchForLoser(wbRound, wbMatchNum);
+            final var lbRound = calculateLosersBracketRoundForLoser(wbRound);
+            final var lbMatchNum = calculateLosersBracketMatchForLoser(wbRound, wbMatchNum);
 
-            var loserDestination = losersBracket.stream()
+            final var loserDestination = losersBracket.stream()
                     .filter(m -> m.getRoundNumber().equals(lbRound)
                             && m.getMatchNumber().equals(lbMatchNum))
                     .findFirst()
@@ -268,7 +268,7 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
     private void assignTeamsToFirstRound(
             List<TournamentMatch> winnersBracket, List<TournamentRegistration> registrations, int participantCount) {
 
-        var firstRoundMatches = winnersBracket.stream()
+        final var firstRoundMatches = winnersBracket.stream()
                 .filter(m -> m.getRoundNumber() == 1)
                 .sorted((m1, m2) -> Integer.compare(m1.getMatchNumber(), m2.getMatchNumber()))
                 .toList();
@@ -312,17 +312,17 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
 
     @Override
     public List<TournamentMatch> advanceWinner(TournamentMatch completedMatch) {
-        var updatedMatches = new ArrayList<TournamentMatch>();
+        final var updatedMatches = new ArrayList<TournamentMatch>();
 
         if (completedMatch.getWinner() == null || !completedMatch.isCompleted()) {
             return updatedMatches;
         }
 
-        var winner = completedMatch.getWinner();
-        var loser = getLoser(completedMatch);
+        final var winner = completedMatch.getWinner();
+        final var loser = getLoser(completedMatch);
 
         // Advance winner to next match
-        var nextMatch = completedMatch.getNextMatch();
+        final var nextMatch = completedMatch.getNextMatch();
         if (nextMatch != null) {
             if (nextMatch.getTeam1() == null) {
                 nextMatch.setTeam1(winner);
@@ -335,7 +335,7 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
 
         // Drop loser to loser's bracket (if this is winner's bracket)
         if (completedMatch.getBracketType() == TournamentMatch.BracketType.MAIN && loser != null) {
-            var loserMatch = completedMatch.getConsolationMatch();
+            final var loserMatch = completedMatch.getConsolationMatch();
             if (loserMatch != null) {
                 if (loserMatch.getTeam1() == null) {
                     loserMatch.setTeam1(loser);
@@ -351,9 +351,9 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
     }
 
     private @Nullable TournamentRegistration getLoser(TournamentMatch match) {
-        var winner = match.getWinner();
-        var team1 = match.getTeam1();
-        var team2 = match.getTeam2();
+        final var winner = match.getWinner();
+        final var team1 = match.getTeam1();
+        final var team2 = match.getTeam2();
 
         if (winner == null || team1 == null || team2 == null) {
             return null;
@@ -364,10 +364,10 @@ public class DoubleEliminationAlgorithm implements TournamentAlgorithm {
 
     @Override
     public boolean isTournamentComplete(Tournament tournament) {
-        var matches = tournament.getMatches();
+        final var matches = tournament.getMatches();
 
         // Find the grand finals (highest round in MAIN bracket)
-        var grandFinals = matches.stream()
+        final var grandFinals = matches.stream()
                 .filter(m -> m.getBracketType() == TournamentMatch.BracketType.MAIN)
                 .max((m1, m2) -> Integer.compare(m1.getRoundNumber(), m2.getRoundNumber()))
                 .orElse(null);

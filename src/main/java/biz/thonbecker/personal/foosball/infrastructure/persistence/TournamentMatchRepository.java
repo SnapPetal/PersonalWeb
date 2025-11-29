@@ -1,5 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
+import biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,8 +47,7 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
             + "LEFT JOIN w.partner wpartner "
             + "WHERE m.tournament.id = :tournamentId "
             + "ORDER BY m.roundNumber ASC, m.matchNumber ASC")
-    List<biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto> findBracketView(
-            @Param("tournamentId") Long tournamentId);
+    List<BracketViewDto> findBracketView(@Param("tournamentId") Long tournamentId);
 
     // Find match with full details
     @Query("SELECT m FROM TournamentMatch m " + "LEFT JOIN FETCH m.tournament "

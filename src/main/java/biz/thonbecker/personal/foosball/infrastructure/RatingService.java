@@ -39,10 +39,10 @@ public class RatingService {
      * Calculates team-based ELO with individual tracking.
      */
     public void updateRatingsAfterGame(Game game) {
-        var whitePlayer1 = game.getWhiteTeamPlayer1();
-        var whitePlayer2 = game.getWhiteTeamPlayer2();
-        var blackPlayer1 = game.getBlackTeamPlayer1();
-        var blackPlayer2 = game.getBlackTeamPlayer2();
+        final var whitePlayer1 = game.getWhiteTeamPlayer1();
+        final var whitePlayer2 = game.getWhiteTeamPlayer2();
+        final var blackPlayer1 = game.getBlackTeamPlayer1();
+        final var blackPlayer2 = game.getBlackTeamPlayer2();
 
         log.info(
                 "Updating ratings for game: {} vs {} | Winner: {}",
@@ -52,10 +52,10 @@ public class RatingService {
 
         // Determine winners and losers
         boolean whiteWon = game.getWinner() == Game.TeamColor.WHITE;
-        var winner1 = whiteWon ? whitePlayer1 : blackPlayer1;
-        var winner2 = whiteWon ? whitePlayer2 : blackPlayer2;
-        var loser1 = whiteWon ? blackPlayer1 : whitePlayer1;
-        var loser2 = whiteWon ? blackPlayer2 : whitePlayer2;
+        final var winner1 = whiteWon ? whitePlayer1 : blackPlayer1;
+        final var winner2 = whiteWon ? whitePlayer2 : blackPlayer2;
+        final var loser1 = whiteWon ? blackPlayer1 : whitePlayer1;
+        final var loser2 = whiteWon ? blackPlayer2 : whitePlayer2;
 
         // Calculate team ratings (average)
         int winningTeamRating = (winner1.getRating() + winner2.getRating()) / 2;
@@ -89,19 +89,19 @@ public class RatingService {
         playerRepository.saveAll(List.of(winner1, winner2, loser1, loser2));
 
         log.info(
-                "Rating changes: {} ({}{}, {} ({}{}, {} ({}{}, {} ({}{})",
+                "Rating changes: {} ({}), {} ({}), {} ({}), {} ({})",
                 winner1.getName(),
-                winner1Change > 0 ? "+" : "",
-                winner1Change,
+                formatChange(winner1Change),
                 winner2.getName(),
-                winner2Change > 0 ? "+" : "",
-                winner2Change,
+                formatChange(winner2Change),
                 loser1.getName(),
-                loser1Change > 0 ? "+" : "",
-                loser1Change,
+                formatChange(loser1Change),
                 loser2.getName(),
-                loser2Change > 0 ? "+" : "",
-                loser2Change);
+                formatChange(loser2Change));
+    }
+
+    private String formatChange(int change) {
+        return (change > 0 ? "+" : "") + change;
     }
 
     private int calculateBasePoints(double expectedWinProbability, Player winner1, Player winner2) {
@@ -179,7 +179,7 @@ public class RatingService {
         }
 
         // Record history
-        var history = new RatingHistory();
+        final var history = new RatingHistory();
         history.setPlayer(player);
         history.setOldRating(oldRating);
         history.setNewRating(newRating);

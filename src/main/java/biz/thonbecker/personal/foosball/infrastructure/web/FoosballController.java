@@ -73,10 +73,10 @@ public class FoosballController {
 
     @GetMapping("/tournaments/{id}")
     public String tournamentDetail(@PathVariable Long id, Model model) {
-        var tournament = tournamentService.getTournamentWithRegistrations(id);
-        var bracket = tournamentService.getBracketView(id);
-        var registrations = tournamentService.getTournamentRegistrations(id);
-        var matches = tournamentService.getTournamentMatches(id);
+        final var tournament = tournamentService.getTournamentWithRegistrations(id);
+        final var bracket = tournamentService.getBracketView(id);
+        final var registrations = tournamentService.getTournamentRegistrations(id);
+        final var matches = tournamentService.getTournamentMatches(id);
 
         model.addAttribute("tournament", tournament);
         model.addAttribute("bracket", bracket);
@@ -114,7 +114,7 @@ public class FoosballController {
     @GetMapping("/fragments/last-game-teams")
     public String getLastGameTeamsFragment(Model model) {
         try {
-            var lastGame = foosballFacade.getLastGame();
+            final var lastGame = foosballFacade.getLastGame();
             if (lastGame != null) {
                 String wp1 = lastGame.getWhiteTeam().getPlayer1();
                 String wp2 = lastGame.getWhiteTeam().getPlayer2();
