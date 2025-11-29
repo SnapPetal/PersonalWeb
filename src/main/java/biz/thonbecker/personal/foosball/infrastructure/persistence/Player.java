@@ -1,5 +1,6 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
+import biz.thonbecker.personal.foosball.domain.RankTier;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -8,6 +9,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -33,6 +35,22 @@ public class Player {
     @Email(message = "Email should be valid")
     @Column(name = "email", length = 255)
     private String email;
+
+    // Rating system fields
+    @Column(name = "rating", nullable = false)
+    private Integer rating = 1000;
+
+    @Column(name = "peak_rating")
+    private @Nullable Integer peakRating;
+
+    @Column(name = "games_played", nullable = false)
+    private Integer gamesPlayed = 0;
+
+    @Column(name = "current_streak", nullable = false)
+    private Integer currentStreak = 0;
+
+    @Column(name = "best_streak")
+    private @Nullable Integer bestStreak;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -62,5 +80,12 @@ public class Player {
     public Player(String name, String email) {
         this.name = name;
         this.email = email;
+    }
+
+    /**
+     * Get the rank tier based on current rating
+     */
+    public RankTier getRankTier() {
+        return RankTier.fromRating(this.rating != null ? this.rating : 1000);
     }
 }

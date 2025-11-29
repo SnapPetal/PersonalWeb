@@ -365,6 +365,17 @@
                 return;
             }
 
+            // Check if this is a double elimination tournament
+            const hasLosersBracket = matches.some(m => m.bracketType === 'LOSERS');
+
+            if (hasLosersBracket) {
+                renderDoubleEliminationBracket(matches);
+            } else {
+                renderSingleEliminationBracket(matches);
+            }
+        }
+
+        function renderSingleEliminationBracket(matches) {
             // Group matches by round
             const rounds = {};
             matches.forEach(match => {
@@ -395,6 +406,66 @@
 
             html += '</div>';
             document.getElementById('bracket').innerHTML = html;
+        }
+
+        function renderDoubleEliminationBracket(matches) {
+            const mainBracket = matches.filter(m => m.bracketType === 'MAIN');
+            const losersBracket = matches.filter(m => m.bracketType === 'LOSERS');
+
+            let html = '<div style="margin-bottom: 40px;">';
+
+            // Winner's Bracket
+            html += '<h5 class="text-center mb-3" style="color: #28a745;"><i class="bi bi-trophy-fill"></i> Winner\'s Bracket</h5>';
+            html += renderBracketSection(mainBracket, 'winners');
+
+            html += '</div>';
+
+            // Loser's Bracket
+            if (losersBracket.length > 0) {
+                html += '<div style="margin-top: 40px; padding-top: 40px; border-top: 3px solid #dee2e6;">';
+                html += '<h5 class="text-center mb-3" style="color: #ffc107;"><i class="bi bi-arrow-counterclockwise"></i> Loser\'s Bracket</h5>';
+                html += renderBracketSection(losersBracket, 'losers');
+                html += '</div>';
+            }
+
+            document.getElementById('bracket').innerHTML = html;
+        }
+
+        function renderBracketSection(matches, bracketName) {
+            if (!matches || matches.length === 0) return '';
+
+            // Group matches by round
+            const rounds = {};
+            matches.forEach(match => {
+                if (!rounds[match.roundNumber]) {
+                    rounds[match.roundNumber] = [];
+                }
+                rounds[match.roundNumber].push(match);
+            });
+
+            const roundNumbers = Object.keys(rounds).sort((a, b) => a - b);
+            const maxRound = Math.max(...roundNumbers);
+
+            let html = '<div class="bracket">';
+
+            roundNumbers.forEach(roundNum => {
+                const roundMatches = rounds[roundNum];
+                const roundName = bracketName === 'winners'
+                    ? getRoundName(parseInt(roundNum), maxRound)
+                    : `LB Round ${roundNum}`;
+
+                html += `<div class="round">`;
+                html += `<div class="round-title">${roundName}</div>`;
+
+                roundMatches.forEach(match => {
+                    html += renderMatch(match);
+                });
+
+                html += `</div>`;
+            });
+
+            html += '</div>';
+            return html;
         }
 
         function renderMatch(match) {

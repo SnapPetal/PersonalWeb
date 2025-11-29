@@ -26,17 +26,20 @@ public class FoosballService {
     private final GameRepository gameRepository;
     private final PlayerStatsRepository playerStatsRepository;
     private final TeamStatsRepository teamStatsRepository;
+    private final RatingService ratingService;
 
     @Autowired
     public FoosballService(
             PlayerRepository playerRepository,
             GameRepository gameRepository,
             PlayerStatsRepository playerStatsRepository,
-            TeamStatsRepository teamStatsRepository) {
+            TeamStatsRepository teamStatsRepository,
+            RatingService ratingService) {
         this.playerRepository = playerRepository;
         this.gameRepository = gameRepository;
         this.playerStatsRepository = playerStatsRepository;
         this.teamStatsRepository = teamStatsRepository;
+        this.ratingService = ratingService;
     }
 
     // Player management
@@ -67,7 +70,13 @@ public class FoosballService {
             Game.TeamColor winner) {
         final var game = new Game(whiteTeamPlayer1, whiteTeamPlayer2, blackTeamPlayer1, blackTeamPlayer2);
         game.setWinner(winner);
-        return gameRepository.save(game);
+        final var savedGame = gameRepository.save(game);
+
+        // Update player ratings based on game result
+        ratingService.updateRatingsAfterGame(savedGame);
+        log.info("Updated ratings for game {}", savedGame.getId());
+
+        return savedGame;
     }
 
     public List<Game> getAllGames() {
@@ -120,8 +129,18 @@ public class FoosballService {
         return playerStatsRepository.findAllPlayerStatsOrderedByWinPercentage();
     }
 
-    public List<PlayerStats> getAllPlayerStatsOrderedByRankScore() {
-        return playerStatsRepository.findAllPlayerStatsOrderedByRankScore();
+    /**
+     * Get players ordered by ELO rating (replaces old rank score)
+     */
+    public List<Player> getAllPlayersOrderedByRating() {
+        return playerRepository.findAllByOrderByRatingDesc();
+    }
+
+    /**
+     * Get leaderboard (top 10 players by rating)
+     */
+    public List<Player> getLeaderboard() {
+        return playerRepository.findTop10ByOrderByRatingDesc();
     }
 
     public List<PlayerStats> getAllPlayerStatsOrderedByTotalGames() {

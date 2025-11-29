@@ -23,9 +23,11 @@
             <thead>
                 <tr>
                     <th><i class="bi bi-person"></i> Player</th>
+                    <th><i class="bi bi-star"></i> Rating</th>
+                    <th><i class="bi bi-graph-up-arrow"></i> Peak</th>
+                    <th><i class="bi bi-fire"></i> Streak</th>
                     <th><i class="bi bi-controller"></i> Games</th>
                     <th><i class="bi bi-trophy"></i> Wins</th>
-                    <th><i class="bi bi-x-circle"></i> Losses</th>
                     <th><i class="bi bi-percent"></i> Win Rate</th>
                 </tr>
             </thead>
@@ -35,9 +37,24 @@
                     hx-target="this"
                     hx-swap="outerHTML transition:true">
                     <td><strong class="foosball-player-name" th:text="${stat.playerName}"></strong></td>
+                    <td>
+                        <span class="badge bg-warning text-dark" th:text="${stat.rating != null ? stat.rating : 1000}"></span>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary" th:text="${stat.peakRating != null ? stat.peakRating : '-'}"></span>
+                    </td>
+                    <td>
+                        <span th:if="${stat.currentStreak != null and stat.currentStreak > 0}"
+                              class="badge bg-success"
+                              th:text="'+' + ${stat.currentStreak}"></span>
+                        <span th:if="${stat.currentStreak != null and stat.currentStreak < 0}"
+                              class="badge bg-danger"
+                              th:text="${stat.currentStreak}"></span>
+                        <span th:if="${stat.currentStreak == null or stat.currentStreak == 0}"
+                              class="text-secondary">-</span>
+                    </td>
                     <td><span class="badge bg-info text-dark" th:text="${stat.totalGames}"></span></td>
                     <td><span class="badge bg-success" th:text="${stat.wins}"></span></td>
-                    <td><span class="badge bg-danger" th:text="${stat.losses}"></span></td>
                     <td>
                         <span th:if="${stat.totalGames > 0}"
                               th:text="${#numbers.formatDecimal(stat.winPercentage, 0, 0)} + '%'"></span>

@@ -141,8 +141,11 @@ class FoosballFacadeImpl implements FoosballFacade {
     @Override
     public List<PlayerStats> getPlayerStats() {
         log.debug("Retrieving player statistics");
-        return foosballService.getAllPlayerStatsOrderedByRankScore().stream()
+        // Use win percentage ordering (ELO ratings are tracked separately via Player.rating)
+        // Filter to only include players with at least 5 games
+        return foosballService.getAllPlayerStatsOrderedByWinPercentage().stream()
                 .map(this::toPlayerStatsDomain)
+                .filter(stats -> stats.getTotalGames() >= 5)
                 .collect(Collectors.toList());
     }
 
@@ -183,6 +186,11 @@ class FoosballFacadeImpl implements FoosballFacade {
             biz.thonbecker.personal.foosball.infrastructure.persistence.PlayerStats projection) {
         return new PlayerStats(
                 projection.getName(),
+                projection.getRating() != null ? projection.getRating() : 1000,
+                projection.getPeakRating(),
+                projection.getCurrentStreak(),
+                projection.getBestStreak(),
+                projection.getGamesPlayed() != null ? projection.getGamesPlayed() : 0,
                 projection.getTotalGames().intValue(),
                 projection.getWins().intValue(),
                 projection.getTotalGames().intValue() - projection.getWins().intValue(),

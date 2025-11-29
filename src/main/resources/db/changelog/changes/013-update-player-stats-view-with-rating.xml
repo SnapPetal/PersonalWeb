@@ -1,0 +1,37 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="013-update-player-stats-view-with-rating" author="claude">
+        <comment>Update player_stats view to include rating fields</comment>
+        <sql>
+            DROP VIEW IF EXISTS foosball.player_stats;
+
+            CREATE VIEW foosball.player_stats AS
+            SELECT
+                p.id,
+                p.name,
+                p.rating,
+                p.peak_rating,
+                p.current_streak,
+                p.best_streak,
+                p.games_played,
+                COUNT(DISTINCT g.id) as total_games,
+                COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p.id OR g.white_team_player2_id = p.id) THEN 1 END) +
+                COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p.id OR g.black_team_player2_id = p.id) THEN 1 END) as wins,
+                (COUNT(CASE WHEN g.winner = 'WHITE' AND (g.white_team_player1_id = p.id OR g.white_team_player2_id = p.id) THEN 1 END) +
+                 COUNT(CASE WHEN g.winner = 'BLACK' AND (g.black_team_player1_id = p.id OR g.black_team_player2_id = p.id) THEN 1 END)) * 100.0 /
+                NULLIF(COUNT(DISTINCT g.id), 0) as win_percentage
+            FROM foosball.players p
+            LEFT JOIN foosball.games g ON
+                g.white_team_player1_id = p.id OR
+                g.white_team_player2_id = p.id OR
+                g.black_team_player1_id = p.id OR
+                g.black_team_player2_id = p.id
+            GROUP BY p.id, p.name, p.rating, p.peak_rating, p.current_streak, p.best_streak, p.games_played;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

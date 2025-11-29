@@ -19,4 +19,13 @@ public interface PlayerRepository extends CrudRepository<Player, Long> {
     List<Player> findByNameContainingIgnoreCase(String name);
 
     List<Player> findAllByOrderByNameAsc();
+
+    // Rating/Ranking queries
+    @RestResource(path = "by-rating", rel = "by-rating")
+    List<Player> findAllByOrderByRatingDesc();
+
+    @RestResource(path = "leaderboard", rel = "leaderboard")
+    List<Player> findTop10ByOrderByRatingDesc();
+
+    List<Player> findByGamesPlayedGreaterThanEqualOrderByRatingDesc(int minGames);
 }

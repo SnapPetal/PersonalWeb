@@ -131,8 +131,16 @@ public class FoosballRestController {
 
     @GetMapping("/stats/players/all")
     public ResponseEntity<List<PlayerStats>> getAllPlayerStats() {
-        final var stats = foosballService.getAllPlayerStatsOrderedByRankScore();
+        // Return players ordered by win percentage (ELO ratings available via /players/leaderboard)
+        final var stats = foosballService.getAllPlayerStatsOrderedByWinPercentage();
         return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/players/leaderboard")
+    public ResponseEntity<List<Player>> getLeaderboard() {
+        // ELO-based leaderboard
+        final var leaderboard = foosballService.getLeaderboard();
+        return ResponseEntity.ok(leaderboard);
     }
 
     // Team performance statistics

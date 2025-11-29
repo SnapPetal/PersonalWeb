@@ -71,12 +71,12 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
+                                        <th><i class="bi bi-person"></i> Name</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr th:each="player : ${players}">
-                                        <td th:text="${player.name}"></td>
+                                        <td><strong th:text="${player.name}"></strong></td>
                                     </tr>
                                 </tbody>
                             </table>

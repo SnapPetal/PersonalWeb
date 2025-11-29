@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="012-add-rating-system" author="claude">
+        <comment>Add ELO rating system fields to players table and create rating_history table</comment>
+
+        <!-- Add rating fields to players table -->
+        <addColumn tableName="players" schemaName="foosball">
+            <column name="rating" type="INTEGER" defaultValueNumeric="1000">
+                <constraints nullable="false"/>
+            </column>
+            <column name="peak_rating" type="INTEGER">
+                <constraints nullable="true"/>
+            </column>
+            <column name="games_played" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_streak" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="best_streak" type="INTEGER">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Create rating_history table -->
+        <createTable tableName="rating_history" schemaName="foosball">
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="player_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="old_rating" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="new_rating" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="change" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="game_id" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="recorded_at" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Add foreign key constraints -->
+        <addForeignKeyConstraint
+            baseTableName="rating_history"
+            baseTableSchemaName="foosball"
+            baseColumnNames="player_id"
+            constraintName="fk_rating_history_player"
+            referencedTableName="players"
+            referencedTableSchemaName="foosball"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+            baseTableName="rating_history"
+            baseTableSchemaName="foosball"
+            baseColumnNames="game_id"
+            constraintName="fk_rating_history_game"
+            referencedTableName="games"
+            referencedTableSchemaName="foosball"
+            referencedColumnNames="id"
+            onDelete="SET NULL"/>
+
+        <!-- Add indexes for performance -->
+        <createIndex indexName="idx_rating_history_player" tableName="rating_history" schemaName="foosball">
+            <column name="player_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_rating_history_recorded_at" tableName="rating_history" schemaName="foosball">
+            <column name="recorded_at"/>
+        </createIndex>
+
+        <createIndex indexName="idx_players_rating" tableName="players" schemaName="foosball">
+            <column name="rating" descending="true"/>
+        </createIndex>
+
+    </changeSet>
+
+</databaseChangeLog>
