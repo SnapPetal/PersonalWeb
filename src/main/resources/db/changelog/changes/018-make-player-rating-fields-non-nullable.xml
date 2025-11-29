@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="018-make-player-rating-fields-non-nullable" author="thonbecker">
+        <!-- Update NULL peak_rating values to match current rating -->
+        <sql>
+            UPDATE foosball.players
+            SET peak_rating = COALESCE(rating, 1000)
+            WHERE peak_rating IS NULL;
+        </sql>
+
+        <!-- Update NULL best_streak values to 0 -->
+        <sql>
+            UPDATE foosball.players
+            SET best_streak = 0
+            WHERE best_streak IS NULL;
+        </sql>
+
+        <!-- Make peak_rating NOT NULL with default value -->
+        <addNotNullConstraint
+            tableName="players"
+            columnName="peak_rating"
+            columnDataType="INTEGER"
+            defaultNullValue="1000"
+            schemaName="foosball"/>
+
+        <!-- Make best_streak NOT NULL with default value -->
+        <addNotNullConstraint
+            tableName="players"
+            columnName="best_streak"
+            columnDataType="INTEGER"
+            defaultNullValue="0"
+            schemaName="foosball"/>
+    </changeSet>
+
+</databaseChangeLog>

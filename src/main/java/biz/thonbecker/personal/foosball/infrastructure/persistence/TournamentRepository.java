@@ -1,6 +1,5 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -13,28 +12,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
-    // Find tournaments by status
-    List<Tournament> findByStatus(Tournament.TournamentStatus status);
-
-    // Find tournaments by type
-    List<Tournament> findByTournamentType(Tournament.TournamentType type);
-
-    // Find tournaments created by a specific player
-    List<Tournament> findByCreatedByIdOrderByCreatedAtDesc(Long createdById);
-
     // Find active tournaments (not cancelled or completed)
     @Query("SELECT t FROM Tournament t WHERE t.status NOT IN ('CANCELLED', 'COMPLETED') ORDER BY t.createdAt DESC")
     List<Tournament> findActiveTournaments();
-
-    // Find tournaments where registration is currently open
-    @Query("SELECT t FROM Tournament t WHERE t.status = 'REGISTRATION_OPEN' "
-            + "AND (t.registrationStart IS NULL OR t.registrationStart <= :now) "
-            + "AND (t.registrationEnd IS NULL OR t.registrationEnd > :now)")
-    List<Tournament> findTournamentsWithOpenRegistration(@Param("now") Instant now);
-
-    // Find upcoming tournaments
-    @Query("SELECT t FROM Tournament t WHERE t.startDate > :now ORDER BY t.startDate ASC")
-    List<Tournament> findUpcomingTournaments(@Param("now") Instant now);
 
     // Find tournaments a player is registered for
     @Query("SELECT DISTINCT t FROM Tournament t JOIN t.registrations r "
@@ -58,11 +38,6 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     Page<biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentSummaryDto> findTournamentSummaries(
             Pageable pageable);
 
-    // Search tournaments by name
-    @Query("SELECT t FROM Tournament t WHERE LOWER(t.name) LIKE LOWER(CONCAT('%', :search, '%')) "
-            + "ORDER BY t.createdAt DESC")
-    List<Tournament> searchByName(@Param("search") String search);
-
     // Find tournament with full details
     @Query("SELECT t FROM Tournament t " + "LEFT JOIN FETCH t.registrations r "
             + "LEFT JOIN FETCH r.player "
@@ -78,14 +53,4 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             + "LEFT JOIN FETCH m.game "
             + "WHERE t.id = :id")
     Optional<Tournament> findByIdWithMatches(@Param("id") Long id);
-
-    // Statistics queries
-    @Query("SELECT COUNT(t) FROM Tournament t WHERE t.status = 'COMPLETED'")
-    long countCompletedTournaments();
-
-    @Query("SELECT COUNT(t) FROM Tournament t WHERE t.status = 'IN_PROGRESS'")
-    long countActiveTournaments();
-
-    @Query("SELECT t.tournamentType, COUNT(t) FROM Tournament t GROUP BY t.tournamentType")
-    List<Object[]> getTournamentTypeStatistics();
 }

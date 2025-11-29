@@ -19,13 +19,6 @@ public interface GameRepository extends CrudRepository<Game, Long> {
             "SELECT g FROM Game g WHERE g.whiteTeamPlayer1 = :player OR g.whiteTeamPlayer2 = :player OR g.blackTeamPlayer1 = :player OR g.blackTeamPlayer2 = :player ORDER BY g.playedAt DESC")
     List<Game> findByPlayer(@Param("player") Player player);
 
-    @RestResource(path = "by-winner", rel = "by-winner")
-    List<Game> findByWinner(Game.TeamColor winner);
-
-    @RestResource(path = "by-date-range", rel = "by-date-range")
-    @Query("SELECT g FROM Game g WHERE g.playedAt BETWEEN :startDate AND :endDate ORDER BY g.playedAt DESC")
-    List<Game> findByDateRange(@Param("startDate") Instant startDate, @Param("endDate") Instant endDate);
-
     @RestResource(path = "recent", rel = "recent")
     @Query("SELECT g FROM Game g " + "LEFT JOIN FETCH g.whiteTeamPlayer1 "
             + "LEFT JOIN FETCH g.whiteTeamPlayer2 "
@@ -45,9 +38,6 @@ public interface GameRepository extends CrudRepository<Game, Long> {
     // Statistics queries
     @Query("SELECT COUNT(g) FROM Game g WHERE g.winner IS NOT NULL")
     Long countGamesWithWinner();
-
-    @Query("SELECT COUNT(g) FROM Game g WHERE g.winner IS NULL")
-    Long countDraws();
 
     // Score statistics - no longer tracked, returning 0
     default Double getAverageTotalScore() {

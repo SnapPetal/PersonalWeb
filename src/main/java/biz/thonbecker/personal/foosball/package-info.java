@@ -83,7 +83,7 @@
  * <h2>Database Schema</h2>
  * <p>This module uses the 'foosball' schema in PostgreSQL with the following tables:
  * <ul>
- *   <li>players - Player information (name, email)</li>
+ *   <li>players - Player information (name)</li>
  *   <li>games - Game records with team compositions and scores</li>
  *   <li>player_stats - Materialized view of player statistics</li>
  *   <li>team_stats - Materialized view of team performance</li>

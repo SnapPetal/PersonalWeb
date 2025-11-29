@@ -43,11 +43,6 @@ public class FoosballService {
     }
 
     // Player management
-    public Player createPlayer(String name, String email) {
-        final var player = new Player(name, email);
-        return playerRepository.save(player);
-    }
-
     public Player createPlayer(String name) {
         final var player = new Player(name);
         return playerRepository.save(player);
@@ -72,7 +67,7 @@ public class FoosballService {
         game.setWinner(winner);
         final var savedGame = gameRepository.save(game);
 
-        // Update player ratings based on game result
+        // Update player ratings based on a game result
         ratingService.updateRatingsAfterGame(savedGame);
         log.info("Updated ratings for game {}", savedGame.getId());
 
@@ -87,10 +82,6 @@ public class FoosballService {
 
     public Optional<Game> getGameById(Long id) {
         return gameRepository.findById(id);
-    }
-
-    public List<Game> getGamesByPlayer(Player player) {
-        return gameRepository.findByPlayer(player);
     }
 
     public List<GameWithPlayers> getRecentGames() {
@@ -130,25 +121,10 @@ public class FoosballService {
     }
 
     /**
-     * Get players ordered by ELO rating (replaces old rank score)
-     */
-    public List<Player> getAllPlayersOrderedByRating() {
-        return playerRepository.findAllByOrderByRatingDesc();
-    }
-
-    /**
      * Get leaderboard (top 10 players by rating)
      */
     public List<Player> getLeaderboard() {
         return playerRepository.findTop10ByOrderByRatingDesc();
-    }
-
-    public List<PlayerStats> getAllPlayerStatsOrderedByTotalGames() {
-        return playerStatsRepository.findAllPlayerStatsOrderedByTotalGames();
-    }
-
-    public List<PlayerStats> getAllPlayerStatsOrderedByWins() {
-        return playerStatsRepository.findAllPlayerStatsOrderedByWins();
     }
 
     // Team performance statistics
@@ -162,10 +138,6 @@ public class FoosballService {
 
     public List<TeamStats> getAllTeamStatsOrderedByWinPercentage() {
         return teamStatsRepository.findAllTeamStatsOrderedByWinPercentage();
-    }
-
-    public List<TeamStats> getAllTeamStatsOrderedByGamesPlayed() {
-        return teamStatsRepository.findAllTeamStatsOrderedByGamesPlayed();
     }
 
     // Overall statistics

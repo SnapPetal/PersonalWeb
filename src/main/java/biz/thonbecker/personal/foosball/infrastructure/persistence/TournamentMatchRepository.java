@@ -13,24 +13,6 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
     // Find matches for a tournament ordered by round and match number
     List<TournamentMatch> findByTournamentIdOrderByRoundNumberAscMatchNumberAsc(Long tournamentId);
 
-    // Find matches for specific round
-    List<TournamentMatch> findByTournamentIdAndRoundNumberOrderByMatchNumberAsc(Long tournamentId, Integer roundNumber);
-
-    // Find matches by status
-    List<TournamentMatch> findByTournamentIdAndStatusOrderByRoundNumberAscMatchNumberAsc(
-            Long tournamentId, TournamentMatch.MatchStatus status);
-
-    // Find matches for a specific registration (team)
-    @Query("SELECT m FROM TournamentMatch m WHERE " + "m.tournament.id = :tournamentId AND "
-            + "(m.team1.id = :registrationId OR m.team2.id = :registrationId) "
-            + "ORDER BY m.roundNumber ASC, m.matchNumber ASC")
-    List<TournamentMatch> findMatchesForRegistration(
-            @Param("tournamentId") Long tournamentId, @Param("registrationId") Long registrationId);
-
-    // Find next match for winner
-    @Query("SELECT m FROM TournamentMatch m WHERE m.nextMatch.id = :matchId")
-    List<TournamentMatch> findMatchesAdvancingTo(@Param("matchId") Long matchId);
-
     // Find bracket view for tournament
     @Query("SELECT new biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto("
             + "m.id, m.roundNumber, m.matchNumber, m.bracketType, "
@@ -67,30 +49,6 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
     List<biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto> findBracketView(
             @Param("tournamentId") Long tournamentId);
 
-    // Find matches by bracket type
-    List<TournamentMatch> findByTournamentIdAndBracketTypeOrderByRoundNumberAscMatchNumberAsc(
-            Long tournamentId, TournamentMatch.BracketType bracketType);
-
-    // Find ready matches (both teams assigned)
-    @Query("SELECT m FROM TournamentMatch m WHERE " + "m.tournament.id = :tournamentId AND "
-            + "m.team1 IS NOT NULL AND m.team2 IS NOT NULL AND "
-            + "m.status = 'READY' "
-            + "ORDER BY m.roundNumber ASC, m.matchNumber ASC")
-    List<TournamentMatch> findReadyMatches(@Param("tournamentId") Long tournamentId);
-
-    // Find pending matches (waiting for teams)
-    @Query("SELECT m FROM TournamentMatch m WHERE " + "m.tournament.id = :tournamentId AND "
-            + "(m.team1 IS NULL OR m.team2 IS NULL) AND "
-            + "m.status = 'PENDING' "
-            + "ORDER BY m.roundNumber ASC, m.matchNumber ASC")
-    List<TournamentMatch> findPendingMatches(@Param("tournamentId") Long tournamentId);
-
-    // Find completed matches
-    @Query("SELECT m FROM TournamentMatch m WHERE " + "m.tournament.id = :tournamentId AND "
-            + "m.status IN ('COMPLETED', 'WALKOVER') "
-            + "ORDER BY m.roundNumber ASC, m.matchNumber ASC")
-    List<TournamentMatch> findCompletedMatches(@Param("tournamentId") Long tournamentId);
-
     // Find match with full details
     @Query("SELECT m FROM TournamentMatch m " + "LEFT JOIN FETCH m.tournament "
             + "LEFT JOIN FETCH m.team1 t1 "
@@ -105,20 +63,4 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
             + "LEFT JOIN FETCH m.game "
             + "WHERE m.id = :id")
     Optional<TournamentMatch> findByIdWithDetails(@Param("id") Long id);
-
-    // Count matches by status for tournament
-    @Query("SELECT m.status, COUNT(m) FROM TournamentMatch m WHERE m.tournament.id = :tournamentId GROUP BY m.status")
-    List<Object[]> countMatchesByStatus(@Param("tournamentId") Long tournamentId);
-
-    // Find matches in current round
-    @Query("SELECT m FROM TournamentMatch m WHERE " + "m.tournament.id = :tournamentId AND "
-            + "m.roundNumber = (SELECT MAX(m2.roundNumber) FROM TournamentMatch m2 "
-            + "                 WHERE m2.tournament.id = :tournamentId AND "
-            + "                 m2.status NOT IN ('COMPLETED', 'WALKOVER')) "
-            + "ORDER BY m.matchNumber ASC")
-    List<TournamentMatch> findCurrentRoundMatches(@Param("tournamentId") Long tournamentId);
-
-    // Get max round number for tournament
-    @Query("SELECT COALESCE(MAX(m.roundNumber), 0) FROM TournamentMatch m WHERE m.tournament.id = :tournamentId")
-    Integer getMaxRoundNumber(@Param("tournamentId") Long tournamentId);
 }

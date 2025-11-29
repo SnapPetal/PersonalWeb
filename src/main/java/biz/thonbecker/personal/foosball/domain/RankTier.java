@@ -43,18 +43,4 @@ public enum RankTier {
         }
         return BRONZE;
     }
-
-    /**
-     * Check if player is at risk of demotion (within 50 points of lower tier)
-     */
-    public boolean isAtRisk(int currentRating) {
-        return currentRating - minRating < 50 && this != BRONZE;
-    }
-
-    /**
-     * Check if player is close to promotion (within 50 points of next tier)
-     */
-    public boolean isCloseToPromotion(int currentRating) {
-        return maxRating - currentRating < 50 && this != GRANDMASTER;
-    }
 }

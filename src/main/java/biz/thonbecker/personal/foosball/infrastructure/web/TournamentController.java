@@ -1,7 +1,16 @@
 package biz.thonbecker.personal.foosball.infrastructure.web;
 
 import biz.thonbecker.personal.foosball.infrastructure.TournamentService;
-import biz.thonbecker.personal.foosball.infrastructure.web.model.*;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.CreateTournamentRequest;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.MatchScoreRequest;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentMatchResponse;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentRegistrationRequest;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentRegistrationResponse;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentResponse;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentSummaryDto;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.UpdateTournamentRequest;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.WalkoverRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -150,8 +159,7 @@ public class TournamentController {
 
     // Bracket and Match Management
     @GetMapping("/{id}/bracket")
-    public ResponseEntity<List<biz.thonbecker.personal.foosball.infrastructure.web.model.BracketViewDto>> getBracket(
-            @PathVariable Long id) {
+    public ResponseEntity<List<BracketViewDto>> getBracket(@PathVariable Long id) {
         var bracket = tournamentService.getBracketView(id);
         return ResponseEntity.ok(bracket);
     }

@@ -25,7 +25,7 @@ public class DataLoader {
     /**
      * Helper method to get an existing player or create a new one
      */
-    private Player getOrCreatePlayer(String name, String email, int rating, int gamesPlayed) {
+    private Player getOrCreatePlayer(String name, int rating, int gamesPlayed) {
         // First try to find existing player
         final var existingPlayer = foosballService.findPlayerByName(name);
         if (existingPlayer.isPresent()) {
@@ -35,7 +35,7 @@ public class DataLoader {
 
         // If player doesn't exist, create new one with specific rating
         log.info("Creating new player: {} with rating {}", name, rating);
-        var player = foosballService.createPlayer(name, email);
+        var player = foosballService.createPlayer(name);
         player.setRating(rating);
         player.setGamesPlayed(gamesPlayed);
         player.setPeakRating(rating);
@@ -52,30 +52,30 @@ public class DataLoader {
 
         // Create sample players with varied ratings across different rank tiers
         // Master tier (1800-1999)
-        final var alice = getOrCreatePlayer("Alice", "alice@example.com", 1850, 10);
+        final var alice = getOrCreatePlayer("Alice", 1850, 10);
 
         // Diamond tier (1600-1799)
-        final var bob = getOrCreatePlayer("Bob", "bob@example.com", 1650, 8);
+        final var bob = getOrCreatePlayer("Bob", 1650, 8);
 
         // Platinum tier (1400-1599)
-        final var charlie = getOrCreatePlayer("Charlie", "charlie@example.com", 1450, 7);
-        final var diana = getOrCreatePlayer("Diana", "diana@example.com", 1480, 6);
+        final var charlie = getOrCreatePlayer("Charlie", 1450, 7);
+        final var diana = getOrCreatePlayer("Diana", 1480, 6);
 
         // Gold tier (1200-1399)
-        final var eve = getOrCreatePlayer("Eve", "eve@example.com", 1250, 8);
-        final var frank = getOrCreatePlayer("Frank", "frank@example.com", 1280, 7);
+        final var eve = getOrCreatePlayer("Eve", 1250, 8);
+        final var frank = getOrCreatePlayer("Frank", 1280, 7);
 
         // Silver tier (1000-1199)
-        final var grace = getOrCreatePlayer("Grace", "grace@example.com", 1100, 6);
-        final var henry = getOrCreatePlayer("Henry", "henry@example.com", 1120, 5);
+        final var grace = getOrCreatePlayer("Grace", 1100, 6);
+        final var henry = getOrCreatePlayer("Henry", 1120, 5);
 
         // Bronze tier (0-999)
-        final var iris = getOrCreatePlayer("Iris", "iris@example.com", 950, 6);
-        final var jack = getOrCreatePlayer("Jack", "jack@example.com", 920, 5);
+        final var iris = getOrCreatePlayer("Iris", 950, 6);
+        final var jack = getOrCreatePlayer("Jack", 920, 5);
 
         // Players with fewer games (won't show in rankings with 5+ game filter)
-        final var kate = getOrCreatePlayer("Kate", "kate@example.com", 1000, 3);
-        final var liam = getOrCreatePlayer("Liam", "liam@example.com", 1000, 2);
+        final var kate = getOrCreatePlayer("Kate", 1000, 3);
+        final var liam = getOrCreatePlayer("Liam", 1000, 2);
 
         log.info("Created {} players", foosballService.getTotalPlayers());
 

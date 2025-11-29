@@ -10,7 +10,6 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -62,7 +61,7 @@ public class RatingService {
         int winningTeamRating = (winner1.getRating() + winner2.getRating()) / 2;
         int losingTeamRating = (loser1.getRating() + loser2.getRating()) / 2;
 
-        // Calculate expected outcome
+        // Calculate the expected outcome
         double expectedWinProbability = calculateExpectedScore(winningTeamRating, losingTeamRating);
 
         // Base points for this game
@@ -216,22 +215,5 @@ public class RatingService {
      */
     private double calculateExpectedScore(int ratingA, int ratingB) {
         return 1.0 / (1.0 + Math.pow(10.0, (ratingB - ratingA) / 400.0));
-    }
-
-    /**
-     * Get player's current rank tier
-     */
-    public RankTier getPlayerRank(Player player) {
-        return RankTier.fromRating(player.getRating());
-    }
-
-    /**
-     * Get rating history for a player
-     */
-    public List<RatingHistory> getRatingHistory(Player player, @Nullable Integer limit) {
-        if (limit != null) {
-            return ratingHistoryRepository.findTopNByPlayerOrderByRecordedAtDesc(player, limit);
-        }
-        return ratingHistoryRepository.findByPlayerOrderByRecordedAtDesc(player);
     }
 }

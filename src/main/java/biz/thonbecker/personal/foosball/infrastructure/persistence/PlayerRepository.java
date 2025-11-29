@@ -12,9 +12,6 @@ public interface PlayerRepository extends CrudRepository<Player, Long> {
     @RestResource(path = "by-name", rel = "by-name")
     Optional<Player> findByName(String name);
 
-    @RestResource(path = "by-email", rel = "by-email")
-    Optional<Player> findByEmail(String email);
-
     @RestResource(path = "search", rel = "search")
     List<Player> findByNameContainingIgnoreCase(String name);
 

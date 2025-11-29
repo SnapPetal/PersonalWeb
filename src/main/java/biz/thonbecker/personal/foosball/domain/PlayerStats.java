@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.foosball.domain;
 
 import lombok.Value;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Immutable value object representing a player's statistics.
@@ -10,16 +9,9 @@ import org.jspecify.annotations.Nullable;
 public class PlayerStats {
     String playerName;
     int rating;
-
-    @Nullable
-    Integer peakRating;
-
-    @Nullable
-    Integer currentStreak;
-
-    @Nullable
-    Integer bestStreak;
-
+    int peakRating;
+    int currentStreak;
+    int bestStreak;
     int gamesPlayed;
     int totalGames;
     int wins;
@@ -49,9 +41,9 @@ public class PlayerStats {
     public PlayerStats(
             String playerName,
             int rating,
-            @Nullable Integer peakRating,
-            @Nullable Integer currentStreak,
-            @Nullable Integer bestStreak,
+            int peakRating,
+            int currentStreak,
+            int bestStreak,
             int gamesPlayed,
             int totalGames,
             int wins,

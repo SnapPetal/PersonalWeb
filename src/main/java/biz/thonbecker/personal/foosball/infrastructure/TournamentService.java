@@ -1,10 +1,24 @@
 package biz.thonbecker.personal.foosball.infrastructure;
 
-import biz.thonbecker.personal.foosball.infrastructure.persistence.*;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.Game;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.GameRepository;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.PlayerRepository;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.Tournament;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentMatch;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentMatchRepository;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentRegistration;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentRegistrationRepository;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentRepository;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentStanding;
+import biz.thonbecker.personal.foosball.infrastructure.persistence.TournamentStandingRepository;
 import biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.DoubleEliminationAlgorithm;
 import biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.SingleEliminationAlgorithm;
 import biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.TournamentAlgorithm;
-import biz.thonbecker.personal.foosball.infrastructure.web.model.*;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.CreateTournamentRequest;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentRegistrationRequest;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.TournamentSummaryDto;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.UpdateTournamentRequest;
+import biz.thonbecker.personal.foosball.infrastructure.web.model.WalkoverRequest;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import java.util.List;
@@ -98,16 +112,6 @@ public class TournamentService {
         return tournamentRepository
                 .findByIdWithRegistrations(tournamentId)
                 .orElseThrow(() -> new EntityNotFoundException("Tournament not found with id: " + tournamentId));
-    }
-
-    public Tournament getTournamentWithMatches(Long tournamentId) {
-        return tournamentRepository
-                .findByIdWithMatches(tournamentId)
-                .orElseThrow(() -> new EntityNotFoundException("Tournament not found with id: " + tournamentId));
-    }
-
-    public List<Tournament> getAllTournaments() {
-        return tournamentRepository.findAll();
     }
 
     public Page<TournamentSummaryDto> getTournamentSummaries(Pageable pageable) {
@@ -268,8 +272,8 @@ public class TournamentService {
                     "  Match {}-{}: {} vs {}",
                     match.getRoundNumber(),
                     match.getMatchNumber(),
-                    match.getTeam1() != null ? match.getTeam1().getDisplayName() : "TBD",
-                    match.getTeam2() != null ? match.getTeam2().getDisplayName() : "TBD");
+                    match.getTeam1().getDisplayName(),
+                    match.getTeam2().getDisplayName());
         }
 
         // Save all matches
@@ -396,10 +400,10 @@ public class TournamentService {
 
         // For singles, duplicate the player in both slots
         var whitePlayer1 = team1.getPlayer();
-        var whitePlayer2 = team1.getPartner() != null ? team1.getPartner() : team1.getPlayer();
+        var whitePlayer2 = team1.getPartner();
 
         var blackPlayer1 = team2.getPlayer();
-        var blackPlayer2 = team2.getPartner() != null ? team2.getPartner() : team2.getPlayer();
+        var blackPlayer2 = team2.getPartner();
 
         var game = new Game(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2);
 
@@ -409,7 +413,7 @@ public class TournamentService {
         } else if (team2Score > team1Score) {
             game.setWinner(Game.TeamColor.BLACK);
         } else {
-            game.setWinner(null); // Draw
+            throw new IllegalArgumentException("Tournament matches cannot end in a draw");
         }
 
         return game;
@@ -417,7 +421,7 @@ public class TournamentService {
 
     // Standings Management
     private void updateStandingsForMatch(TournamentMatch match) {
-        if (!match.isCompleted() || match.getGame() == null) {
+        if (!match.isCompleted()) {
             log.debug("Match {} is not completed or has no game, skipping standings update", match.getId());
             return;
         }
@@ -425,11 +429,6 @@ public class TournamentService {
         var tournament = match.getTournament();
         var team1 = match.getTeam1();
         var team2 = match.getTeam2();
-
-        if (team1 == null || team2 == null) {
-            log.warn("Match {} has null teams, skipping standings update", match.getId());
-            return;
-        }
 
         log.info("Updating standings for match {} in tournament {}", match.getId(), tournament.getId());
 
@@ -470,9 +469,5 @@ public class TournamentService {
         }
 
         standingRepository.saveAll(standings);
-    }
-
-    public List<TournamentStanding> getTournamentStandings(Long tournamentId) {
-        return standingRepository.findByTournamentIdOrderByPointsDesc(tournamentId);
     }
 }

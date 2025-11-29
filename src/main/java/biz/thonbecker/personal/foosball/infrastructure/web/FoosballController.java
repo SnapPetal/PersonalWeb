@@ -141,17 +141,14 @@ public class FoosballController {
     }
 
     @PostMapping("/htmx/players")
-    public String createPlayerHtmx(@RequestParam String name, @RequestParam String email, Model model) {
+    public String createPlayerHtmx(@RequestParam String name, Model model) {
         try {
-            if (name != null
-                    && !name.trim().isEmpty()
-                    && email != null
-                    && !email.trim().isEmpty()) {
+            if (name != null && !name.trim().isEmpty()) {
                 Player player = new Player(name.trim());
                 foosballFacade.createPlayer(player);
                 model.addAttribute("success", "Player '" + name.trim() + "' added successfully!");
             } else {
-                model.addAttribute("error", "Please provide both name and email.");
+                model.addAttribute("error", "Please provide a player name.");
             }
         } catch (Exception e) {
             model.addAttribute("error", "Failed to add player. Please try again.");

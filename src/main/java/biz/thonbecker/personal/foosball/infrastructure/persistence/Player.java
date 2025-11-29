@@ -2,14 +2,24 @@ package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
 import biz.thonbecker.personal.foosball.domain.RankTier;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.*;
-import org.jspecify.annotations.Nullable;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -32,16 +42,12 @@ public class Player {
     @Column(name = "name", unique = true, nullable = false, length = 100)
     private String name;
 
-    @Email(message = "Email should be valid")
-    @Column(name = "email", length = 255)
-    private String email;
-
     // Rating system fields
     @Column(name = "rating", nullable = false)
     private Integer rating = 1000;
 
-    @Column(name = "peak_rating")
-    private @Nullable Integer peakRating;
+    @Column(name = "peak_rating", nullable = false)
+    private Integer peakRating = 1000;
 
     @Column(name = "games_played", nullable = false)
     private Integer gamesPlayed = 0;
@@ -49,8 +55,8 @@ public class Player {
     @Column(name = "current_streak", nullable = false)
     private Integer currentStreak = 0;
 
-    @Column(name = "best_streak")
-    private @Nullable Integer bestStreak;
+    @Column(name = "best_streak", nullable = false)
+    private Integer bestStreak = 0;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -75,11 +81,6 @@ public class Player {
 
     public Player(String name) {
         this.name = name;
-    }
-
-    public Player(String name, String email) {
-        this.name = name;
-        this.email = email;
     }
 
     /**

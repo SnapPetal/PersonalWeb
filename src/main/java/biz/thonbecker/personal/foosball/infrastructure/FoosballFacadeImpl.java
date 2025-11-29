@@ -186,17 +186,17 @@ class FoosballFacadeImpl implements FoosballFacade {
             biz.thonbecker.personal.foosball.infrastructure.persistence.PlayerStats projection) {
         return new PlayerStats(
                 projection.getName(),
-                projection.getRating() != null ? projection.getRating() : 1000,
+                projection.getRating(),
                 projection.getPeakRating(),
                 projection.getCurrentStreak(),
                 projection.getBestStreak(),
-                projection.getGamesPlayed() != null ? projection.getGamesPlayed() : 0,
+                projection.getGamesPlayed(),
                 projection.getTotalGames().intValue(),
                 projection.getWins().intValue(),
                 projection.getTotalGames().intValue() - projection.getWins().intValue(),
-                0, // draws not tracked
-                0, // goals scored not tracked
-                0); // goals against not tracked
+                0,
+                0,
+                0);
     }
 
     private TeamStats toTeamStatsDomain(
