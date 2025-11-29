@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="015-backfill-player-ratings" author="claude">
+        <comment>Backfill rating data for existing players based on their game history</comment>
+
+        <!-- Ensure all players have default rating values -->
+        <sql>
+            UPDATE foosball.players
+            SET rating = 1000
+            WHERE rating IS NULL;
+        </sql>
+
+        <sql>
+            UPDATE foosball.players
+            SET current_streak = 0
+            WHERE current_streak IS NULL;
+        </sql>
+
+        <!-- Calculate actual games_played from game history -->
+        <sql>
+            UPDATE foosball.players p
+            SET games_played = COALESCE((
+                SELECT COUNT(DISTINCT g.id)
+                FROM foosball.games g
+                WHERE g.white_team_player1_id = p.id
+                   OR g.white_team_player2_id = p.id
+                   OR g.black_team_player1_id = p.id
+                   OR g.black_team_player2_id = p.id
+            ), 0)
+            WHERE games_played IS NULL OR games_played = 0;
+        </sql>
+
+        <!-- Set peak_rating to current rating if null -->
+        <sql>
+            UPDATE foosball.players
+            SET peak_rating = rating
+            WHERE peak_rating IS NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
