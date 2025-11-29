@@ -18,6 +18,7 @@
     <caffeine.version>3.2.3</caffeine.version>
     <htmx.org.version>2.0.8</htmx.org.version>
     <java.version>25</java.version>
+    <jspecify.version>1.0.0</jspecify.version>
     <lombok.version>1.18.42</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
     <shedlock.version>7.2.0</shedlock.version>
@@ -25,7 +26,6 @@
     <spotless.version>3.1.0</spotless.version>
     <spring-retry.version>2.0.12</spring-retry.version>
     <stomp-websocket.version>2.3.4</stomp-websocket.version>
-      <jspecify.version>1.0.0</jspecify.version>
   </properties>
 
   <dependencyManagement>
@@ -76,6 +76,11 @@
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-spring</artifactId>
       <version>${shedlock.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>${jspecify.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.ai</groupId>
@@ -174,11 +179,6 @@
       <groupId>org.webjars.npm</groupId>
       <artifactId>htmx.org</artifactId>
       <version>${htmx.org.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jspecify</groupId>
-      <artifactId>jspecify</artifactId>
-      <version>${jspecify.version}</version>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>

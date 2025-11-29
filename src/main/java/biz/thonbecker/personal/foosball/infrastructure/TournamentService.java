@@ -1,6 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure;
 
 import biz.thonbecker.personal.foosball.infrastructure.persistence.*;
+import biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.DoubleEliminationAlgorithm;
 import biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.SingleEliminationAlgorithm;
 import biz.thonbecker.personal.foosball.infrastructure.tournament.algorithm.TournamentAlgorithm;
 import biz.thonbecker.personal.foosball.infrastructure.web.model.*;
@@ -28,6 +29,7 @@ public class TournamentService {
 
     // Tournament algorithms
     private final SingleEliminationAlgorithm singleEliminationAlgorithm;
+    private final DoubleEliminationAlgorithm doubleEliminationAlgorithm;
 
     // Tournament CRUD Operations
     public Tournament createTournament(CreateTournamentRequest request, Long createdById) {
@@ -37,9 +39,11 @@ public class TournamentService {
                 .findById(createdById)
                 .orElseThrow(() -> new EntityNotFoundException("Player not found with id: " + createdById));
 
-        // For now, only support single elimination
-        if (request.tournamentType() != Tournament.TournamentType.SINGLE_ELIMINATION) {
-            throw new UnsupportedOperationException("Currently only single elimination tournaments are supported");
+        // Support single and double elimination
+        if (request.tournamentType() != Tournament.TournamentType.SINGLE_ELIMINATION
+                && request.tournamentType() != Tournament.TournamentType.DOUBLE_ELIMINATION) {
+            throw new UnsupportedOperationException(
+                    "Currently only single and double elimination tournaments are supported");
         }
 
         var tournament = new Tournament(request.name(), request.tournamentType(), creator);
@@ -68,8 +72,10 @@ public class TournamentService {
         if (request.name() != null) tournament.setName(request.name());
         if (request.description() != null) tournament.setDescription(request.description());
         if (request.tournamentType() != null) {
-            if (request.tournamentType() != Tournament.TournamentType.SINGLE_ELIMINATION) {
-                throw new UnsupportedOperationException("Currently only single elimination tournaments are supported");
+            if (request.tournamentType() != Tournament.TournamentType.SINGLE_ELIMINATION
+                    && request.tournamentType() != Tournament.TournamentType.DOUBLE_ELIMINATION) {
+                throw new UnsupportedOperationException(
+                        "Currently only single and double elimination tournaments are supported");
             }
             tournament.setTournamentType(request.tournamentType());
         }
@@ -276,6 +282,7 @@ public class TournamentService {
     private TournamentAlgorithm getTournamentAlgorithm(Tournament.TournamentType type) {
         return switch (type) {
             case SINGLE_ELIMINATION -> singleEliminationAlgorithm;
+            case DOUBLE_ELIMINATION -> doubleEliminationAlgorithm;
             default -> throw new UnsupportedOperationException("Tournament type not supported: " + type);
         };
     }
