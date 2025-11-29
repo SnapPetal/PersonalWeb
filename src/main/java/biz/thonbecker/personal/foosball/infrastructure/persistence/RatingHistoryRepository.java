@@ -25,9 +25,4 @@ public interface RatingHistoryRepository extends JpaRepository<RatingHistory, Lo
         """)
     List<RatingHistory> findTopNByPlayerOrderByRecordedAtDesc(
             @Param("player") Player player, @Param("limit") int limit);
-
-    /**
-     * Find rating history for a player's specific game
-     */
-    List<RatingHistory> findByPlayerAndGame(Player player, Game game);
 }
