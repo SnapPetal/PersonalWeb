@@ -1,6 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure.persistence;
 
-import biz.thonbecker.personal.foosball.domain.RankTier;
+import static biz.thonbecker.personal.foosball.infrastructure.RatingService.INITIAL_RATING;
+
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,10 +45,10 @@ public class Player {
 
     // Rating system fields
     @Column(name = "rating", nullable = false)
-    private Integer rating = 1000;
+    private Integer rating = INITIAL_RATING;
 
     @Column(name = "peak_rating", nullable = false)
-    private Integer peakRating = 1000;
+    private Integer peakRating = INITIAL_RATING;
 
     @Column(name = "games_played", nullable = false)
     private Integer gamesPlayed = 0;
@@ -81,12 +82,5 @@ public class Player {
 
     public Player(String name) {
         this.name = name;
-    }
-
-    /**
-     * Get the rank tier based on current rating
-     */
-    public RankTier getRankTier() {
-        return RankTier.fromRating(this.rating != null ? this.rating : 1000);
     }
 }

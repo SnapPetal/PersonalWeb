@@ -13,6 +13,8 @@ import org.jspecify.annotations.Nullable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Player {
+    private static final int INITIAL_RATING = 1000;
+
     private String id;
     private String name;
     private int rating;
@@ -23,7 +25,7 @@ public class Player {
 
     public Player(String name) {
         this.name = name;
-        this.rating = 1000;
+        this.rating = INITIAL_RATING;
         this.gamesPlayed = 0;
         this.currentStreak = 0;
     }
@@ -31,12 +33,8 @@ public class Player {
     public Player(String id, String name) {
         this.id = id;
         this.name = name;
-        this.rating = 1000;
+        this.rating = INITIAL_RATING;
         this.gamesPlayed = 0;
         this.currentStreak = 0;
-    }
-
-    public RankTier getRankTier() {
-        return RankTier.fromRating(this.rating);
     }
 }

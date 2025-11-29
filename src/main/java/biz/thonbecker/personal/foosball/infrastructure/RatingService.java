@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class RatingService {
 
-    private static final int INITIAL_RATING = 1000;
+    public static final int INITIAL_RATING = 1000;
     private static final int K_FACTOR_REGULAR = 32;
     private static final int K_FACTOR_PLACEMENT = 50;
     private static final int PLACEMENT_GAMES = 10;
@@ -89,14 +89,18 @@ public class RatingService {
         playerRepository.saveAll(List.of(winner1, winner2, loser1, loser2));
 
         log.info(
-                "Rating changes: {} ({:+d}), {} ({:+d}), {} ({:+d}), {} ({:+d})",
+                "Rating changes: {} ({}{}, {} ({}{}, {} ({}{}, {} ({}{})",
                 winner1.getName(),
+                winner1Change > 0 ? "+" : "",
                 winner1Change,
                 winner2.getName(),
+                winner2Change > 0 ? "+" : "",
                 winner2Change,
                 loser1.getName(),
+                loser1Change > 0 ? "+" : "",
                 loser1Change,
                 loser2.getName(),
+                loser2Change > 0 ? "+" : "",
                 loser2Change);
     }
 
@@ -158,7 +162,7 @@ public class RatingService {
         player.setGamesPlayed(player.getGamesPlayed() + 1);
 
         // Track peak rating
-        if (player.getPeakRating() == null || newRating > player.getPeakRating()) {
+        if (newRating > player.getPeakRating()) {
             player.setPeakRating(newRating);
             log.info("New peak rating for {}: {}", player.getName(), newRating);
         }
@@ -203,7 +207,7 @@ public class RatingService {
 
         // Track best streak
         if (player.getCurrentStreak() > 0) {
-            if (player.getBestStreak() == null || player.getCurrentStreak() > player.getBestStreak()) {
+            if (player.getCurrentStreak() > player.getBestStreak()) {
                 player.setBestStreak(player.getCurrentStreak());
             }
         }
