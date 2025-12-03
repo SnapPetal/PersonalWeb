@@ -1,5 +1,7 @@
 package biz.thonbecker.personal.foosball.infrastructure;
 
+import static java.util.Objects.isNull;
+
 import biz.thonbecker.personal.foosball.infrastructure.persistence.Game;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.GameRepository;
 import biz.thonbecker.personal.foosball.infrastructure.persistence.PlayerRepository;
@@ -401,10 +403,10 @@ public class TournamentService {
 
         // For singles, duplicate the player in both slots
         final var whitePlayer1 = team1.getPlayer();
-        final var whitePlayer2 = team1.getPartner();
+        final var whitePlayer2 = isNull(team1.getPartner()) ? team1.getPlayer() : team1.getPartner();
 
         final var blackPlayer1 = team2.getPlayer();
-        final var blackPlayer2 = team2.getPartner();
+        final var blackPlayer2 = isNull(team2.getPartner()) ? team2.getPlayer() : team2.getPartner();
 
         final var game = new Game(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2);
 
