@@ -112,3 +112,39 @@
     outline-offset: 4px;
     border-radius: 8px;
 }
+
+/* Mobile responsiveness */
+@media (max-width: 991px) {
+    .light-switch-container {
+        top: 70px; /* Move below navbar on mobile */
+        right: 15px;
+        width: 50px; /* Slightly smaller on mobile */
+        height: 70px;
+    }
+
+    .light-bulb {
+        width: 35px;
+        height: 35px;
+    }
+
+    .pull-string {
+        height: 30px;
+    }
+}
+
+@media (max-width: 576px) {
+    .light-switch-container {
+        right: 10px;
+        width: 45px;
+        height: 65px;
+    }
+
+    .light-bulb {
+        width: 30px;
+        height: 30px;
+    }
+
+    .pull-string {
+        height: 28px;
+    }
+}
