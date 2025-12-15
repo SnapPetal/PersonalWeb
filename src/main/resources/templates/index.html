@@ -38,6 +38,7 @@
     <link href="/css/main.css" rel="stylesheet">
     <link href="/css/bible-verse.css" rel="stylesheet">
     <link href="/css/htmx-indicators.css" rel="stylesheet">
+    <link href="/css/light-switch.css" rel="stylesheet">
 
     <script type="application/ld+json">
         {
@@ -94,11 +95,11 @@
                     </button>
                 </li>
                 <li class="nav-item d-flex align-items-center ms-2">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" id="darkModeToggle" type="checkbox">
-                        <label class="form-check-label" for="darkModeToggle">
-                            <i class="bi bi-moon-stars toggle-icon"></i>
-                        </label>
+                    <div class="light-switch-container" id="lightSwitch" role="button" tabindex="0" aria-label="Toggle dark mode">
+                        <div class="light-bulb"></div>
+                        <div class="pull-string">
+                            <div class="string-knob"></div>
+                        </div>
                     </div>
                 </li>
             </ul>

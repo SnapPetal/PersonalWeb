@@ -1,0 +1,111 @@
+/* Pull-String Light Switch Component */
+.light-switch-container {
+    position: relative;
+    width: 60px;
+    height: 80px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Light bulb */
+.light-bulb {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    background: #ffd700;
+    border-radius: 50% 50% 45% 45%;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+/* Light bulb base */
+.light-bulb::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 10px;
+    background: #999;
+    border-radius: 0 0 5px 5px;
+}
+
+/* Dark mode - bulb off */
+.light-switch-container.dark .light-bulb {
+    background: #555;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Pull string */
+.pull-string {
+    position: absolute;
+    top: 45px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 35px;
+    background: linear-gradient(to bottom, #666, #999);
+    transform-origin: top center;
+    transition: transform 0.3s ease;
+}
+
+/* String pull animation */
+.light-switch-container.pulling .pull-string {
+    animation: pullString 0.4s ease-in-out;
+}
+
+@keyframes pullString {
+    0% {
+        transform: translateX(-50%) scaleY(1);
+    }
+    50% {
+        transform: translateX(-50%) scaleY(1.3) translateY(5px);
+    }
+    100% {
+        transform: translateX(-50%) scaleY(1);
+    }
+}
+
+/* String knob */
+.string-knob {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    background: #888;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Bulb glow animation when turning on */
+.light-switch-container:not(.dark) .light-bulb {
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+    }
+}
+
+/* Hover effect */
+.light-switch-container:hover .string-knob {
+    transform: translateX(-50%) scale(1.2);
+    transition: transform 0.2s ease;
+}
+
+/* Accessibility - focus state */
+.light-switch-container:focus-visible {
+    outline: 2px solid #0d6efd;
+    outline-offset: 4px;
+    border-radius: 8px;
+}
