@@ -43,7 +43,9 @@
     toggleButtonState(button, true);
     button.querySelector("i")?.classList.add(CLASSES.SPINNING);
 
+    // Update audio source with MP3 URL
     audioElement.src = response;
+    audioElement.type = "audio/mp3";
     audioElement.load();
 
     // Play audio with slight delay to ensure loading

@@ -64,6 +64,12 @@ bible:
     cache:
       duration: 24
 
+# Audio Storage Configuration (Dad Jokes)
+audio:
+  storage:
+    bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq
+    cdn-domain: https://cdn.thonbecker.com
+
 # Spring Modulith Configuration
 spring.modulith:
   # Event publication and handling
