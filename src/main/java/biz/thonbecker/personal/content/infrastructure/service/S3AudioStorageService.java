@@ -27,7 +27,7 @@ public class S3AudioStorageService implements AudioStorageService {
 
     private static final DateTimeFormatter KEY_FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS").withZone(ZoneId.of("UTC"));
-    private static final String FOLDER_PREFIX = "DadJokes/";
+    private static final String FOLDER_PREFIX = "dadjokes/";
     private static final String FILE_EXTENSION = ".mp3";
 
     private final S3Client s3Client;
@@ -69,7 +69,7 @@ public class S3AudioStorageService implements AudioStorageService {
 
     /**
      * Generates a unique S3 object key based on current timestamp.
-     * Format: DadJokes/YYYYMMDD-HHmmss-SSS.mp3
+     * Format: dadjokes/YYYYMMDD-HHmmss-SSS.mp3
      *
      * @return The generated object key
      */
