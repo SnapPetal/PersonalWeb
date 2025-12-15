@@ -2,10 +2,10 @@
 
 A modern, feature-rich personal portfolio website built with Spring Boot, showcasing professional experience and interactive applications.
 
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-brightgreen)
 ![Java](https://img.shields.io/badge/Java-25-orange)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.8-blue)
-![HTMX](https://img.shields.io/badge/HTMX-2.0.7-purple)
+![HTMX](https://img.shields.io/badge/HTMX-2.0.8-purple)
 
 ## 🌟 Features
 
@@ -15,7 +15,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - **Responsive Design** using Bootstrap 5
 - **Dark/Light Mode** toggle for better user experience
 - **Interactive Bible Verse** display with caching
-- **Dad Jokes Player** with audio integration
+- **Dad Jokes Player** with AI text-to-speech and audio storage
 
 ### **Interactive Applications**
 
@@ -41,6 +41,8 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - Docker (for running PostgreSQL locally)
 - AWS Cognito setup (for authentication features)
 - AWS Bedrock access (for AI-powered trivia questions)
+- AWS Polly access (for text-to-speech dad jokes)
+- AWS S3 bucket (for audio file storage)
 
 ### Installation
 
@@ -66,7 +68,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 
 ### **Backend Stack**
 
-- **Spring Boot 3.5.6** - Core framework
+- **Spring Boot 4.0.0** - Core framework
 - **Spring Security** - Authentication & CSRF protection
 - **Spring Cloud OpenFeign** - HTTP client for microservices
 - **Spring WebSocket** - Real-time communication for trivia
@@ -79,7 +81,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ### **Frontend Stack**
 
 - **Bootstrap 5.3.8** - Responsive UI framework
-- **HTMX 2.0.7** - Dynamic HTML interactions
+- **HTMX 2.0.8** - Dynamic HTML interactions
 - **Bootstrap Icons** - Icon library
 - **SockJS & STOMP** - WebSocket communication
 - **Vanilla JavaScript** - Custom interactions
@@ -87,6 +89,8 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ### **Integration & Services**
 
 - **AWS Cognito** - OAuth2/OpenID authentication
+- **AWS Polly** - Neural text-to-speech for dad jokes with SSML formatting
+- **AWS S3** - Audio file storage and CDN delivery
 - **External APIs** - Bible verse and dad jokes integration
 - **Spring Modulith** - Modular monolith architecture with enforced boundaries
 
@@ -168,6 +172,15 @@ A complete table soccer game tracking system integrated as a Spring Modulith mod
 - **KJV Translation** - King James Version integration
 - **Retry Logic** - Fault-tolerant API calls
 - **Responsive Display** - Mobile-optimized presentation
+
+### **Dad Jokes with Text-to-Speech**
+
+- **AWS Polly Integration** - Neural text-to-speech with natural voice delivery
+- **SSML Formatting** - Enhanced comedic timing with pauses and prosody
+- **Smart Joke Detection** - Automatic setup/punchline parsing for Q&A, newline, and dash-separated formats
+- **S3 Storage** - Audio files stored in S3 with CDN delivery
+- **Daily Caching** - Jokes cached for 24 hours for consistent user experience
+- **Multiple Voice Support** - Configurable voice selection for text-to-speech
 
 ## 🛡️ Security Features
 
