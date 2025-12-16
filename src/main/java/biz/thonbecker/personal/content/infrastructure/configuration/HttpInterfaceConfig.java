@@ -1,4 +1,4 @@
-package biz.thonbecker.personal.shared.infrastructure.configuration;
+package biz.thonbecker.personal.content.infrastructure.configuration;
 
 import biz.thonbecker.personal.content.infrastructure.client.BibleVerseHttpClient;
 import biz.thonbecker.personal.content.infrastructure.client.DadJokeHttpClient;
