@@ -2,11 +2,11 @@ package biz.thonbecker.personal.content.infrastructure.web;
 
 import biz.thonbecker.personal.content.domain.BibleVerse;
 import biz.thonbecker.personal.content.domain.BibleVerseResponse;
+import biz.thonbecker.personal.content.infrastructure.client.BibleVerseHttpClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +17,6 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/api/bible")
@@ -27,27 +26,23 @@ public class BibleVerseController {
     private static final String VERSE_FORMAT = "%s (%s %s:%s)";
     private static final String FETCH_ERROR_MESSAGE = "Failed to fetch bible verse";
 
-    private final RestTemplate restTemplate;
+    private final BibleVerseHttpClient bibleVerseHttpClient;
     private final Cache<LocalDate, BibleVerse> verseCache;
-    private final String bibleVerseApiUrl;
     private final int cacheDurationHours;
 
     public BibleVerseController(
-            RestTemplate restTemplate,
-            @Value("${bible.verse.api.url}") String bibleVerseApiUrl,
+            BibleVerseHttpClient bibleVerseHttpClient,
             @Value("${bible.verse.cache.duration:24}") int cacheDurationHours) {
-        this.restTemplate = restTemplate;
-        this.bibleVerseApiUrl = bibleVerseApiUrl;
+        this.bibleVerseHttpClient = bibleVerseHttpClient;
         this.cacheDurationHours = cacheDurationHours;
         this.verseCache = createVerseCache();
-        configureRestTemplate();
     }
 
     @GetMapping(value = "/verse-of-day", produces = MediaType.APPLICATION_JSON_VALUE)
     @Retryable(backoff = @Backoff(delay = 1000))
     public ResponseEntity<BibleVerse> getVerseOfTheDay() {
         LocalDate today = LocalDate.now();
-        BibleVerse verse = verseCache.get(today, key -> fetchDailyBibleVerse());
+        BibleVerse verse = verseCache.get(today, _ -> fetchDailyBibleVerse());
         return ResponseEntity.ok(verse);
     }
 
@@ -57,34 +52,20 @@ public class BibleVerseController {
                 .build();
     }
 
-    private void configureRestTemplate() {
-        restTemplate.getInterceptors().add((request, body, execution) -> {
-            request.getHeaders().setAccept(List.of(MediaType.APPLICATION_JSON));
-            return execution.execute(request, body);
-        });
-    }
-
     private BibleVerse fetchDailyBibleVerse() {
         try {
-            // First try to get the response as a string since the API returns text/plain
-            ResponseEntity<String> response = restTemplate.getForEntity(bibleVerseApiUrl, String.class);
+            String responseBody = bibleVerseHttpClient
+                    .getDailyVerse(MediaType.APPLICATION_JSON_VALUE)
+                    .trim();
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                String responseBody = response.getBody().trim();
-
-                // Check if the response looks like JSON
-                if (responseBody.startsWith("{") && responseBody.endsWith("}")) {
-                    // Parse the JSON manually
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    BibleVerseResponse bibleVerseResponse =
-                            objectMapper.readValue(responseBody, BibleVerseResponse.class);
-                    return formatBibleVerse(bibleVerseResponse);
-                } else {
-                    // Not JSON, throw an error
-                    throw new BibleVerseFetchException("API returned non-JSON response");
-                }
+            // Check if the response looks like JSON
+            if (responseBody.startsWith("{") && responseBody.endsWith("}")) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                BibleVerseResponse bibleVerseResponse = objectMapper.readValue(responseBody, BibleVerseResponse.class);
+                return formatBibleVerse(bibleVerseResponse);
+            } else {
+                throw new BibleVerseFetchException("API returned non-JSON response");
             }
-            throw new BibleVerseFetchException(FETCH_ERROR_MESSAGE);
         } catch (Exception e) {
             log.error("Error fetching bible verse: ", e);
             throw new BibleVerseFetchException(FETCH_ERROR_MESSAGE, e);

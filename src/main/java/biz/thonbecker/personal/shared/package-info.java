@@ -9,7 +9,7 @@
  * <ul>
  *   <li>Security configuration - Spring Security setup and CSRF protection</li>
  *   <li>Caching configuration - Caffeine cache manager setup</li>
- *   <li>Web configuration - WebSocket, REST template, and retry logic</li>
+ *   <li>Web configuration - WebSocket, HTTP Interface, and retry logic</li>
  *   <li>Common utilities and helpers</li>
  * </ul>
  *
@@ -20,7 +20,7 @@
  *     ├── SecurityConfig          - Application security setup
  *     ├── CacheConfig             - Cache management
  *     ├── WebSocketConfig         - WebSocket messaging
- *     ├── RestTemplateConfig      - REST client
+ *     ├── HttpInterfaceConfig     - HTTP client interfaces
  *     └── RetryConfig             - Retry logic
  * </pre>
  *
@@ -29,7 +29,7 @@
  * <ul>
  *   <li>Security and authentication across all modules</li>
  *   <li>WebSocket infrastructure for real-time features</li>
- *   <li>HTTP client configuration for external API calls</li>
+ *   <li>Declarative HTTP client configuration for external API calls</li>
  *   <li>Resilience patterns like retry logic</li>
  * </ul>
  *
