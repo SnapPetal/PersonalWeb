@@ -4,9 +4,11 @@ import biz.thonbecker.personal.PersonalApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.modulith.docs.Documenter;
+import org.springframework.modulith.docs.Documenter.DiagramOptions;
 
 /**
- * Tests to verify and document the modular structure of the application.
+ * Tests to verify and document the modular structure of the application using Spring Modulith 2.0.
+ * This test suite validates module boundaries and generates comprehensive documentation.
  */
 class ModuleStructureTest {
 
@@ -18,6 +20,7 @@ class ModuleStructureTest {
      * - Modules only depend on allowed dependencies
      * - No cyclic dependencies exist
      * - Package structure follows conventions
+     * - jMolecules architecture annotations are respected (included automatically in 2.0)
      */
     @Test
     void verifiesModularStructure() {
@@ -25,15 +28,24 @@ class ModuleStructureTest {
     }
 
     /**
-     * Generates comprehensive module documentation in the docs/ folder.
-     * This creates:
-     * - Module dependency diagrams
-     * - Module component diagrams
-     * - Documentation of module APIs
+     * Generates comprehensive module documentation using Spring Modulith 2.0 features.
+     * Creates in the docs/ folder:
+     * - C4 architecture diagrams (component and container views)
+     * - Module canvases (visual module summaries)
+     * - Individual module diagrams
+     * - Complete documentation with all available metadata
      */
     @Test
     void createsModuleDocumentation() {
-        new Documenter(modules).writeModulesAsPlantUml().writeIndividualModulesAsPlantUml();
+        var diagramOptions = DiagramOptions.defaults().withStyle(DiagramOptions.DiagramStyle.C4);
+
+        var documenterOptions = Documenter.Options.defaults().withOutputFolder("docs/modulith");
+
+        new Documenter(modules, documenterOptions)
+                .writeModulesAsPlantUml(diagramOptions)
+                .writeIndividualModulesAsPlantUml(diagramOptions)
+                .writeModuleCanvases()
+                .writeDocumentation();
     }
 
     /**
@@ -48,9 +60,8 @@ class ModuleStructureTest {
             System.out.println("  Base Package: " + module.getBasePackage().getName());
 
             System.out.println("  Named Interfaces:");
-            module.getNamedInterfaces().forEach(namedInterface -> {
-                System.out.println("    - " + namedInterface.getName());
-            });
+            module.getNamedInterfaces()
+                    .forEach(namedInterface -> System.out.println("    - " + namedInterface.getName()));
 
             System.out.println("  Dependencies:");
             module.getBootstrapDependencies(modules)

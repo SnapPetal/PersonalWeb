@@ -1,0 +1,13 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`biz.thonbecker.personal.shared`
+|Spring components
+|* `b.t.p.s.infrastructure.configuration.AwsConfig`
+* `b.t.p.s.infrastructure.configuration.CacheConfig`
+* `b.t.p.s.infrastructure.configuration.JpaConfig`
+* `b.t.p.s.infrastructure.configuration.RetryConfig`
+* `b.t.p.s.infrastructure.configuration.SecurityConfig`
+* `b.t.p.s.infrastructure.configuration.ShedlockConfig`
+* `b.t.p.s.infrastructure.configuration.WebSocketConfig`
+|===

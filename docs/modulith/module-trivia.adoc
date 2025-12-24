@@ -1,0 +1,11 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`biz.thonbecker.personal.trivia`
+|Spring components
+|_Services_
+
+* `b.t.p.t.api.TriviaFacade` (via `b.t.p.t.infrastructure.TriviaFacadeImpl`)
+|Aggregate roots
+|* `b.t.p.t.infrastructure.QuizResultEntity`
+|===

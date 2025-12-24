@@ -22,12 +22,11 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none  # Liquibase manages all schema
     show-sql: false
     properties:
       hibernate:
         format_sql: true
-        default_schema: trivia
         jdbc:
           time_zone: UTC
 
@@ -70,19 +69,26 @@ audio:
     bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq
     cdn-domain: https://cdn.thonbecker.com
 
-# Spring Modulith Configuration
+# Spring Modulith Configuration (2.0.1)
 spring.modulith:
   # Event publication and handling
   events:
-    # Enable event externalization (for publishing to message brokers)
+    # Event externalization (for publishing to message brokers)
     externalization:
-      enabled: false  # Set to true when integrating with Kafka, RabbitMQ, etc.
-    # Enable event republication for failed events
+      enabled: true  # Enable event publication registry
+      serialized-execution: true  # NEW in 2.0: Serialize event execution for consistency
+
+    # Event republication for failed events
     republish-outstanding-events-on-restart: true
 
-  # Module detection and verification
-  detection-strategy: explicitly-annotated  # Only detect modules with @ApplicationModule annotation
+    # JDBC-based event publication registry
+    jdbc-schema-initialization:
+      enabled: false  # Liquibase creates the event_publication table (see changeset 019)
 
-  # Documentation generation
-  moments:
-    enable-time-machine: false  # Enable for event sourcing scenarios
+  # NEW in 2.0: Startup validation
+  validation:
+    enabled: true  # Validate module structure at startup
+
+  # NEW in 2.0: Module observability
+  observability:
+    enabled: true  # Enable module interaction logging and metrics

@@ -1,0 +1,9 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`biz.thonbecker.personal.user`
+|Spring components
+|_Services_
+
+* `b.t.p.u.api.UserFacade` (via `b.t.p.u.infrastructure.persistence.UserFacadeImpl`)
+|===

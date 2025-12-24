@@ -1,5 +1,5 @@
 @startuml
-title <size:24>PersonalApplication</size>
+title <size:24>Notification Services</size>
 
 set separator none
 top to bottom direction
@@ -21,14 +21,10 @@ System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="")
     Component(PersonalApplication.PersonalApplication.Foosball, "Foosball", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.TriviaQuiz, "Trivia Quiz", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.UserManagement, "User Management", $techn="Module", $descr="", $tags="", $link="")
-    Component(PersonalApplication.PersonalApplication.Infrastructure, "Infrastructure", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }
 
-Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")

@@ -1,0 +1,35 @@
+== PersonalApplication
+plantuml::components.puml[,,format=svg]
+
+== Content Services
+plantuml::module-content.puml[,,format=svg]
+include::module-content.adoc[]
+
+== Foosball
+plantuml::module-foosball.puml[,,format=svg]
+include::module-foosball.adoc[]
+
+== Shared Infrastructure
+plantuml::module-shared.puml[,,format=svg]
+include::module-shared.adoc[]
+
+== Tankgame
+plantuml::module-tankgame.puml[,,format=svg]
+include::module-tankgame.adoc[]
+
+== Trivia Quiz
+plantuml::module-trivia.puml[,,format=svg]
+include::module-trivia.adoc[]
+
+== User Management
+plantuml::module-user.puml[,,format=svg]
+include::module-user.adoc[]
+
+== Infrastructure
+plantuml::module-infrastructure.puml[,,format=svg]
+include::module-infrastructure.adoc[]
+
+== Notification Services
+plantuml::module-notification.puml[,,format=svg]
+include::module-notification.adoc[]
+

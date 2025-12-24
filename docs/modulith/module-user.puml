@@ -1,5 +1,5 @@
 @startuml
-title <size:24>Trivia Quiz</size>
+title <size:24>User Management</size>
 
 set separator none
 top to bottom direction
@@ -17,7 +17,7 @@ top to bottom direction
 
 System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="") {
   Container_Boundary("PersonalApplication.PersonalApplication_boundary", "PersonalApplication", $tags="") {
-    Component(PersonalApplication.PersonalApplication.TriviaQuiz, "Trivia Quiz", $techn="Module", $descr="", $tags="", $link="")
+    Component(PersonalApplication.PersonalApplication.UserManagement, "User Management", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }

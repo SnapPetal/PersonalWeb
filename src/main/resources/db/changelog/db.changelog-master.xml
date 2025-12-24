@@ -22,4 +22,5 @@
     <include file="classpath:db/changelog/changes/016-fix-null-rating-fields.xml"/>
     <include file="classpath:db/changelog/changes/017-drop-player-email-column.xml"/>
     <include file="classpath:db/changelog/changes/018-make-player-rating-fields-non-nullable.xml"/>
+    <include file="classpath:db/changelog/changes/019-add-spring-modulith-event-publication.xml"/>
 </databaseChangeLog>

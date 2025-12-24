@@ -1,0 +1,25 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`biz.thonbecker.personal.content`
+|Spring components
+|_Controllers_
+
+* `b.t.p.c.infrastructure.web.BibleVerseController`
+* `b.t.p.c.infrastructure.web.DadJokeController`
+* `b.t.p.c.infrastructure.web.ExperienceController`
+* `b.t.p.c.infrastructure.web.WebController`
+
+_Services_
+
+* `b.t.p.c.infrastructure.service.DadJokeService`
+* `b.t.p.c.infrastructure.service.ExperienceService`
+* `b.t.p.c.domain.TextToSpeechService` (via `b.t.p.c.infrastructure.service.PollyTextToSpeechService`)
+* `b.t.p.c.domain.AudioStorageService` (via `b.t.p.c.infrastructure.service.S3AudioStorageService`)
+
+_Others_
+
+* `b.t.p.c.infrastructure.client.BibleVerseHttpClient`
+* `b.t.p.c.infrastructure.client.DadJokeHttpClient`
+* `b.t.p.c.infrastructure.configuration.HttpInterfaceConfig`
+|===
