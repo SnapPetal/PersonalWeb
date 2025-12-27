@@ -8,7 +8,7 @@ spring:
 
   # Database Configuration
   datasource:
-    url: ${DB_URL:jdbc:postgresql://ls-3cd9e093f05f5c4d801b58031197f04063b55800.cmldxjsfqvn4.us-east-1.rds.amazonaws.com:5432/dbmaster}
+    url: jdbc:postgresql://ls-d58c718c47b3e4713b1e40ba54194bc87f99e527.cmldxjsfqvn4.us-east-1.rds.amazonaws.com:5432/dbmaster
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
