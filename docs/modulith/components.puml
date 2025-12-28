@@ -26,9 +26,9 @@ System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="")
 
 }
 
+Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")

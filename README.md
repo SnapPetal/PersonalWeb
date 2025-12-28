@@ -26,7 +26,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 ### **Technical Features**
 
 - **🔒 CSRF Protection** for secure form submissions
-- **🌍 Environment Configuration** with AWS Cognito integration
+- **🌍 Environment Configuration** for AWS services
 - **⚡ Caching** with Caffeine for optimized performance
 - **🔄 Retry Logic** for external API calls
 - **📱 Progressive Web App** features
@@ -39,7 +39,6 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - Maven 3.6+
 - PostgreSQL 16+ (for local development)
 - Docker (for running PostgreSQL locally)
-- AWS Cognito setup (for authentication features)
 - AWS Bedrock access (for AI-powered trivia questions)
 - AWS Polly access (for text-to-speech dad jokes)
 - AWS S3 bucket (for audio file storage)
@@ -56,7 +55,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 
    ```bash
    cp .env.example .env
-   # Edit .env with your actual Cognito credentials
+   # Edit .env with your actual AWS credentials
    ```
 3. **Run the application**
 
@@ -88,7 +87,6 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 
 ### **Integration & Services**
 
-- **AWS Cognito** - OAuth2/OpenID authentication
 - **AWS Polly** - Neural text-to-speech for dad jokes with SSML formatting
 - **AWS S3** - Audio file storage and CDN delivery
 - **External APIs** - Bible verse and dad jokes integration
@@ -123,7 +121,7 @@ src/
     └── modulith/                      # Module structure tests
 ```
 
-See [Spring Modulith Documentation](docs/modulith/README.md) for detailed module architecture.
+See [Spring Modulith Documentation](docs/modulith/all-docs.adoc) for detailed module architecture.
 
 ## 🔧 Configuration
 
@@ -133,7 +131,7 @@ The application implements Cross-Site Request Forgery protection using Spring Se
 
 ### **🌍 Environment Configuration**
 
-Configure your development environment with AWS Cognito integration using environment variables. See `.env.example` for required settings.
+Configure your development environment with AWS services using environment variables. See `.env.example` for required settings.
 
 ## 🎮 Applications
 
@@ -185,7 +183,6 @@ A complete table soccer game tracking system integrated as a Spring Modulith mod
 ## 🛡️ Security Features
 
 - **CSRF Token Protection** - All POST requests secured
-- **OAuth2 Integration** - AWS Cognito authentication
 - **Secure Headers** - Spring Security configuration
 - **Environment Isolation** - Separate dev/prod configs
 
