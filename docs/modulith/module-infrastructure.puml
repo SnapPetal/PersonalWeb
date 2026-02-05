@@ -17,10 +17,10 @@ top to bottom direction
 
 System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="") {
   Container_Boundary("PersonalApplication.PersonalApplication_boundary", "PersonalApplication", $tags="") {
+    Component(PersonalApplication.PersonalApplication.Infrastructure, "Infrastructure", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.Foosball, "Foosball", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.TriviaQuiz, "Trivia Quiz", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.UserManagement, "User Management", $techn="Module", $descr="", $tags="", $link="")
-    Component(PersonalApplication.PersonalApplication.Infrastructure, "Infrastructure", $techn="Module", $descr="", $tags="", $link="")
   }
 
 }

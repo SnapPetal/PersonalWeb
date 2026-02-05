@@ -48,27 +48,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function connectWebSocket() {
   const socket = new SockJS("/quiz-websocket");
-  stompClient = new StompJs.Client({
-    webSocketFactory: () => socket,
-    reconnectDelay: 5000,
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000,
-    debug: (str) => console.log("STOMP:", str),
-  });
+  stompClient = Stomp.over(socket);
 
-  stompClient.onConnect = function (frame) {
-    console.log("Connected to WebSocket");
-    document.getElementById("lobbyStatus").innerHTML =
-      '<span class="text-success"><i class="bi bi-check-circle"></i> Connected</span>';
-  };
-
-  stompClient.onStompError = function (frame) {
-    console.error("STOMP error:", frame);
-    document.getElementById("lobbyStatus").innerHTML =
-      '<span class="text-danger"><i class="bi bi-x-circle"></i> Connection error</span>';
-  };
-
-  stompClient.activate();
+  stompClient.connect(
+    {},
+    function (frame) {
+      console.log("Connected to WebSocket");
+      document.getElementById("lobbyStatus").innerHTML =
+        '<span class="text-success"><i class="bi bi-check-circle"></i> Connected</span>';
+    },
+    function (error) {
+      console.error("STOMP error:", error);
+      document.getElementById("lobbyStatus").innerHTML =
+        '<span class="text-danger"><i class="bi bi-x-circle"></i> Connection error</span>';
+      setTimeout(connectWebSocket, 5000);
+    }
+  );
 }
 
 function cleanupSubscriptions() {
@@ -103,9 +98,7 @@ function joinGame() {
   cleanupSubscriptions();
 
   // First, create or get a game
-  stompClient.publish({
-    destination: "/app/tankgame/create",
-  });
+  stompClient.send("/app/tankgame/create", {}, "");
 
   // Subscribe to lobby to get game ID
   lobbySubscription = stompClient.subscribe(
@@ -163,10 +156,11 @@ function joinGame() {
       );
 
       // Join the game
-      stompClient.publish({
-        destination: `/app/tankgame/join/${gameId}`,
-        body: JSON.stringify({ playerName: playerName }),
-      });
+      stompClient.send(
+        `/app/tankgame/join/${gameId}`,
+        {},
+        JSON.stringify({ playerName: playerName })
+      );
     }
   );
 }
@@ -231,10 +225,11 @@ function startInputLoop() {
       mouseY: mouseY,
     };
 
-    stompClient.publish({
-      destination: `/app/tankgame/input/${gameId}/${myTankId}`,
-      body: JSON.stringify(input),
-    });
+    stompClient.send(
+      `/app/tankgame/input/${gameId}/${myTankId}`,
+      {},
+      JSON.stringify(input)
+    );
   }, 50); // Send input 20 times per second
 }
 
@@ -511,9 +506,7 @@ function playAgain() {
 
   // Leave current game
   if (gameId && myTankId && stompClient) {
-    stompClient.publish({
-      destination: `/app/tankgame/leave/${gameId}/${myTankId}`,
-    });
+    stompClient.send(`/app/tankgame/leave/${gameId}/${myTankId}`, {}, "");
   }
 
   // Clean up all subscriptions and intervals
@@ -542,8 +535,6 @@ document.addEventListener("visibilitychange", function () {
 // Cleanup on page unload
 window.addEventListener("beforeunload", function () {
   if (gameId && myTankId && stompClient) {
-    stompClient.publish({
-      destination: `/app/tankgame/leave/${gameId}/${myTankId}`,
-    });
+    stompClient.send(`/app/tankgame/leave/${gameId}/${myTankId}`, {}, "");
   }
 });

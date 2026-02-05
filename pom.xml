@@ -21,6 +21,7 @@
     <jspecify.version>1.0.0</jspecify.version>
     <lombok.version>1.18.42</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
+    <plyr.version>3.7.8</plyr.version>
     <shedlock.version>7.6.0</shedlock.version>
     <sockjs-client.version>1.5.1</sockjs-client.version>
     <spotless.version>3.2.1</spotless.version>
@@ -190,6 +191,11 @@
       <groupId>org.webjars.npm</groupId>
       <artifactId>htmx.org</artifactId>
       <version>${htmx.org.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>plyr</artifactId>
+      <version>${plyr.version}</version>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>

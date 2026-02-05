@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en-US" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Skateboard Trick Analyzer</title>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/plyr/dist/plyr.css}">
+    <link rel="stylesheet" href="/css/skatetricks.css">
+</head>
+<body class="skatetricks-page">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>🛹 Skateboard Trick Analyzer</h2>
+            <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+        </div>
+
+        <div class="row g-4">
+            <!-- Video Source -->
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#liveTab" type="button">
+                                    <i class="bi bi-camera-video"></i> Live Camera
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#uploadTab" type="button">
+                                    <i class="bi bi-upload"></i> Upload Video
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <!-- Live Camera Tab -->
+                            <div class="tab-pane fade show active" id="liveTab">
+                                <video id="liveVideo" autoplay muted playsinline class="w-100 rounded mb-3" style="max-height: 400px; background: #000;"></video>
+                                <div class="d-flex gap-2">
+                                    <button id="startCameraBtn" class="btn btn-primary">
+                                        <i class="bi bi-camera-video"></i> Start Camera
+                                    </button>
+                                    <button id="stopCameraBtn" class="btn btn-danger" disabled>
+                                        <i class="bi bi-stop-circle"></i> Stop
+                                    </button>
+                                    <button id="captureBtn" class="btn btn-success" disabled>
+                                        <i class="bi bi-record-circle"></i> Capture & Analyze
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Upload Tab -->
+                            <div class="tab-pane fade" id="uploadTab">
+                                <div class="mb-3">
+                                    <input type="file" id="videoUpload" class="form-control" accept="video/*">
+                                </div>
+                                <div id="plyrContainer" class="mb-3" style="display: none;">
+                                    <video id="uploadedVideo" controls playsinline class="w-100 rounded" style="max-height: 400px;"></video>
+                                </div>
+                                <p class="text-muted small mb-2 mt-2">Upload any video format (MOV, MP4, etc). Max 100MB. Server will convert and analyze.</p>
+                                <button id="analyzeUploadBtn" class="btn btn-success" disabled>
+                                    <i class="bi bi-lightning"></i> Analyze Video
+                                </button>
+                            </div>
+                        </div>
+                        <video id="extractionVideo" muted style="display: none;"></video>
+                        <canvas id="frameCanvas" style="display: none;"></canvas>
+                    </div>
+                </div>
+
+                <!-- Connection Status -->
+                <div class="card mt-3">
+                    <div class="card-body py-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-wifi me-2"></i>
+                            <span class="badge" id="connectionStatus">Disconnected</span>
+                            <span class="ms-auto small text-muted" id="frameCounter">Frames: 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="col-lg-5">
+                <!-- Current Analysis -->
+                <div class="card mb-3">
+                    <div class="card-header"><h5 class="mb-0">Analysis Result</h5></div>
+                    <div class="card-body" id="analysisResult">
+                        <p class="text-muted text-center">Capture or upload a video to analyze tricks</p>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0">Session History</h5></div>
+                    <div class="card-body p-0">
+                        <div id="trickHistory" class="list-group list-group-flush">
+                            <div class="list-group-item text-center text-muted py-3">No tricks analyzed yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
+    <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
+    <script th:src="@{/webjars/plyr/dist/plyr.min.js}"></script>
+    <script src="/js/skatetricks.js"></script>
+</body>
+</html>

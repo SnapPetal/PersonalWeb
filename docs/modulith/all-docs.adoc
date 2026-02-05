@@ -13,6 +13,10 @@ include::module-foosball.adoc[]
 plantuml::module-shared.puml[,,format=svg]
 include::module-shared.adoc[]
 
+== Skateboard Trick Analyzer
+plantuml::module-skatetricks.puml[,,format=svg]
+include::module-skatetricks.adoc[]
+
 == Tankgame
 plantuml::module-tankgame.puml[,,format=svg]
 include::module-tankgame.adoc[]

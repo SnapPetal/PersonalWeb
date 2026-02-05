@@ -1,0 +1,27 @@
+@startuml
+title <size:24>Skateboard Trick Analyzer</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="") {
+  Container_Boundary("PersonalApplication.PersonalApplication_boundary", "PersonalApplication", $tags="") {
+    Component(PersonalApplication.PersonalApplication.SkateboardTrickAnalyzer, "Skateboard Trick Analyzer", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

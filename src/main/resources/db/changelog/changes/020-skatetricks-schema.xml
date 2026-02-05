@@ -1,0 +1,44 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="020-create-skatetricks-schema" author="claude">
+        <sql>CREATE SCHEMA IF NOT EXISTS skatetricks</sql>
+    </changeSet>
+
+    <changeSet id="020-create-trick-attempts-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="trick_attempts" schemaName="skatetricks"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="trick_attempts" schemaName="skatetricks">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="session_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="trick_name" type="VARCHAR(100)"/>
+            <column name="confidence" type="INT"/>
+            <column name="form_score" type="INT"/>
+            <column name="feedback" type="TEXT"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_trick_attempts_session_id" tableName="trick_attempts" schemaName="skatetricks">
+            <column name="session_id"/>
+        </createIndex>
+
+        <createIndex indexName="idx_trick_attempts_created_at" tableName="trick_attempts" schemaName="skatetricks">
+            <column name="created_at" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
