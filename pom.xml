@@ -250,6 +250,18 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <image>
+            <builder>paketobuildpacks/builder-jammy-full</builder>
+            <buildpacks>
+              <buildpack>docker.io/paketobuildpacks/apt:0.1.0</buildpack>
+              <buildpack>paketo-buildpacks/java</buildpack>
+            </buildpacks>
+            <bindings>
+              <binding>${project.basedir}/Aptfile:/workspace/Aptfile</binding>
+            </bindings>
+          </image>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>

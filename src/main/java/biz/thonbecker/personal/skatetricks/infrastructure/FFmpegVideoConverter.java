@@ -17,6 +17,37 @@ class FFmpegVideoConverter {
     private static final int TIMEOUT_SECONDS = 60;
     private static final int DEFAULT_FRAME_COUNT = 30;
 
+    // Paketo apt buildpack installs packages here
+    private static final String APT_LAYER = "/layers/paketo-buildpacks_apt/apt";
+
+    /**
+     * Configures ProcessBuilder with correct environment for apt buildpack installations.
+     * This adds the apt layer paths to PATH and LD_LIBRARY_PATH so ffmpeg can find its libraries.
+     */
+    private void configureEnvironment(ProcessBuilder pb) {
+        var env = pb.environment();
+
+        // Check if running in buildpack environment (apt layer exists)
+        if (Files.isDirectory(Path.of(APT_LAYER))) {
+            // Add apt layer bin to PATH
+            String aptBin = APT_LAYER + "/usr/bin";
+            String currentPath = env.getOrDefault("PATH", "/usr/bin:/bin");
+            env.put("PATH", aptBin + ":" + currentPath);
+
+            // Add apt layer libs to LD_LIBRARY_PATH including pulseaudio subdirectory
+            String aptLibs = String.join(
+                    ":",
+                    APT_LAYER + "/usr/lib/x86_64-linux-gnu",
+                    APT_LAYER + "/usr/lib/x86_64-linux-gnu/pulseaudio",
+                    APT_LAYER + "/lib/x86_64-linux-gnu",
+                    APT_LAYER + "/usr/lib");
+            String currentLdPath = env.getOrDefault("LD_LIBRARY_PATH", "");
+            env.put("LD_LIBRARY_PATH", aptLibs + (currentLdPath.isEmpty() ? "" : ":" + currentLdPath));
+
+            log.debug("Configured apt buildpack environment: PATH={}, LD_LIBRARY_PATH={}", env.get("PATH"), env.get("LD_LIBRARY_PATH"));
+        }
+    }
+
     /**
      * Converts a video file to MP4 format using FFmpeg.
      *
@@ -45,6 +76,7 @@ class FFmpegVideoConverter {
                     "-y", // overwrite output
                     outputPath.toString());
 
+            configureEnvironment(pb);
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
@@ -115,6 +147,7 @@ class FFmpegVideoConverter {
                     "-y",
                     tempDir.resolve("frame%03d.jpg").toString());
 
+            configureEnvironment(pb);
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
@@ -183,6 +216,7 @@ class FFmpegVideoConverter {
                     "default=noprint_wrappers=1:nokey=1",
                     inputPath.toString());
 
+            configureEnvironment(pb);
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
@@ -206,9 +240,10 @@ class FFmpegVideoConverter {
      */
     public boolean isFFmpegAvailable() {
         try {
-            Process process = new ProcessBuilder("ffmpeg", "-version")
-                    .redirectErrorStream(true)
-                    .start();
+            ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-version");
+            configureEnvironment(pb);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
             boolean finished = process.waitFor(5, TimeUnit.SECONDS);
             return finished && process.exitValue() == 0;
         } catch (Exception e) {
