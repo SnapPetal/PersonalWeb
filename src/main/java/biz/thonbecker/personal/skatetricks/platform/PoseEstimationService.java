@@ -65,7 +65,7 @@ class PoseEstimationService implements AutoCloseable {
         try (Predictor<Image, Joints[]> predictor = loadedModel.newPredictor()) {
             List<PoseData.FramePoseData> framePoseDataList = new ArrayList<>();
             List<Double> allBodyRotations = new ArrayList<>();
-            int airborneCount = 0;
+            List<Double> allAnkleYPositions = new ArrayList<>();
             List<Double> allKneeAngles = new ArrayList<>();
 
             for (int i = 0; i < base64Frames.size(); i++) {
@@ -78,9 +78,7 @@ class PoseEstimationService implements AutoCloseable {
                     persons.add(personPose);
 
                     allBodyRotations.add(personPose.bodyRotationAngle());
-                    if (personPose.feetAirborne()) {
-                        airborneCount++;
-                    }
+                    allAnkleYPositions.add(getAverageAnkleY(joints.getJoints()));
                     for (PoseData.JointAngle angle : personPose.angles()) {
                         if (angle.name().contains("knee")) {
                             allKneeAngles.add(angle.angleDegrees());
@@ -91,7 +89,12 @@ class PoseEstimationService implements AutoCloseable {
                 framePoseDataList.add(new PoseData.FramePoseData(i, persons));
             }
 
-            double maxRotationDelta = computeMaxRotationDelta(allBodyRotations);
+            // Detect airborne by tracking ankle vertical displacement across frames
+            int airborneCount = detectAirborneFrames(allAnkleYPositions);
+
+            // Use smoothed cumulative rotation instead of noisy frame-to-frame max
+            double maxRotationDelta = computeSmoothedRotationDelta(allBodyRotations);
+
             double avgKneeAngle = allKneeAngles.stream()
                     .mapToDouble(Double::doubleValue)
                     .average()
@@ -99,8 +102,11 @@ class PoseEstimationService implements AutoCloseable {
             String motionSummary =
                     buildMotionSummary(airborneCount, base64Frames.size(), maxRotationDelta, avgKneeAngle);
 
+            // Update the feetAirborne flags on PersonPose using cross-frame detection
+            List<PoseData.FramePoseData> updatedFrames = applyAirborneDetection(framePoseDataList, allAnkleYPositions);
+
             PoseData.SequencePoseData result = new PoseData.SequencePoseData(
-                    framePoseDataList, maxRotationDelta, airborneCount, avgKneeAngle, motionSummary);
+                    updatedFrames, maxRotationDelta, airborneCount, avgKneeAngle, motionSummary);
 
             log.info(
                     "Pose estimation complete: {} airborne frames, {} deg max rotation",
@@ -165,7 +171,8 @@ class PoseEstimationService implements AutoCloseable {
 
         List<PoseData.JointAngle> angles = calculateAngles(jointList);
         double bodyRotation = calculateBodyRotation(jointList);
-        boolean feetAirborne = detectFeetAirborne(jointList);
+        // Airborne detection is done cross-frame in applyAirborneDetection; default false here
+        boolean feetAirborne = false;
         double[] cog = calculateCenterOfGravity(jointList);
 
         return new PoseData.PersonPose(keypoints, angles, bodyRotation, feetAirborne, cog[0], cog[1]);
@@ -218,14 +225,15 @@ class PoseEstimationService implements AutoCloseable {
 
     private double calculateBodyRotation(List<Joints.Joint> joints) {
         if (joints.size() <= RIGHT_SHOULDER) {
-            return 0.0;
+            return Double.NaN;
         }
 
         Joints.Joint leftShoulder = joints.get(LEFT_SHOULDER);
         Joints.Joint rightShoulder = joints.get(RIGHT_SHOULDER);
 
-        if (leftShoulder.getConfidence() < 0.3 || rightShoulder.getConfidence() < 0.3) {
-            return 0.0;
+        // Require higher confidence to avoid noisy detections causing false rotation
+        if (leftShoulder.getConfidence() < 0.5 || rightShoulder.getConfidence() < 0.5) {
+            return Double.NaN;
         }
 
         double dx = rightShoulder.getX() - leftShoulder.getX();
@@ -233,34 +241,98 @@ class PoseEstimationService implements AutoCloseable {
         return Math.toDegrees(Math.atan2(dy, dx));
     }
 
-    private boolean detectFeetAirborne(List<Joints.Joint> joints) {
+    private double getAverageAnkleY(List<Joints.Joint> joints) {
         if (joints.size() <= RIGHT_ANKLE) {
-            return false;
+            return Double.NaN;
         }
 
         Joints.Joint leftAnkle = joints.get(LEFT_ANKLE);
         Joints.Joint rightAnkle = joints.get(RIGHT_ANKLE);
-        Joints.Joint leftKnee = joints.get(LEFT_KNEE);
-        Joints.Joint rightKnee = joints.get(RIGHT_KNEE);
 
-        if (leftAnkle.getConfidence() < 0.3
-                || rightAnkle.getConfidence() < 0.3
-                || leftKnee.getConfidence() < 0.3
-                || rightKnee.getConfidence() < 0.3) {
-            return false;
+        boolean leftValid = leftAnkle.getConfidence() > 0.3;
+        boolean rightValid = rightAnkle.getConfidence() > 0.3;
+
+        if (leftValid && rightValid) {
+            return (leftAnkle.getY() + rightAnkle.getY()) / 2.0;
+        } else if (leftValid) {
+            return leftAnkle.getY();
+        } else if (rightValid) {
+            return rightAnkle.getY();
+        }
+        return Double.NaN;
+    }
+
+    private int detectAirborneFrames(List<Double> ankleYPositions) {
+        // Establish baseline from first few valid frames (grounded position)
+        List<Double> validPositions =
+                ankleYPositions.stream().filter(y -> !Double.isNaN(y)).toList();
+
+        if (validPositions.size() < 3) {
+            return 0;
         }
 
-        // In image coordinates, Y increases downward.
-        // If ankles are significantly above (lower Y) where they'd normally be relative to knees,
-        // the feet are likely airborne. Normal standing: ankle Y > knee Y.
-        // Airborne: ankle Y approaches or goes above knee Y.
-        double leftAnkleKneeDiff = leftAnkle.getY() - leftKnee.getY();
-        double rightAnkleKneeDiff = rightAnkle.getY() - rightKnee.getY();
+        // Baseline = average ankle Y from first 20% of frames (assumed grounded setup)
+        int baselineCount = Math.max(2, validPositions.size() / 5);
+        double baseline = validPositions.stream()
+                .limit(baselineCount)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
 
-        // When standing, ankle is well below knee (diff > ~0.05).
-        // When airborne/tucked, this difference shrinks significantly.
-        double threshold = 0.03;
-        return leftAnkleKneeDiff < threshold && rightAnkleKneeDiff < threshold;
+        // A frame is "airborne" if ankles moved upward (lower Y) by > 5% of image height
+        // relative to baseline. This catches whole-body displacement.
+        double threshold = 0.05;
+        int airborneCount = 0;
+        for (Double ankleY : ankleYPositions) {
+            if (!Double.isNaN(ankleY) && (baseline - ankleY) > threshold) {
+                airborneCount++;
+            }
+        }
+        return airborneCount;
+    }
+
+    private List<PoseData.FramePoseData> applyAirborneDetection(
+            List<PoseData.FramePoseData> frames, List<Double> ankleYPositions) {
+        List<Double> validPositions =
+                ankleYPositions.stream().filter(y -> !Double.isNaN(y)).toList();
+        if (validPositions.size() < 3) {
+            return frames;
+        }
+
+        int baselineCount = Math.max(2, validPositions.size() / 5);
+        double baseline = validPositions.stream()
+                .limit(baselineCount)
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
+        double threshold = 0.05;
+
+        List<PoseData.FramePoseData> updated = new ArrayList<>();
+        int ankleIdx = 0;
+        for (PoseData.FramePoseData frame : frames) {
+            List<PoseData.PersonPose> updatedPersons = new ArrayList<>();
+            for (PoseData.PersonPose person : frame.persons()) {
+                boolean airborne = false;
+                if (ankleIdx < ankleYPositions.size()) {
+                    double ankleY = ankleYPositions.get(ankleIdx);
+                    airborne = !Double.isNaN(ankleY) && (baseline - ankleY) > threshold;
+                    ankleIdx++;
+                }
+                updatedPersons.add(new PoseData.PersonPose(
+                        person.keypoints(),
+                        person.angles(),
+                        person.bodyRotationAngle(),
+                        airborne,
+                        person.cogX(),
+                        person.cogY()));
+            }
+            // If frame had no persons, still advance
+            if (frame.persons().isEmpty() && ankleIdx < ankleYPositions.size()) {
+                ankleIdx++;
+            }
+            updated.add(new PoseData.FramePoseData(frame.frameIndex(), updatedPersons));
+        }
+        return updated;
     }
 
     private double[] calculateCenterOfGravity(List<Joints.Joint> joints) {
@@ -284,15 +356,28 @@ class PoseEstimationService implements AutoCloseable {
         return new double[] {sumX / count, sumY / count};
     }
 
-    private double computeMaxRotationDelta(List<Double> rotations) {
-        if (rotations.size() < 2) {
+    private double computeSmoothedRotationDelta(List<Double> rotations) {
+        // Filter out NaN values (low-confidence frames)
+        List<Double> valid = rotations.stream().filter(r -> !Double.isNaN(r)).toList();
+
+        if (valid.size() < 3) {
             return 0.0;
         }
 
+        // Use a 3-frame sliding window median to smooth jitter,
+        // then compute max delta between smoothed values
+        List<Double> smoothed = new ArrayList<>();
+        for (int i = 0; i < valid.size(); i++) {
+            int start = Math.max(0, i - 1);
+            int end = Math.min(valid.size() - 1, i + 1);
+            List<Double> window = new ArrayList<>(valid.subList(start, end + 1));
+            window.sort(Double::compareTo);
+            smoothed.add(window.get(window.size() / 2));
+        }
+
         double maxDelta = 0.0;
-        for (int i = 1; i < rotations.size(); i++) {
-            double delta = Math.abs(rotations.get(i) - rotations.get(i - 1));
-            // Handle angle wrapping
+        for (int i = 1; i < smoothed.size(); i++) {
+            double delta = Math.abs(smoothed.get(i) - smoothed.get(i - 1));
             if (delta > 180) {
                 delta = 360 - delta;
             }
