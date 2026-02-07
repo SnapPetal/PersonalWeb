@@ -30,8 +30,8 @@ Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.
 Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

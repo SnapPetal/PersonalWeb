@@ -27,5 +27,4 @@ public enum SupportedTrick {
         this.displayName = displayName;
         this.description = description;
     }
-
 }

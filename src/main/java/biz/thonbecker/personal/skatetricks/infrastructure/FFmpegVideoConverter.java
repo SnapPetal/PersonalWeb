@@ -44,7 +44,10 @@ class FFmpegVideoConverter {
             String currentLdPath = env.getOrDefault("LD_LIBRARY_PATH", "");
             env.put("LD_LIBRARY_PATH", aptLibs + (currentLdPath.isEmpty() ? "" : ":" + currentLdPath));
 
-            log.debug("Configured apt buildpack environment: PATH={}, LD_LIBRARY_PATH={}", env.get("PATH"), env.get("LD_LIBRARY_PATH"));
+            log.debug(
+                    "Configured apt buildpack environment: PATH={}, LD_LIBRARY_PATH={}",
+                    env.get("PATH"),
+                    env.get("LD_LIBRARY_PATH"));
         }
     }
 

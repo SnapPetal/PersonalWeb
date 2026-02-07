@@ -62,7 +62,12 @@ class SkateTricksController {
             // Copy video bytes before returning (MultipartFile may be cleaned up)
             byte[] videoBytes = video.getBytes();
 
-            log.info("Queuing video conversion: {} ({} bytes) for session {}, videoId={}", filename, fileSize, sessionId, videoId);
+            log.info(
+                    "Queuing video conversion: {} ({} bytes) for session {}, videoId={}",
+                    filename,
+                    fileSize,
+                    sessionId,
+                    videoId);
 
             // Set initial status
             conversionStatuses.put(videoId, new ConversionStatus("pending", 0, null, null));
@@ -127,7 +132,8 @@ class SkateTricksController {
         if (status == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(new ConversionStatusUpdate(videoId, status.status(), status.progress(), status.size()));
+        return ResponseEntity.ok(
+                new ConversionStatusUpdate(videoId, status.status(), status.progress(), status.size()));
     }
 
     @GetMapping("/skatetricks/video/{videoId}")
