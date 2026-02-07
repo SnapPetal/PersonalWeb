@@ -18,7 +18,7 @@
  *
  * <h2>Internal Implementation</h2>
  * <ul>
- *   <li>{@link biz.thonbecker.personal.foosball.infrastructure} - All implementation details
+ *   <li>{@link biz.thonbecker.personal.foosball.platform} - All implementation details
  *   <li>FoosballFacadeImpl - Implementation of the public facade
  *   <li>FoosballService - Core business logic for games and players
  *   <li>TournamentService - Tournament bracket generation and management

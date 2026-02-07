@@ -2,7 +2,7 @@ package biz.thonbecker.personal.tankgame.application;
 
 import biz.thonbecker.personal.tankgame.domain.MatchResult;
 import biz.thonbecker.personal.tankgame.domain.PlayerProgression;
-import biz.thonbecker.personal.tankgame.infrastructure.persistence.*;
+import biz.thonbecker.personal.tankgame.platform.persistence.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

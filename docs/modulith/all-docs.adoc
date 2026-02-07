@@ -29,11 +29,11 @@ include::module-trivia.adoc[]
 plantuml::module-user.puml[,,format=svg]
 include::module-user.adoc[]
 
-== Infrastructure
-plantuml::module-infrastructure.puml[,,format=svg]
-include::module-infrastructure.adoc[]
-
 == Notification Services
 plantuml::module-notification.puml[,,format=svg]
 include::module-notification.adoc[]
+
+== Platform
+plantuml::module-platform.puml[,,format=svg]
+include::module-platform.adoc[]
 

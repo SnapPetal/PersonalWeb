@@ -5,7 +5,7 @@
 |Spring components
 |_Services_
 
-* `b.t.p.n.api.NotificationFacade` (via `b.t.p.n.infrastructure.NotificationFacadeImpl`)
+* `b.t.p.n.api.NotificationFacade` (via `b.t.p.n.platform.NotificationFacadeImpl`)
 |Events listened to
 |* `b.t.p.f.api.GameRecordedEvent` (async) 
 * `b.t.p.t.api.QuizCompletedEvent` (async) 

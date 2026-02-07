@@ -16,6 +16,7 @@
     <bootstrap-icons.version>1.13.1</bootstrap-icons.version>
     <bootstrap.version>5.3.8</bootstrap.version>
     <caffeine.version>3.2.3</caffeine.version>
+    <djl.version>0.35.1</djl.version>
     <htmx.org.version>2.0.8</htmx.org.version>
     <java.version>25</java.version>
     <jspecify.version>1.0.0</jspecify.version>
@@ -70,6 +71,21 @@
   </dependencyManagement>
 
   <dependencies>
+    <dependency>
+      <groupId>ai.djl</groupId>
+      <artifactId>api</artifactId>
+      <version>${djl.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ai.djl.pytorch</groupId>
+      <artifactId>pytorch-engine</artifactId>
+      <version>${djl.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ai.djl.pytorch</groupId>
+      <artifactId>pytorch-model-zoo</artifactId>
+      <version>${djl.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>

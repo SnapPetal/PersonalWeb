@@ -17,8 +17,8 @@ top to bottom direction
 
 System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="") {
   Container_Boundary("PersonalApplication.PersonalApplication_boundary", "PersonalApplication", $tags="") {
-    Component(PersonalApplication.PersonalApplication.Infrastructure, "Infrastructure", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.NotificationServices, "Notification Services", $techn="Module", $descr="", $tags="", $link="")
+    Component(PersonalApplication.PersonalApplication.Platform, "Platform", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.Foosball, "Foosball", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.TriviaQuiz, "Trivia Quiz", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.UserManagement, "User Management", $techn="Module", $descr="", $tags="", $link="")
@@ -26,12 +26,12 @@ System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="")
 
 }
 
-Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.Infrastructure, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Platform, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Platform, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Platform, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

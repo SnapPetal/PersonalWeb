@@ -103,12 +103,12 @@ src/
 │   │   ├── foosball/                  # Foosball Module
 │   │   │   ├── api/                   # Public facade interfaces
 │   │   │   ├── domain/                # Domain models (Game, Player, Stats)
-│   │   │   └── infrastructure/        # Implementation, persistence, web
+│   │   │   └── platform/              # Implementation, persistence, web
 │   │   ├── trivia/                    # Trivia Module
 │   │   │   ├── api/                   # Public facade interfaces
 │   │   │   ├── domain/                # Domain models (Quiz, Question)
-│   │   │   └── infrastructure/        # Implementation, persistence, web
-│   │   ├── shared/                    # Shared infrastructure
+│   │   │   └── platform/             # Implementation, persistence, web
+│   │   ├── shared/                    # Shared platform config
 │   │   ├── configuration/             # Spring configuration
 │   │   └── PersonalWebApplication.java
 │   ├── resources/

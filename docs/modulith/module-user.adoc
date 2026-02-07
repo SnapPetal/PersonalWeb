@@ -5,5 +5,5 @@
 |Spring components
 |_Services_
 
-* `b.t.p.u.api.UserFacade` (via `b.t.p.u.infrastructure.persistence.UserFacadeImpl`)
+* `b.t.p.u.api.UserFacade` (via `b.t.p.u.platform.persistence.UserFacadeImpl`)
 |===

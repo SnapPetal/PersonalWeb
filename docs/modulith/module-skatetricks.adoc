@@ -5,5 +5,5 @@
 |Spring components
 |_Services_
 
-* `b.t.p.s.api.SkateTricksFacade` (via `b.t.p.s.infrastructure.SkateTricksFacadeImpl`)
+* `b.t.p.s.api.SkateTricksFacade` (via `b.t.p.s.platform.SkateTricksFacadeImpl`)
 |===

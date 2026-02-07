@@ -5,7 +5,7 @@
 |Spring components
 |_Services_
 
-* `b.t.p.t.api.TriviaFacade` (via `b.t.p.t.infrastructure.TriviaFacadeImpl`)
+* `b.t.p.t.api.TriviaFacade` (via `b.t.p.t.platform.TriviaFacadeImpl`)
 |Aggregate roots
-|* `b.t.p.t.infrastructure.QuizResultEntity`
+|* `b.t.p.t.platform.QuizResultEntity`
 |===

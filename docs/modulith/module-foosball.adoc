@@ -5,46 +5,46 @@
 |Spring components
 |_Controllers_
 
-* `b.t.p.f.infrastructure.web.FoosballController`
-* `b.t.p.f.infrastructure.web.FoosballRestController`
-* `b.t.p.f.infrastructure.web.TournamentController`
+* `b.t.p.f.platform.web.FoosballController`
+* `b.t.p.f.platform.web.FoosballRestController`
+* `b.t.p.f.platform.web.TournamentController`
 
 _Services_
 
-* `b.t.p.f.infrastructure.CleanupService`
-* `b.t.p.f.api.FoosballFacade` (via `b.t.p.f.infrastructure.FoosballFacadeImpl`)
-* `b.t.p.f.infrastructure.FoosballService`
-* `b.t.p.f.infrastructure.RatingService`
-* `b.t.p.f.infrastructure.TournamentService`
+* `b.t.p.f.platform.CleanupService`
+* `b.t.p.f.api.FoosballFacade` (via `b.t.p.f.platform.FoosballFacadeImpl`)
+* `b.t.p.f.platform.FoosballService`
+* `b.t.p.f.platform.RatingService`
+* `b.t.p.f.platform.TournamentService`
 
 _Repositories_
 
-* `b.t.p.f.infrastructure.persistence.GameRepository`
-* `b.t.p.f.infrastructure.persistence.PlayerRepository`
-* `b.t.p.f.infrastructure.persistence.PlayerStatsRepository`
-* `b.t.p.f.infrastructure.persistence.RatingHistoryRepository`
-* `b.t.p.f.infrastructure.persistence.TeamStatsRepository`
-* `b.t.p.f.infrastructure.persistence.TournamentMatchRepository`
-* `b.t.p.f.infrastructure.persistence.TournamentRegistrationRepository`
-* `b.t.p.f.infrastructure.persistence.TournamentRepository`
-* `b.t.p.f.infrastructure.persistence.TournamentStandingRepository`
+* `b.t.p.f.platform.persistence.GameRepository`
+* `b.t.p.f.platform.persistence.PlayerRepository`
+* `b.t.p.f.platform.persistence.PlayerStatsRepository`
+* `b.t.p.f.platform.persistence.RatingHistoryRepository`
+* `b.t.p.f.platform.persistence.TeamStatsRepository`
+* `b.t.p.f.platform.persistence.TournamentMatchRepository`
+* `b.t.p.f.platform.persistence.TournamentRegistrationRepository`
+* `b.t.p.f.platform.persistence.TournamentRepository`
+* `b.t.p.f.platform.persistence.TournamentStandingRepository`
 
 _Event listeners_
 
-* `b.t.p.f.infrastructure.config.DataLoader`
+* `b.t.p.f.platform.config.DataLoader`
 
 _Others_
 
-* `b.t.p.f.infrastructure.tournament.algorithm.TournamentAlgorithm` (via `b.t.p.f.infrastructure.tournament.algorithm.DoubleEliminationAlgorithm`)
-* `b.t.p.f.infrastructure.tournament.algorithm.TournamentAlgorithm` (via `b.t.p.f.infrastructure.tournament.algorithm.SingleEliminationAlgorithm`)
+* `b.t.p.f.platform.tournament.algorithm.TournamentAlgorithm` (via `b.t.p.f.platform.tournament.algorithm.DoubleEliminationAlgorithm`)
+* `b.t.p.f.platform.tournament.algorithm.TournamentAlgorithm` (via `b.t.p.f.platform.tournament.algorithm.SingleEliminationAlgorithm`)
 |Aggregate roots
-|* `b.t.p.f.infrastructure.persistence.Game`
-* `b.t.p.f.infrastructure.persistence.Player`
-* `b.t.p.f.infrastructure.persistence.RatingHistory`
-* `b.t.p.f.infrastructure.persistence.Tournament`
-* `b.t.p.f.infrastructure.persistence.TournamentMatch`
-* `b.t.p.f.infrastructure.persistence.TournamentRegistration`
-* `b.t.p.f.infrastructure.persistence.TournamentStanding`
+|* `b.t.p.f.platform.persistence.Game`
+* `b.t.p.f.platform.persistence.Player`
+* `b.t.p.f.platform.persistence.RatingHistory`
+* `b.t.p.f.platform.persistence.Tournament`
+* `b.t.p.f.platform.persistence.TournamentMatch`
+* `b.t.p.f.platform.persistence.TournamentRegistration`
+* `b.t.p.f.platform.persistence.TournamentStanding`
 |Events listened to
 |* `org.springframework.boot.context.event.ApplicationReadyEvent` 
 |===
