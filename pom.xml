@@ -16,7 +16,7 @@
     <bootstrap-icons.version>1.13.1</bootstrap-icons.version>
     <bootstrap.version>5.3.8</bootstrap.version>
     <caffeine.version>3.2.3</caffeine.version>
-    <djl.version>0.35.1</djl.version>
+    <djl.version>0.36.0</djl.version>
     <htmx.org.version>2.0.8</htmx.org.version>
     <java.version>25</java.version>
     <jspecify.version>1.0.0</jspecify.version>
