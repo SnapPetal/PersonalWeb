@@ -3,8 +3,11 @@ package biz.thonbecker.personal.skatetricks.platform;
 import ai.djl.inference.Predictor;
 import ai.djl.modality.cv.Image;
 import ai.djl.modality.cv.ImageFactory;
+import ai.djl.modality.cv.output.DetectedObjects;
 import ai.djl.modality.cv.output.Joints;
+import ai.djl.modality.cv.output.Rectangle;
 import ai.djl.modality.cv.translator.YoloPoseTranslatorFactory;
+import ai.djl.modality.cv.translator.YoloV8TranslatorFactory;
 import ai.djl.repository.zoo.Criteria;
 import ai.djl.repository.zoo.ZooModel;
 import java.io.ByteArrayInputStream;
@@ -56,6 +59,9 @@ class PoseEstimationService implements AutoCloseable {
     private volatile @Nullable ZooModel<Image, Joints[]> model;
     private volatile boolean modelLoadAttempted;
 
+    private volatile @Nullable ZooModel<Image, DetectedObjects> objectModel;
+    private volatile boolean objectModelLoadAttempted;
+
     PoseData.@Nullable SequencePoseData estimatePoses(List<String> base64Frames) {
         ZooModel<Image, Joints[]> loadedModel = ensureModelLoaded();
         if (loadedModel == null) {
@@ -89,8 +95,17 @@ class PoseEstimationService implements AutoCloseable {
                 framePoseDataList.add(new PoseData.FramePoseData(i, persons));
             }
 
+            // Detect board via object detection model
+            List<PoseData.BoardDetection> boardDetections = detectBoards(base64Frames);
+            int boardAirborneCount = (int) boardDetections.stream()
+                    .filter(PoseData.BoardDetection::airborne)
+                    .count();
+
             // Detect airborne by tracking ankle vertical displacement across frames
-            int airborneCount = detectAirborneFrames(allAnkleYPositions);
+            int ankleAirborneCount = detectAirborneFrames(allAnkleYPositions);
+
+            // Combine: frame is airborne if either person or board shows upward displacement
+            int airborneCount = combineAirborneSignals(allAnkleYPositions, boardDetections);
 
             // Use smoothed cumulative rotation instead of noisy frame-to-frame max
             double maxRotationDelta = computeSmoothedRotationDelta(allBodyRotations);
@@ -103,14 +118,17 @@ class PoseEstimationService implements AutoCloseable {
                     buildMotionSummary(airborneCount, base64Frames.size(), maxRotationDelta, avgKneeAngle);
 
             // Update the feetAirborne flags on PersonPose using cross-frame detection
-            List<PoseData.FramePoseData> updatedFrames = applyAirborneDetection(framePoseDataList, allAnkleYPositions);
+            List<PoseData.FramePoseData> updatedFrames =
+                    applyAirborneDetection(framePoseDataList, allAnkleYPositions, boardDetections);
 
             PoseData.SequencePoseData result = new PoseData.SequencePoseData(
-                    updatedFrames, maxRotationDelta, airborneCount, avgKneeAngle, motionSummary);
+                    updatedFrames, maxRotationDelta, airborneCount, boardAirborneCount, avgKneeAngle, motionSummary);
 
             log.info(
-                    "Pose estimation complete: {} airborne frames, {} deg max rotation",
+                    "Pose estimation complete: {} airborne frames (ankle={}, board={}), {} deg max rotation",
                     airborneCount,
+                    ankleAirborneCount,
+                    boardAirborneCount,
                     String.format("%.0f", maxRotationDelta));
 
             return result;
@@ -153,6 +171,155 @@ class PoseEstimationService implements AutoCloseable {
                 return null;
             }
         }
+    }
+
+    private @Nullable ZooModel<Image, DetectedObjects> ensureObjectModelLoaded() {
+        if (objectModel != null) {
+            return objectModel;
+        }
+        if (objectModelLoadAttempted) {
+            return null;
+        }
+
+        synchronized (this) {
+            if (objectModel != null) {
+                return objectModel;
+            }
+            if (objectModelLoadAttempted) {
+                return null;
+            }
+
+            try {
+                log.info("Loading YOLO11n object detection model...");
+                Criteria<Image, DetectedObjects> criteria = Criteria.builder()
+                        .setTypes(Image.class, DetectedObjects.class)
+                        .optModelUrls("djl://ai.djl.pytorch/yolo11n")
+                        .optTranslatorFactory(new YoloV8TranslatorFactory())
+                        .build();
+                objectModel = criteria.loadModel();
+                log.info("YOLO11n object detection model loaded successfully");
+                return objectModel;
+            } catch (Exception e) {
+                log.warn("Failed to load YOLO11n object detection model, board detection will be unavailable", e);
+                objectModelLoadAttempted = true;
+                return null;
+            }
+        }
+    }
+
+    private List<PoseData.BoardDetection> detectBoards(List<String> base64Frames) {
+        ZooModel<Image, DetectedObjects> loadedModel = ensureObjectModelLoaded();
+        if (loadedModel == null) {
+            return base64Frames.stream()
+                    .map(f -> new PoseData.BoardDetection(false, false, 0.0, 0.0))
+                    .toList();
+        }
+
+        List<PoseData.BoardDetection> detections = new ArrayList<>();
+        try (Predictor<Image, DetectedObjects> predictor = loadedModel.newPredictor()) {
+            for (String frame : base64Frames) {
+                Image image = decodeImage(frame);
+                DetectedObjects objects = predictor.predict(image);
+
+                PoseData.BoardDetection best = findSkateboard(objects);
+                detections.add(best);
+            }
+        } catch (Exception e) {
+            log.warn("Board detection failed, continuing without board data", e);
+            return base64Frames.stream()
+                    .map(f -> new PoseData.BoardDetection(false, false, 0.0, 0.0))
+                    .toList();
+        }
+
+        // Compute baseline board bottomY from first ~20% of frames where board was detected
+        List<Double> baselineValues = new ArrayList<>();
+        int baselineLimit = Math.max(2, detections.size() / 5);
+        for (PoseData.BoardDetection det : detections) {
+            if (det.detected() && baselineValues.size() < baselineLimit) {
+                baselineValues.add(det.bottomY());
+            }
+        }
+
+        if (baselineValues.isEmpty()) {
+            log.info("Skateboard detected in 0 frames, board airborne in 0 frames");
+            return detections;
+        }
+
+        double baselineBottomY = baselineValues.stream()
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
+        double threshold = 0.05;
+
+        // Flag airborne if board rises >5% above baseline (lower Y = higher position)
+        List<PoseData.BoardDetection> updated = new ArrayList<>();
+        int detectedCount = 0;
+        int airborneCount = 0;
+        for (PoseData.BoardDetection det : detections) {
+            if (det.detected()) {
+                detectedCount++;
+                boolean airborne = (baselineBottomY - det.bottomY()) > threshold;
+                if (airborne) {
+                    airborneCount++;
+                }
+                updated.add(new PoseData.BoardDetection(true, airborne, det.bottomY(), det.confidence()));
+            } else {
+                updated.add(det);
+            }
+        }
+
+        log.info("Skateboard detected in {} frames, board airborne in {} frames", detectedCount, airborneCount);
+        return updated;
+    }
+
+    private PoseData.BoardDetection findSkateboard(DetectedObjects objects) {
+        PoseData.BoardDetection best = new PoseData.BoardDetection(false, false, 0.0, 0.0);
+        double bestConfidence = 0.0;
+
+        for (int i = 0; i < objects.getNumberOfObjects(); i++) {
+            DetectedObjects.DetectedObject obj = (DetectedObjects.DetectedObject) objects.item(i);
+            if ("skateboard".equalsIgnoreCase(obj.getClassName()) && obj.getProbability() > 0.3) {
+                if (obj.getProbability() > bestConfidence) {
+                    bestConfidence = obj.getProbability();
+                    Rectangle rect = obj.getBoundingBox().getBounds();
+                    double bottomY = rect.getY() + rect.getHeight();
+                    best = new PoseData.BoardDetection(true, false, bottomY, obj.getProbability());
+                }
+            }
+        }
+        return best;
+    }
+
+    private int combineAirborneSignals(List<Double> ankleYPositions, List<PoseData.BoardDetection> boardDetections) {
+        // Establish ankle baseline
+        List<Double> validPositions =
+                ankleYPositions.stream().filter(y -> !Double.isNaN(y)).toList();
+        double ankleBaseline = 0.0;
+        double ankleThreshold = 0.05;
+        if (validPositions.size() >= 3) {
+            int baselineCount = Math.max(2, validPositions.size() / 5);
+            ankleBaseline = validPositions.stream()
+                    .limit(baselineCount)
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0.0);
+        }
+
+        int airborneCount = 0;
+        int size = Math.max(ankleYPositions.size(), boardDetections.size());
+        for (int i = 0; i < size; i++) {
+            boolean ankleAirborne = false;
+            if (i < ankleYPositions.size() && validPositions.size() >= 3) {
+                double ankleY = ankleYPositions.get(i);
+                ankleAirborne = !Double.isNaN(ankleY) && (ankleBaseline - ankleY) > ankleThreshold;
+            }
+            boolean boardAirborne =
+                    i < boardDetections.size() && boardDetections.get(i).airborne();
+            if (ankleAirborne || boardAirborne) {
+                airborneCount++;
+            }
+        }
+        return airborneCount;
     }
 
     private Image decodeImage(String base64Frame) throws java.io.IOException {
@@ -292,32 +459,40 @@ class PoseEstimationService implements AutoCloseable {
     }
 
     private List<PoseData.FramePoseData> applyAirborneDetection(
-            List<PoseData.FramePoseData> frames, List<Double> ankleYPositions) {
+            List<PoseData.FramePoseData> frames,
+            List<Double> ankleYPositions,
+            List<PoseData.BoardDetection> boardDetections) {
         List<Double> validPositions =
                 ankleYPositions.stream().filter(y -> !Double.isNaN(y)).toList();
-        if (validPositions.size() < 3) {
-            return frames;
-        }
 
-        int baselineCount = Math.max(2, validPositions.size() / 5);
-        double baseline = validPositions.stream()
-                .limit(baselineCount)
-                .mapToDouble(Double::doubleValue)
-                .average()
-                .orElse(0.0);
+        double baseline = 0.0;
         double threshold = 0.05;
+        boolean hasAnkleBaseline = validPositions.size() >= 3;
+        if (hasAnkleBaseline) {
+            int baselineCount = Math.max(2, validPositions.size() / 5);
+            baseline = validPositions.stream()
+                    .limit(baselineCount)
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0.0);
+        }
 
         List<PoseData.FramePoseData> updated = new ArrayList<>();
         int ankleIdx = 0;
-        for (PoseData.FramePoseData frame : frames) {
+        for (int frameIdx = 0; frameIdx < frames.size(); frameIdx++) {
+            PoseData.FramePoseData frame = frames.get(frameIdx);
+            PoseData.BoardDetection boardDet = frameIdx < boardDetections.size() ? boardDetections.get(frameIdx) : null;
+
             List<PoseData.PersonPose> updatedPersons = new ArrayList<>();
             for (PoseData.PersonPose person : frame.persons()) {
-                boolean airborne = false;
-                if (ankleIdx < ankleYPositions.size()) {
+                boolean ankleAirborne = false;
+                if (hasAnkleBaseline && ankleIdx < ankleYPositions.size()) {
                     double ankleY = ankleYPositions.get(ankleIdx);
-                    airborne = !Double.isNaN(ankleY) && (baseline - ankleY) > threshold;
+                    ankleAirborne = !Double.isNaN(ankleY) && (baseline - ankleY) > threshold;
                     ankleIdx++;
                 }
+                boolean boardAirborne = boardDet != null && boardDet.airborne();
+                boolean airborne = ankleAirborne || boardAirborne;
                 updatedPersons.add(new PoseData.PersonPose(
                         person.keypoints(),
                         person.angles(),
@@ -330,7 +505,7 @@ class PoseEstimationService implements AutoCloseable {
             if (frame.persons().isEmpty() && ankleIdx < ankleYPositions.size()) {
                 ankleIdx++;
             }
-            updated.add(new PoseData.FramePoseData(frame.frameIndex(), updatedPersons));
+            updated.add(new PoseData.FramePoseData(frame.frameIndex(), updatedPersons, boardDet));
         }
         return updated;
     }
@@ -420,6 +595,11 @@ class PoseEstimationService implements AutoCloseable {
         if (m != null) {
             m.close();
             model = null;
+        }
+        ZooModel<Image, DetectedObjects> om = objectModel;
+        if (om != null) {
+            om.close();
+            objectModel = null;
         }
     }
 }

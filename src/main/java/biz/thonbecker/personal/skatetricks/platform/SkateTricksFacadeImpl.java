@@ -1,14 +1,17 @@
 package biz.thonbecker.personal.skatetricks.platform;
 
 import biz.thonbecker.personal.skatetricks.api.SkateTricksFacade;
+import biz.thonbecker.personal.skatetricks.api.SupportedTrick;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisEvent;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
+import biz.thonbecker.personal.skatetricks.api.TrickSequenceEntry;
 import biz.thonbecker.personal.skatetricks.domain.TrickCatalog;
 import biz.thonbecker.personal.skatetricks.platform.FFmpegVideoConverter.VideoConversionException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -41,17 +44,7 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         log.info("Analyzing {} frames for session {}", base64Frames.size(), sessionId);
 
         TrickAnalysisResult result = trickAnalyzer.analyze(base64Frames);
-
-        TrickAttemptEntity entity = new TrickAttemptEntity();
-        entity.setSessionId(sessionId);
-        entity.setTrickName(result.trick().name());
-        entity.setConfidence(result.confidence());
-        entity.setFormScore(result.formScore());
-        entity.setFeedback(String.join("|", result.feedback()));
-        trickAttemptRepository.save(entity);
-
-        eventPublisher.publishEvent(new TrickAnalysisEvent(sessionId, result, Instant.now()));
-
+        saveResult(sessionId, result);
         return result;
     }
 
@@ -82,18 +75,7 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
 
             // Analyze with AI
             TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
-
-            // Save to database
-            TrickAttemptEntity entity = new TrickAttemptEntity();
-            entity.setSessionId(sessionId);
-            entity.setTrickName(result.trick().name());
-            entity.setConfidence(result.confidence());
-            entity.setFormScore(result.formScore());
-            entity.setFeedback(String.join("|", result.feedback()));
-            trickAttemptRepository.save(entity);
-
-            eventPublisher.publishEvent(new TrickAnalysisEvent(sessionId, result, Instant.now()));
-
+            saveResult(sessionId, result);
             return result;
 
         } catch (IOException | VideoConversionException e) {
@@ -109,6 +91,49 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
     private String getFileExtension(String filename) {
         int idx = filename.lastIndexOf('.');
         return idx >= 0 ? filename.substring(idx) : "";
+    }
+
+    private void saveResult(String sessionId, TrickAnalysisResult result) {
+        TrickAttemptEntity entity = new TrickAttemptEntity();
+        entity.setSessionId(sessionId);
+        entity.setTrickName(result.trick().name());
+        entity.setConfidence(result.confidence());
+        entity.setFormScore(result.formScore());
+        entity.setFeedback(String.join("|", result.feedback()));
+        entity.setTrickSequence(encodeTrickSequence(result.trickSequence()));
+        trickAttemptRepository.save(entity);
+        eventPublisher.publishEvent(new TrickAnalysisEvent(sessionId, result, Instant.now()));
+    }
+
+    private String encodeTrickSequence(List<TrickSequenceEntry> sequence) {
+        if (sequence == null || sequence.isEmpty()) {
+            return null;
+        }
+        return sequence.stream()
+                .map(e -> "%s:%s:%d".formatted(e.trick().name(), e.timeframe(), e.confidence()))
+                .reduce((a, b) -> a + "|" + b)
+                .orElse(null);
+    }
+
+    private List<TrickSequenceEntry> decodeTrickSequence(String encoded) {
+        if (encoded == null || encoded.isBlank()) {
+            return List.of();
+        }
+        List<TrickSequenceEntry> result = new ArrayList<>();
+        for (String part : encoded.split("\\|")) {
+            String[] fields = part.split(":", 3);
+            if (fields.length == 3) {
+                SupportedTrick trick = TrickCatalog.fromName(fields[0]);
+                String timeframe = fields[1];
+                int confidence = 0;
+                try {
+                    confidence = Integer.parseInt(fields[2]);
+                } catch (NumberFormatException ignored) {
+                }
+                result.add(new TrickSequenceEntry(trick, timeframe, confidence));
+            }
+        }
+        return result;
     }
 
     private void deleteQuietly(Path path) {
@@ -171,18 +196,7 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
 
             // Analyze frames with AI
             TrickAnalysisResult result = trickAnalyzer.analyze(frames);
-
-            // Save to database
-            TrickAttemptEntity entity = new TrickAttemptEntity();
-            entity.setSessionId(sessionId);
-            entity.setTrickName(result.trick().name());
-            entity.setConfidence(result.confidence());
-            entity.setFormScore(result.formScore());
-            entity.setFeedback(String.join("|", result.feedback()));
-            trickAttemptRepository.save(entity);
-
-            eventPublisher.publishEvent(new TrickAnalysisEvent(sessionId, result, Instant.now()));
-
+            saveResult(sessionId, result);
             return result;
 
         } catch (IOException | VideoConversionException e) {
@@ -201,7 +215,8 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
                         TrickCatalog.fromName(e.getTrickName()),
                         e.getConfidence(),
                         e.getFormScore(),
-                        e.getFeedback() != null ? List.of(e.getFeedback().split("\\|")) : List.of()))
+                        e.getFeedback() != null ? List.of(e.getFeedback().split("\\|")) : List.of(),
+                        decodeTrickSequence(e.getTrickSequence())))
                 .toList();
     }
 }

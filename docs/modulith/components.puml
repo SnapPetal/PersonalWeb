@@ -26,12 +26,12 @@ System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="")
 
 }
 
+Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
+Rel(PersonalApplication.PersonalApplication.Platform, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.Platform, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.Platform, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.Platform, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

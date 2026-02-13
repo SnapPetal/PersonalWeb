@@ -1,0 +1,14 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="021-add-trick-sequence-column" author="claude">
+        <addColumn tableName="trick_attempts" schemaName="skatetricks">
+            <column name="trick_sequence" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

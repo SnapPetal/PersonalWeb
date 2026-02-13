@@ -16,6 +16,15 @@ final class PoseData {
         }
     }
 
+    record BoardDetection(boolean detected, boolean airborne, double bottomY, double confidence) {
+        String toPromptText() {
+            if (!detected) {
+                return "board=not_detected";
+            }
+            return "board=(detected, airborne=%s, bottomY=%.2f, conf=%.2f)".formatted(airborne, bottomY, confidence);
+        }
+    }
+
     record JointAngle(String name, double angleDegrees) {
         String toPromptText() {
             return "%s=%.0f°".formatted(name, angleDegrees);
@@ -37,13 +46,18 @@ final class PoseData {
         }
     }
 
-    record FramePoseData(int frameIndex, List<PersonPose> persons) {
+    record FramePoseData(int frameIndex, List<PersonPose> persons, BoardDetection boardDetection) {
+        FramePoseData(int frameIndex, List<PersonPose> persons) {
+            this(frameIndex, persons, null);
+        }
+
         String toPromptText() {
             if (persons.isEmpty()) {
                 return "frame_%d: no_person_detected".formatted(frameIndex);
             }
             String personText = persons.stream().map(PersonPose::toPromptText).collect(Collectors.joining("; "));
-            return "frame_%d: %s".formatted(frameIndex, personText);
+            String boardText = boardDetection != null ? " | " + boardDetection.toPromptText() : "";
+            return "frame_%d: %s%s".formatted(frameIndex, personText, boardText);
         }
     }
 
@@ -51,14 +65,31 @@ final class PoseData {
             List<FramePoseData> frames,
             double maxBodyRotationDelta,
             int framesWithFeetAirborne,
+            int framesWithBoardAirborne,
             double averageKneeAngle,
             String motionSummary) {
+
+        SequencePoseData(
+                List<FramePoseData> frames,
+                double maxBodyRotationDelta,
+                int framesWithFeetAirborne,
+                double averageKneeAngle,
+                String motionSummary) {
+            this(frames, maxBodyRotationDelta, framesWithFeetAirborne, 0, averageKneeAngle, motionSummary);
+        }
 
         String toPromptText() {
             StringBuilder sb = new StringBuilder();
             sb.append("SEQUENCE SUMMARY: ").append(motionSummary).append("\n");
-            sb.append("max_rotation_delta=%.0f°, airborne_frames=%d/%d, avg_knee_angle=%.0f°\n"
-                    .formatted(maxBodyRotationDelta, framesWithFeetAirborne, frames.size(), averageKneeAngle));
+            sb.append(
+                    "max_rotation_delta=%.0f°, airborne_frames=%d/%d, board_airborne_frames=%d/%d, avg_knee_angle=%.0f°\n"
+                            .formatted(
+                                    maxBodyRotationDelta,
+                                    framesWithFeetAirborne,
+                                    frames.size(),
+                                    framesWithBoardAirborne,
+                                    frames.size(),
+                                    averageKneeAngle));
             sb.append("\nPER-FRAME DATA:\n");
             for (FramePoseData frame : frames) {
                 sb.append(frame.toPromptText()).append("\n");

@@ -2,6 +2,7 @@ package biz.thonbecker.personal.skatetricks.platform;
 
 import biz.thonbecker.personal.skatetricks.api.SupportedTrick;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
+import biz.thonbecker.personal.skatetricks.api.TrickSequenceEntry;
 import biz.thonbecker.personal.skatetricks.domain.TrickCatalog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,10 +66,9 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     6. DROP_IN: If early frames show rider at top of ramp/bowl/halfpipe with board on coping edge, then transitioning down the ramp - this is DROP_IN
                     7. CRUISING: ONLY choose this if rider is on flat ground the ENTIRE clip with no ramp/transition/trick visible
 
-                    IMPORTANT - IDENTIFY THE TRICK BY WHAT STARTS THE CLIP:
-                    - If video starts with drop-in from ramp coping, classify as DROP_IN (even if they ride away after)
-                    - If video starts with a pop/ollie, classify as that trick (even if they land and roll)
-                    - Only classify as CRUISING if ALL frames show flat-ground rolling with zero trick initiation
+                    MULTIPLE TRICKS: If the clip contains more than one trick performed in
+                    sequence, identify ALL of them in order. The primary trick is the most
+                    significant one (not just the first). Return them in trickSequence.
 
                     If you see the board airborne (all wheels off ground), choose OLLIE or a flip/spin variation.
                     If the board contacts a rail/ledge and slides, choose a GRIND variation.
@@ -100,14 +100,16 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     %s
 
                     Respond ONLY with valid JSON (no markdown, no explanation):
-                    {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"]}
+                    {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"], "trickSequence": [{"trick": "DROP_IN", "timeframe": "frames 1-8", "confidence": 90}, {"trick": "KICKFLIP", "timeframe": "frames 12-20", "confidence": 85}]}
 
+                    The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
+                    If only one trick is visible, trickSequence should contain just that one entry.
                     Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if you truly cannot identify the trick.
                     """.formatted(TrickCatalog.buildTrickDescriptions()) + poseDataText;
 
             String userPrompt =
                     ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
-                                    + "Frame 1 is earliest, frame %d is latest. Focus on what happens in the FIRST FEW FRAMES to identify the trick being initiated. Analyze the progression of movement across all frames.")
+                                    + "Frame 1 is earliest, frame %d is latest. Analyze the full progression of movement across all frames and identify all tricks performed in sequence.")
                             .formatted(base64Frames.size(), base64Frames.size());
 
             UserMessage userMessage =
@@ -151,6 +153,10 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     5. MANUAL: Rider stays on ground but front wheels are lifted high. Must see sustained nose-up balance.
                     6. CRUISING: All 4 wheels stay on ground, rider is simply rolling
 
+                    MULTIPLE TRICKS: If the clip contains more than one trick performed in
+                    sequence, identify ALL of them in order. The primary trick is the most
+                    significant one (not just the first). Return them in trickSequence.
+
                     If you see the board airborne (all wheels off ground), choose OLLIE or a flip/spin variation.
                     If the board contacts a rail/ledge and slides, choose a GRIND variation.
                     NEVER choose MANUAL if the board leaves the ground completely.
@@ -181,8 +187,10 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     %s
 
                     Respond ONLY with valid JSON (no markdown, no explanation):
-                    {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"]}
+                    {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"], "trickSequence": [{"trick": "DROP_IN", "timeframe": "0:00-0:02", "confidence": 90}, {"trick": "KICKFLIP", "timeframe": "0:03-0:05", "confidence": 85}]}
 
+                    The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
+                    If only one trick is visible, trickSequence should contain just that one entry.
                     Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING). Use UNKNOWN only if you truly cannot identify the trick.
                     """.formatted(TrickCatalog.buildTrickDescriptions());
 
@@ -220,7 +228,19 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                 feedbackNode.forEach(f -> feedback.add(f.asText()));
             }
 
-            return new TrickAnalysisResult(trick, confidence, formScore, feedback);
+            List<TrickSequenceEntry> trickSequence = new ArrayList<>();
+            JsonNode sequenceNode = node.path("trickSequence");
+            if (sequenceNode.isArray()) {
+                for (JsonNode entry : sequenceNode) {
+                    SupportedTrick seqTrick =
+                            TrickCatalog.fromName(entry.path("trick").asText("UNKNOWN"));
+                    String timeframe = entry.path("timeframe").asText("");
+                    int seqConfidence = entry.path("confidence").asInt(0);
+                    trickSequence.add(new TrickSequenceEntry(seqTrick, timeframe, seqConfidence));
+                }
+            }
+
+            return new TrickAnalysisResult(trick, confidence, formScore, feedback, trickSequence);
         } catch (Exception e) {
             log.error("Failed to parse AI response: {}", response, e);
             return fallback();
@@ -256,6 +276,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     - feet_airborne=false for ALL frames = manual/cruising
                     - knee < 90° = deep crouch (setup/landing)
                     - body_rotation delta > 90° = 180 trick
+                    - board airborne (detected via YOLO object detection) = board left the ground
 
                     """ + poseData.toPromptText();
         } catch (Exception e) {

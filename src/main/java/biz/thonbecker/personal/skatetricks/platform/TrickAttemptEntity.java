@@ -30,6 +30,9 @@ class TrickAttemptEntity {
     @Column(name = "feedback", columnDefinition = "TEXT")
     private String feedback;
 
+    @Column(name = "trick_sequence", columnDefinition = "TEXT")
+    private String trickSequence;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

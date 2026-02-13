@@ -178,6 +178,27 @@
       });
       html += "</ul>";
     }
+
+    if (result.trickSequence && result.trickSequence.length > 1) {
+      html += '<h6 class="mt-3">Trick Sequence</h6>';
+      html += '<ol class="list-group list-group-numbered">';
+      result.trickSequence.forEach(function (entry) {
+        var name =
+          entry.trick === "UNKNOWN"
+            ? "Unknown"
+            : entry.trick.replace(/_/g, " ");
+        html +=
+          '<li class="list-group-item">' +
+          name +
+          " (" +
+          entry.timeframe +
+          ") &mdash; " +
+          entry.confidence +
+          "%</li>";
+      });
+      html += "</ol>";
+    }
+
     analysisResult.innerHTML = html;
   }
 

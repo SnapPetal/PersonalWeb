@@ -24,4 +24,5 @@
     <include file="classpath:db/changelog/changes/018-make-player-rating-fields-non-nullable.xml"/>
     <include file="classpath:db/changelog/changes/019-add-spring-modulith-event-publication.xml"/>
     <include file="classpath:db/changelog/changes/020-skatetricks-schema.xml"/>
+    <include file="classpath:db/changelog/changes/021-add-trick-sequence-column.xml"/>
 </databaseChangeLog>
