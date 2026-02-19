@@ -13,10 +13,17 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
+import software.amazon.awssdk.services.s3vectors.model.PutInputVector;
+import software.amazon.awssdk.services.s3vectors.model.VectorData;
 
 @Service
 @Slf4j
@@ -26,16 +33,28 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
     private final TrickAttemptRepository trickAttemptRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final FFmpegVideoConverter videoConverter;
+    private final S3VectorsClient s3VectorsClient;
+    private final EmbeddingService embeddingService;
+
+    @Value("${skatetricks.vectorstore.bucket}")
+    private String vectorBucket;
+
+    @Value("${skatetricks.vectorstore.index}")
+    private String vectorIndex;
 
     SkateTricksFacadeImpl(
             TrickAnalyzer trickAnalyzer,
             TrickAttemptRepository trickAttemptRepository,
             ApplicationEventPublisher eventPublisher,
-            FFmpegVideoConverter videoConverter) {
+            FFmpegVideoConverter videoConverter,
+            S3VectorsClient s3VectorsClient,
+            EmbeddingService embeddingService) {
         this.trickAnalyzer = trickAnalyzer;
         this.trickAttemptRepository = trickAttemptRepository;
         this.eventPublisher = eventPublisher;
         this.videoConverter = videoConverter;
+        this.s3VectorsClient = s3VectorsClient;
+        this.embeddingService = embeddingService;
     }
 
     @Override
@@ -142,17 +161,35 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         writeToVectorStore(entity);
     }
 
-    private void writeToVectorStore(TrickAttemptEntity entity) {
-        // TODO: Replace with actual vector store write when PGVector/S3 Vectors integration is added.
-        // The accepted trick is verifiedTrickName if the user corrected it, otherwise the AI's trickName.
-        String acceptedTrick =
-                entity.getVerifiedTrickName() != null ? entity.getVerifiedTrickName() : entity.getTrickName();
-        log.info(
-                "Vector store stub — would embed attempt id={} trick={} confidence={} formScore={}",
-                entity.getId(),
-                acceptedTrick,
-                entity.getConfidence(),
-                entity.getFormScore());
+    private void writeToVectorStore(final TrickAttemptEntity entity) {
+        try {
+            final var acceptedTrick = Objects.nonNull(entity.getVerifiedTrickName())
+                    ? entity.getVerifiedTrickName()
+                    : entity.getTrickName();
+
+            final var text = "trick:%s feedback:%s"
+                    .formatted(acceptedTrick, Objects.nonNull(entity.getFeedback()) ? entity.getFeedback() : "");
+
+            final var embedding = embeddingService.embed(text);
+
+            final var metadata = Document.fromMap(Map.of(
+                    "trickName", Document.fromString(acceptedTrick),
+                    "confidence", Document.fromNumber(entity.getConfidence()),
+                    "formScore", Document.fromNumber(entity.getFormScore()),
+                    "attemptId", Document.fromNumber(entity.getId())));
+
+            s3VectorsClient.putVectors(r -> r.vectorBucketName(vectorBucket)
+                    .indexName(vectorIndex)
+                    .vectors(List.of(PutInputVector.builder()
+                            .key("attempt-" + entity.getId())
+                            .data(VectorData.fromFloat32(embedding))
+                            .metadata(metadata)
+                            .build())));
+
+            log.info("Stored attempt {} ({}) in vector store '{}'", entity.getId(), acceptedTrick, vectorIndex);
+        } catch (Exception e) {
+            log.error("Failed to write attempt {} to vector store", entity.getId(), e);
+        }
     }
 
     private String encodeTrickSequence(List<TrickSequenceEntry> sequence) {

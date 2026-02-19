@@ -74,6 +74,13 @@ audio:
     bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq
     cdn-domain: https://cdn.thonbecker.com
 
+# Skatetricks Vector Store Configuration
+skatetricks:
+  vectorstore:
+    bucket: thonbecker-vectors
+    index: skatetricks-tricks
+    dimension: 1024
+
 # Spring Modulith Configuration (2.0.1)
 spring.modulith:
   # Event publication and handling

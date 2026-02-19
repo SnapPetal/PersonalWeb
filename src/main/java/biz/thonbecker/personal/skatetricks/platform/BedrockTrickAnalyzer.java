@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -17,9 +18,12 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
+import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
+import software.amazon.awssdk.services.s3vectors.model.VectorData;
 
 @Component
 @Slf4j
@@ -28,12 +32,26 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final PoseEstimationService poseEstimationService;
+    private final S3VectorsClient s3VectorsClient;
+    private final EmbeddingService embeddingService;
+
+    @Value("${skatetricks.vectorstore.bucket}")
+    private String vectorBucket;
+
+    @Value("${skatetricks.vectorstore.index}")
+    private String vectorIndex;
 
     @Autowired(required = false)
-    BedrockTrickAnalyzer(ChatModel chatModel, PoseEstimationService poseEstimationService) {
+    BedrockTrickAnalyzer(
+            ChatModel chatModel,
+            PoseEstimationService poseEstimationService,
+            S3VectorsClient s3VectorsClient,
+            EmbeddingService embeddingService) {
         this.chatModel = chatModel;
         this.objectMapper = new ObjectMapper();
         this.poseEstimationService = poseEstimationService;
+        this.s3VectorsClient = s3VectorsClient;
+        this.embeddingService = embeddingService;
     }
 
     @Override
@@ -51,7 +69,8 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                             .build())
                     .toList();
 
-            String poseDataText = buildPoseDataText(base64Frames);
+            final var poseDataText = buildPoseDataText(base64Frames);
+            final var similarExamples = fetchSimilarExamples(poseDataText);
 
             String systemPrompt = """
                     You are an expert skateboarding coach and trick judge. You will receive sequential frames \
@@ -105,7 +124,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
                     If only one trick is visible, trickSequence should contain just that one entry.
                     Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if you truly cannot identify the trick.
-                    """.formatted(TrickCatalog.buildTrickDescriptions()) + poseDataText;
+                    """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseDataText;
 
             String userPrompt =
                     ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
@@ -210,6 +229,44 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
         } catch (Exception e) {
             log.error("Error analyzing skateboard trick video", e);
             return fallback();
+        }
+    }
+
+    private String fetchSimilarExamples(final String poseText) {
+        if (Objects.isNull(s3VectorsClient) || Objects.isNull(embeddingService) || poseText.isBlank()) {
+            return "";
+        }
+        try {
+            final var queryEmbedding = embeddingService.embed(poseText);
+            final var response = s3VectorsClient.queryVectors(r -> r.vectorBucketName(vectorBucket)
+                    .indexName(vectorIndex)
+                    .queryVector(VectorData.fromFloat32(queryEmbedding))
+                    .topK(3)
+                    .returnMetadata(true)
+                    .returnDistance(false));
+
+            if (response.vectors().isEmpty()) {
+                return "";
+            }
+
+            final var sb = new StringBuilder("\nSIMILAR VERIFIED PAST ATTEMPTS (use as reference examples):\n");
+            response.vectors().forEach(match -> {
+                final var meta = match.metadata().asMap();
+                final var trickName = meta.get("trickName").asString();
+                final var confidence = meta.get("confidence").asNumber().intValue();
+                final var formScore = meta.get("formScore").asNumber().intValue();
+                sb.append("- ")
+                        .append(trickName)
+                        .append(" (verified confidence: ")
+                        .append(confidence)
+                        .append("%, form score: ")
+                        .append(formScore)
+                        .append("%)\n");
+            });
+            return sb.toString();
+        } catch (Exception e) {
+            log.warn("Could not fetch similar examples from vector store: {}", e.getMessage());
+            return "";
         }
     }
 

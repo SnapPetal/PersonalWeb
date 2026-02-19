@@ -6,8 +6,10 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.polly.PollyClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
 
 /**
  * Configuration for AWS SDK clients.
@@ -52,6 +54,39 @@ public class AwsConfig {
         final var credentialsProvider = StaticCredentialsProvider.create(credentials);
 
         return S3Client.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    /**
+     * Creates a configured S3VectorsClient bean for vector store operations.
+     *
+     * @return Configured S3VectorsClient
+     */
+    @Bean
+    public S3VectorsClient s3VectorsClient() {
+        final var credentials = AwsBasicCredentials.create(accessKey, secretKey);
+        final var credentialsProvider = StaticCredentialsProvider.create(credentials);
+
+        return S3VectorsClient.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    /**
+     * Creates a configured BedrockRuntimeClient bean for invoking Bedrock models directly
+     * (e.g. Titan Embed for generating vector embeddings).
+     *
+     * @return Configured BedrockRuntimeClient
+     */
+    @Bean
+    public BedrockRuntimeClient bedrockRuntimeClient() {
+        final var credentials = AwsBasicCredentials.create(accessKey, secretKey);
+        final var credentialsProvider = StaticCredentialsProvider.create(credentials);
+
+        return BedrockRuntimeClient.builder()
                 .region(Region.of(awsRegion))
                 .credentialsProvider(credentialsProvider)
                 .build();
