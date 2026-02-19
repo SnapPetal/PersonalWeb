@@ -127,21 +127,39 @@
     );
   }
 
+  var SUPPORTED_TRICKS = [
+    { value: "OLLIE", label: "Ollie" },
+    { value: "FRONTSIDE_180", label: "Frontside 180" },
+    { value: "BACKSIDE_180", label: "Backside 180" },
+    { value: "KICKFLIP", label: "Kickflip" },
+    { value: "HEELFLIP", label: "Heelflip" },
+    { value: "POP_SHUVIT", label: "Pop Shuvit" },
+    { value: "TREFLIP", label: "Tre Flip" },
+    { value: "BOARDSLIDE", label: "Boardslide" },
+    { value: "FIFTY_FIFTY", label: "50-50 Grind" },
+    { value: "FIVE_O", label: "5-0 Grind" },
+    { value: "NOSEGRIND", label: "Nosegrind" },
+    { value: "MANUAL", label: "Manual" },
+    { value: "CRUISING", label: "Cruising" },
+    { value: "DROP_IN", label: "Drop In" },
+    { value: "UNKNOWN", label: "Unknown" },
+  ];
+
   function displayResult(result) {
-    const confidenceColor =
+    var confidenceColor =
       result.confidence >= 70
         ? "success"
         : result.confidence >= 40
         ? "warning"
         : "danger";
-    const formColor =
+    var formColor =
       result.formScore >= 70
         ? "success"
         : result.formScore >= 40
         ? "warning"
         : "danger";
 
-    let html =
+    var html =
       '<h4 class="text-center mb-3">' +
       (result.trick === "UNKNOWN"
         ? "Unknown Trick"
@@ -199,20 +217,117 @@
       html += "</ol>";
     }
 
+    if (result.attemptId) {
+      var selectOptions = SUPPORTED_TRICKS.map(function (t) {
+        return (
+          '<option value="' +
+          t.value +
+          '"' +
+          (t.value === result.trick ? " selected" : "") +
+          ">" +
+          t.label +
+          "</option>"
+        );
+      }).join("");
+
+      html +=
+        '<div class="mt-3 pt-3 border-top" id="verifySection-' +
+        result.attemptId +
+        '">';
+      html +=
+        '<p class="small text-muted mb-2"><i class="bi bi-patch-question me-1"></i>Was this the right trick?</p>';
+      html += '<div class="d-flex flex-wrap gap-2 align-items-center">';
+      html +=
+        '<button class="btn btn-sm btn-success" onclick="confirmTrick(' +
+        result.attemptId +
+        ', null)">';
+      html += '<i class="bi bi-check-circle me-1"></i>Confirm</button>';
+      html +=
+        '<select class="form-select form-select-sm" style="max-width:180px;" id="correctionSelect-' +
+        result.attemptId +
+        '">' +
+        selectOptions +
+        "</select>";
+      html +=
+        '<button class="btn btn-sm btn-warning" onclick="correctTrick(' +
+        result.attemptId +
+        ')">';
+      html += '<i class="bi bi-pencil me-1"></i>Correct</button>';
+      html += "</div></div>";
+    }
+
     analysisResult.innerHTML = html;
   }
 
+  function confirmTrick(attemptId, correctedTrickName) {
+    var section = document.getElementById("verifySection-" + attemptId);
+    var body = correctedTrickName
+      ? { correctedTrickName: correctedTrickName }
+      : {};
+
+    fetch("/skatetricks/attempts/" + attemptId + "/verify", {
+      method: "POST",
+      headers: Object.assign(
+        { "Content-Type": "application/json" },
+        getHeaders()
+      ),
+      body: JSON.stringify(body),
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("Verify failed: " + response.status);
+        if (section) {
+          section.innerHTML =
+            '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Verified' +
+            (correctedTrickName
+              ? " — " + correctedTrickName.replace(/_/g, " ")
+              : "") +
+            "</span>";
+        }
+        // Update the matching history item badge
+        updateHistoryVerified(attemptId, correctedTrickName);
+      })
+      .catch(function (e) {
+        console.error("Verification error:", e);
+        if (section) {
+          section.innerHTML +=
+            '<div class="text-danger small mt-1">Verification failed — please try again.</div>';
+        }
+      });
+  }
+
+  function correctTrick(attemptId) {
+    var select = document.getElementById("correctionSelect-" + attemptId);
+    if (!select) return;
+    confirmTrick(attemptId, select.value);
+  }
+
+  function updateHistoryVerified(attemptId, correctedTrickName) {
+    var item = document.querySelector('[data-attempt-id="' + attemptId + '"]');
+    if (!item) return;
+    var badge = item.querySelector(".badge");
+    if (badge) {
+      badge.classList.replace("bg-primary", "bg-success");
+    }
+    if (correctedTrickName) {
+      var nameEl = item.querySelector(".trick-name");
+      if (nameEl) nameEl.textContent = correctedTrickName.replace(/_/g, " ");
+    }
+  }
+
   function addToHistory(result) {
-    const placeholder = trickHistory.querySelector(".text-muted");
+    var placeholder = trickHistory.querySelector(".text-muted");
     if (placeholder) placeholder.remove();
 
-    const item = document.createElement("div");
+    var item = document.createElement("div");
     item.className =
       "list-group-item d-flex justify-content-between align-items-center";
-    const name =
+    if (result.attemptId) {
+      item.setAttribute("data-attempt-id", result.attemptId);
+    }
+    var name =
       result.trick === "UNKNOWN" ? "Unknown" : result.trick.replace(/_/g, " ");
     item.innerHTML =
-      "<span>" +
+      '<span class="trick-name">' +
       name +
       '</span><span class="badge bg-primary">' +
       result.confidence +

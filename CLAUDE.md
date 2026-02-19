@@ -49,17 +49,17 @@ Each module follows this internal package convention:
 
 ### Modules
 
-| Module | Public Facade | Purpose |
-|---|---|---|
-| `foosball` | `FoosballFacade` | Table soccer game tracking, stats, tournaments, ELO rating |
-| `trivia` | `TriviaFacade` | AI-powered FPU trivia, WebSocket multiplayer |
-| `skatetricks` | `SkateTricksFacade` | YOLO pose estimation + Bedrock AI trick detection |
-| `tankgame` | `TankGameFacade` | WebSocket tank game with player progression |
-| `user` | `UserFacade` | User management |
-| `notification` | `NotificationFacade` | Notification delivery |
-| `content` | _(no external facade)_ | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter |
-| `shared` | _(configuration only)_ | SecurityConfig, CacheConfig, AwsConfig, WebSocketConfig, RetryConfig, ShedlockConfig |
-| `platform` | _(internal)_ | EventLoggingListener for Spring Modulith events |
+|     Module     |     Public Facade      |                                       Purpose                                        |
+|----------------|------------------------|--------------------------------------------------------------------------------------|
+| `foosball`     | `FoosballFacade`       | Table soccer game tracking, stats, tournaments, ELO rating                           |
+| `trivia`       | `TriviaFacade`         | AI-powered FPU trivia, WebSocket multiplayer                                         |
+| `skatetricks`  | `SkateTricksFacade`    | YOLO pose estimation + Bedrock AI trick detection                                    |
+| `tankgame`     | `TankGameFacade`       | WebSocket tank game with player progression                                          |
+| `user`         | `UserFacade`           | User management                                                                      |
+| `notification` | `NotificationFacade`   | Notification delivery                                                                |
+| `content`      | _(no external facade)_ | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter                      |
+| `shared`       | _(configuration only)_ | SecurityConfig, CacheConfig, AwsConfig, WebSocketConfig, RetryConfig, ShedlockConfig |
+| `platform`     | _(internal)_           | EventLoggingListener for Spring Modulith events                                      |
 
 ### Key Technical Patterns
 
@@ -80,7 +80,17 @@ Spotless enforces formatting as part of the build (`spotless:check` runs on `mvn
 - **Markdown**: Flexmark
 - **POM**: SortPom (dependencies sorted by `scope,groupId,artifactId`)
 
-Always run `./mvnw spotless:apply` before committing Java, JS, or Markdown changes.
+Always run `mvn spotless:apply` before committing Java, JS, or Markdown changes.
+
+### Java Coding Conventions
+
+- Use `var` for local variable type inference when the type is clear from context.
+- Declare local variables and parameters as `final` where they are not reassigned.
+- Use `Objects.isNull()` and `Objects.nonNull()` instead of `== null` / `!= null` checks.
+
+### Infrastructure Notes
+
+- **Vector store bucket**: `thonbecker-vectors` (AWS S3 Vectors — used by the skatetricks trick verification flow). The `writeToVectorStore()` stub in `SkateTricksFacadeImpl` is the integration point.
 
 ### Deployment
 

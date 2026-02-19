@@ -25,4 +25,5 @@
     <include file="classpath:db/changelog/changes/019-add-spring-modulith-event-publication.xml"/>
     <include file="classpath:db/changelog/changes/020-skatetricks-schema.xml"/>
     <include file="classpath:db/changelog/changes/021-add-trick-sequence-column.xml"/>
+    <include file="classpath:db/changelog/changes/022-add-verification-columns.xml"/>
 </databaseChangeLog>

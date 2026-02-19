@@ -15,4 +15,11 @@ public interface SkateTricksFacade {
     TrickAnalysisResult analyzeConvertedVideo(String sessionId, byte[] mp4Data);
 
     List<TrickAnalysisResult> getSessionHistory(String sessionId);
+
+    /**
+     * Verifies a trick analysis result. If {@code correctedTrickName} is non-null, the AI's
+     * classification is overridden with the user-supplied value before writing to the vector store.
+     * Passing null accepts the AI's original classification as correct.
+     */
+    void verifyAttempt(Long attemptId, String correctedTrickName);
 }

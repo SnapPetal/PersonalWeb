@@ -19,6 +19,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -180,9 +181,19 @@ class SkateTricksController {
         }
     }
 
+    @PostMapping("/skatetricks/attempts/{id}/verify")
+    public ResponseEntity<Void> verifyAttempt(
+            @PathVariable Long id, @RequestBody(required = false) VerifyRequest request) {
+        String corrected = request != null ? request.correctedTrickName() : null;
+        skateTricksFacade.verifyAttempt(id, corrected);
+        return ResponseEntity.ok().build();
+    }
+
     record ConvertResponse(String videoId, long size, String status) {}
 
     record ConversionStatus(String status, int progress, Long size, String error) {}
 
     record ConversionStatusUpdate(String videoId, String status, int progress, Long size) {}
+
+    record VerifyRequest(String correctedTrickName) {}
 }

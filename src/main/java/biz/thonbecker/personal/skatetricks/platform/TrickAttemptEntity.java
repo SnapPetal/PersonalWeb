@@ -33,6 +33,12 @@ class TrickAttemptEntity {
     @Column(name = "trick_sequence", columnDefinition = "TEXT")
     private String trickSequence;
 
+    @Column(name = "verified", nullable = false)
+    private boolean verified = false;
+
+    @Column(name = "verified_trick_name", length = 100)
+    private String verifiedTrickName;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

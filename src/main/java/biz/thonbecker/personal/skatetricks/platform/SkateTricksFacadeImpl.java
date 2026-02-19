@@ -44,8 +44,8 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         log.info("Analyzing {} frames for session {}", base64Frames.size(), sessionId);
 
         TrickAnalysisResult result = trickAnalyzer.analyze(base64Frames);
-        saveResult(sessionId, result);
-        return result;
+        Long id = saveResult(sessionId, result);
+        return result.withAttemptId(id);
     }
 
     @Override
@@ -75,8 +75,8 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
 
             // Analyze with AI
             TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
-            saveResult(sessionId, result);
-            return result;
+            Long id = saveResult(sessionId, result);
+            return result.withAttemptId(id);
 
         } catch (IOException | VideoConversionException e) {
             log.error("Failed to process video for session {}", sessionId, e);
@@ -93,7 +93,9 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         return idx >= 0 ? filename.substring(idx) : "";
     }
 
-    private void saveResult(String sessionId, TrickAnalysisResult result) {
+    private static final int AUTO_VERIFY_CONFIDENCE_THRESHOLD = 80;
+
+    private Long saveResult(String sessionId, TrickAnalysisResult result) {
         TrickAttemptEntity entity = new TrickAttemptEntity();
         entity.setSessionId(sessionId);
         entity.setTrickName(result.trick().name());
@@ -101,8 +103,56 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         entity.setFormScore(result.formScore());
         entity.setFeedback(String.join("|", result.feedback()));
         entity.setTrickSequence(encodeTrickSequence(result.trickSequence()));
-        trickAttemptRepository.save(entity);
+
+        if (result.confidence() >= AUTO_VERIFY_CONFIDENCE_THRESHOLD) {
+            entity.setVerified(true);
+            log.info(
+                    "Auto-verifying attempt for session {} (confidence {}% >= {}%)",
+                    sessionId, result.confidence(), AUTO_VERIFY_CONFIDENCE_THRESHOLD);
+        }
+
+        entity = trickAttemptRepository.save(entity);
+
+        if (entity.isVerified()) {
+            writeToVectorStore(entity);
+        }
+
         eventPublisher.publishEvent(new TrickAnalysisEvent(sessionId, result, Instant.now()));
+        return entity.getId();
+    }
+
+    @Override
+    @Transactional
+    public void verifyAttempt(Long attemptId, String correctedTrickName) {
+        TrickAttemptEntity entity = trickAttemptRepository
+                .findById(attemptId)
+                .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
+
+        entity.setVerified(true);
+        if (correctedTrickName != null && !correctedTrickName.isBlank()) {
+            entity.setVerifiedTrickName(correctedTrickName);
+            log.info("User corrected attempt {} from {} to {}", attemptId, entity.getTrickName(), correctedTrickName);
+        } else {
+            log.info(
+                    "User confirmed attempt {} as {} ({}% confidence)",
+                    attemptId, entity.getTrickName(), entity.getConfidence());
+        }
+
+        trickAttemptRepository.save(entity);
+        writeToVectorStore(entity);
+    }
+
+    private void writeToVectorStore(TrickAttemptEntity entity) {
+        // TODO: Replace with actual vector store write when PGVector/S3 Vectors integration is added.
+        // The accepted trick is verifiedTrickName if the user corrected it, otherwise the AI's trickName.
+        String acceptedTrick =
+                entity.getVerifiedTrickName() != null ? entity.getVerifiedTrickName() : entity.getTrickName();
+        log.info(
+                "Vector store stub — would embed attempt id={} trick={} confidence={} formScore={}",
+                entity.getId(),
+                acceptedTrick,
+                entity.getConfidence(),
+                entity.getFormScore());
     }
 
     private String encodeTrickSequence(List<TrickSequenceEntry> sequence) {
@@ -196,8 +246,8 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
 
             // Analyze frames with AI
             TrickAnalysisResult result = trickAnalyzer.analyze(frames);
-            saveResult(sessionId, result);
-            return result;
+            Long id = saveResult(sessionId, result);
+            return result.withAttemptId(id);
 
         } catch (IOException | VideoConversionException e) {
             log.error("Failed to analyze video for session {}", sessionId, e);
@@ -216,7 +266,8 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
                         e.getConfidence(),
                         e.getFormScore(),
                         e.getFeedback() != null ? List.of(e.getFeedback().split("\\|")) : List.of(),
-                        decodeTrickSequence(e.getTrickSequence())))
+                        decodeTrickSequence(e.getTrickSequence()),
+                        e.getId()))
                 .toList();
     }
 }
