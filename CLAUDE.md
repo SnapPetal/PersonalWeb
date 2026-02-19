@@ -90,7 +90,42 @@ Always run `mvn spotless:apply` before committing Java, JS, or Markdown changes.
 
 ### Infrastructure Notes
 
-- **Vector store bucket**: `thonbecker-vectors` (AWS S3 Vectors — used by the skatetricks trick verification flow). The `writeToVectorStore()` stub in `SkateTricksFacadeImpl` is the integration point.
+#### S3 Vectors Integration (Skatetricks RAG Pipeline)
+
+The `skatetricks` module uses **AWS S3 Vectors** as a vector store for Retrieval-Augmented Generation (RAG) to improve trick detection accuracy over time.
+
+**Two-model architecture:**
+- **Claude Opus 4.6** (`us.anthropic.claude-opus-4-6-v1`) — visual trick analysis via Spring AI / Bedrock Converse API
+- **Titan Text Embeddings V2** (`amazon.titan-embed-text-v2:0`) — 1024-dimension normalized float embeddings via `BedrockRuntimeClient.invokeModel()` directly (no Spring AI wrapper)
+
+**Store flow** (verified attempt → vector store):
+1. Trick analyzed by Claude; result saved to DB via `SkateTricksFacadeImpl.saveResult()`
+2. Auto-verified if `confidence >= 80`; otherwise surfaced to user for confirmation/correction
+3. On verification: `writeToVectorStore()` embeds `"trick:{name} feedback:{feedback}"` via `EmbeddingService`, stores with `PutInputVector` keyed `attempt-{id}` and `Document` metadata (`trickName`, `confidence`, `formScore`, `attemptId`)
+
+**RAG query flow** (frame analysis path only):
+1. `BedrockTrickAnalyzer.fetchSimilarExamples()` embeds the YOLO pose data text
+2. Queries `queryVectors` top-3 by cosine similarity
+3. Similar verified past attempts are injected as few-shot examples into Claude's system prompt
+
+**Key classes:**
+- `EmbeddingService` — wraps Titan Embed V2, returns `List<Float>` (1024 dims)
+- `VectorStoreInitializer` — `@PostConstruct` creates the index (`DataType.FLOAT32`, `DistanceMetric.COSINE`, dim=1024); silently skips `ConflictException`
+- `writeToVectorStore()` in `SkateTricksFacadeImpl` — upserts (same key replaces on correction)
+- `fetchSimilarExamples()` in `BedrockTrickAnalyzer` — RAG retrieval for frame analysis
+
+**Configuration** (`application.yml`):
+```yaml
+skatetricks:
+  vectorstore:
+    bucket: thonbecker-vectors
+    index: skatetricks-tricks
+    dimension: 1024
+```
+
+**AWS prerequisite:** `amazon.titan-embed-text-v2:0` must be enabled in the Bedrock Model Access console in `us-east-1`.
+
+**Known gap:** `analyzeVideo()` (direct video path) does not query the vector store — no pose data is available in that path to use as a query embedding.
 
 ### Deployment
 
