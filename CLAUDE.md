@@ -89,6 +89,62 @@ Always run `mvn spotless:apply` before committing Java, JS, or Markdown changes.
 - Declare local variables and parameters as `final` where they are not reassigned.
 - Use `Objects.isNull()` and `Objects.nonNull()` instead of `== null` / `!= null` checks.
 
+### AWS Bedrock Configuration
+
+#### Model Identifiers
+
+AWS Bedrock model identifiers follow the pattern `anthropic.claude-<model>-<version>`. **Critical**: Not all models use the same versioning suffix.
+
+**Working model identifiers** (verified with `aws bedrock list-foundation-models`):
+- **Claude Sonnet 4.6**: `anthropic.claude-sonnet-4-6` (no version suffix)
+- **Claude Opus 4.6**: `anthropic.claude-opus-4-6-v1` (has `-v1` suffix)
+- **Claude Sonnet 4.5**: `anthropic.claude-sonnet-4-5-20250929-v1:0`
+- **Claude Haiku 4.5**: `anthropic.claude-haiku-4-5-20251001-v1:0`
+
+**To list available models**:
+```bash
+aws-vault exec <profile> -- aws bedrock list-foundation-models \
+  --query 'modelSummaries[?contains(modelId, `anthropic`)].[modelId,modelName]' \
+  --output table --region us-east-1
+```
+
+**Current configuration** (`application.yml`):
+```yaml
+spring:
+  ai:
+    bedrock:
+      converse:
+        chat:
+          options:
+            model: anthropic.claude-sonnet-4-6
+            temperature: 0.3
+            max-tokens: 1500
+```
+
+#### Spring AI PromptTemplate Gotcha
+
+When using Spring AI's `PromptTemplate` with JSON examples in prompts, **escape curly braces** to prevent them from being interpreted as template variables:
+
+```java
+// ❌ WRONG - Throws IllegalArgumentException: "The template string is not valid"
+"""
+Return JSON like this:
+{
+  "field": "value"
+}
+"""
+
+// ✅ CORRECT - Escape braces in examples
+"""
+Return JSON like this:
+{{
+  "field": "value"
+}}
+"""
+```
+
+This applies to both LandscapeAiService and FinancialPeaceQuestionGenerator prompt templates.
+
 ### Infrastructure Notes
 
 #### S3 Vectors Integration (Skatetricks RAG Pipeline)
