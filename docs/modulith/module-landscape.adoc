@@ -1,0 +1,30 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`biz.thonbecker.personal.landscape`
+|Spring components
+|_Controllers_
+
+* `b.t.p.l.platform.web.LandscapeController`
+
+_Services_
+
+* `b.t.p.l.api.LandscapeFacade` (via `b.t.p.l.platform.LandscapeFacadeImpl`)
+* `b.t.p.l.platform.service.LandscapeAiService`
+* `b.t.p.l.platform.service.LandscapeImageStorageService`
+* `b.t.p.l.platform.service.PlantApiService`
+
+_Repositories_
+
+* `b.t.p.l.platform.persistence.LandscapePlanRepository`
+* `b.t.p.l.platform.persistence.PlantPlacementRepository`
+
+_Others_
+
+* `b.t.p.l.platform.client.UsdaPlantHttpClient`
+* `b.t.p.l.platform.configuration.LandscapeHttpClientConfig`
+|Aggregate roots
+|* `b.t.p.l.platform.persistence.LandscapePlanEntity`
+* `b.t.p.l.platform.persistence.PlantPlacementEntity`
+* `b.t.p.l.platform.persistence.RecommendedPlantEntity`
+|===

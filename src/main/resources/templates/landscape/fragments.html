@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en-US" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Search Results Fragment -->
+<div th:fragment="search-results">
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div th:if="${plants != null and !plants.isEmpty()}">
+        <p class="text-muted mb-2"><small th:text="${plants.size()} + ' plants found'"></small></p>
+        <div class="list-group">
+            <a href="#" th:each="plant : ${plants}"
+               class="list-group-item list-group-item-action plant-result"
+               th:data-usda-symbol="${plant.usdaSymbol()}"
+               th:data-scientific-name="${plant.scientificName()}"
+               th:data-common-name="${plant.commonName()}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1" th:text="${plant.commonName()} ?: ${plant.scientificName()}"></h6>
+                        <p class="mb-1 small text-muted" th:text="${plant.scientificName()}"></p>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-light text-dark" th:if="${plant.category()}" th:text="${plant.category()}"></span>
+                            <span class="badge bg-success" th:if="${plant.nativeStatus()}" th:text="${plant.nativeStatus()}"></span>
+                        </div>
+                    </div>
+                    <span class="badge bg-primary" th:text="${plant.usdaSymbol()}"></span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div th:if="${plants == null or plants.isEmpty()}" class="text-center text-muted">
+        <p>No plants found. Try a different search.</p>
+    </div>
+</div>
+
+<!-- Recommendations Fragment -->
+<div th:fragment="recommendations">
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div th:if="${recommendations != null and !recommendations.isEmpty()}">
+        <p class="text-muted mb-3">
+            <small>Claude analyzed your landscape and suggests these plants:</small>
+        </p>
+        <div class="row row-cols-1 g-3">
+            <div class="col" th:each="rec : ${recommendations}">
+                <div class="card h-100 recommendation-card"
+                     th:data-usda-symbol="${rec.usdaSymbol()}"
+                     th:data-scientific-name="${rec.scientificName()}"
+                     th:data-common-name="${rec.commonName()}">
+                    <div class="card-body">
+                        <h6 class="card-title" th:text="${rec.commonName()} ?: ${rec.scientificName()}"></h6>
+                        <p class="card-text small text-muted mb-2" th:text="${rec.scientificName()}"></p>
+                        <div class="d-flex gap-2 mb-2">
+                            <span class="badge bg-warning text-dark"
+                                  th:if="${rec.lightRequirement()}"
+                                  th:text="${rec.lightRequirement().toString().replace('_', ' ')}"></span>
+                            <span class="badge bg-info"
+                                  th:if="${rec.waterRequirement()}"
+                                  th:text="${rec.waterRequirement()} + ' Water'"></span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-success add-to-plan-btn w-100">
+                            <i class="bi bi-plus-circle"></i> Add to Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${recommendations == null or recommendations.isEmpty()}" class="text-center text-muted">
+        <p>No recommendations available.</p>
+    </div>
+</div>
+
+</body>
+</html>

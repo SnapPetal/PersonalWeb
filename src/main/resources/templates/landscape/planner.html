@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en-US" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>Landscape Planner - Personal</title>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link rel="stylesheet" href="/css/landscape.css">
+</head>
+<body class="landscape-page">
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-tree"></i> Landscape Planner</h2>
+            <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back Home</a>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Panel: Upload & Search -->
+            <div class="col-lg-5">
+                <!-- Upload Form -->
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Create New Plan</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="createPlanForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="planName" class="form-label">Plan Name *</label>
+                                <input type="text" class="form-control" id="planName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="planDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="planDescription" name="description" rows="2"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="hardinessZone" class="form-label">Hardiness Zone *</label>
+                                <select class="form-select" id="hardinessZone" name="hardinessZone" required>
+                                    <option value="">Select your zone...</option>
+                                    <option th:each="zone : ${hardinessZones}" th:value="${zone}" th:text="${zone.name() + ' (Zone ' + zone.getZoneNumber() + ')'}"></option>
+                                </select>
+                                <div class="form-text">
+                                    <a href="https://planthardiness.ars.usda.gov/" target="_blank">Find your zone</a>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="zipCode" class="form-label">Zip Code (Optional)</label>
+                                <input type="text" class="form-control" id="zipCode" name="zipCode" maxlength="10">
+                            </div>
+                            <div class="mb-3">
+                                <label for="landscapeImage" class="form-label">Landscape Image *</label>
+                                <input type="file" class="form-control" id="landscapeImage" name="image"
+                                       accept="image/jpeg,image/png,image/jpg" required>
+                                <div class="form-text">JPEG or PNG, max 100MB</div>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100" id="createPlanBtn">
+                                <span class="spinner-border spinner-border-sm d-none" id="uploadSpinner"></span>
+                                <i class="bi bi-cloud-upload"></i> Create Plan & Analyze
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- My Plans -->
+                <div class="card mb-3" th:if="${userPlans != null and !userPlans.isEmpty()}">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-folder"></i> My Plans</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a th:each="plan : ${userPlans}"
+                               th:href="@{'/landscape/plans/' + ${plan.id()}}"
+                               class="list-group-item list-group-item-action load-plan-link"
+                               th:data-plan-id="${plan.id()}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0" th:text="${plan.name()}"></h6>
+                                        <small class="text-muted" th:text="${plan.hardinessZone().name()}"></small>
+                                    </div>
+                                    <span class="badge bg-primary" th:text="${plan.placements().size()} + ' plants'"></span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plant Search -->
+                <div class="card" id="plantSearchCard" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-search"></i> Search Plants</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="plantSearchForm" hx-get="/landscape/plants/search"
+                              hx-target="#searchResults" hx-swap="innerHTML" hx-trigger="submit">
+                            <div class="row g-2 mb-3">
+                                <div class="col-12">
+                                    <input type="text" class="form-control" name="query"
+                                           placeholder="Plant name (e.g., maple, rose)" required>
+                                </div>
+                                <div class="col-6">
+                                    <select class="form-select" name="lightRequirement">
+                                        <option value="">Any Sunlight</option>
+                                        <option value="FULL_SUN">Full Sun</option>
+                                        <option value="PARTIAL_SHADE">Partial Shade</option>
+                                        <option value="FULL_SHADE">Full Shade</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <select class="form-select" name="waterRequirement">
+                                        <option value="">Any Water</option>
+                                        <option value="LOW">Low</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HIGH">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <input type="hidden" name="zone" id="searchZone">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </form>
+                        <div id="searchResults" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Workspace & Recommendations -->
+            <div class="col-lg-7">
+                <!-- Plan Workspace -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-image"></i> Plan Workspace</h5>
+                    </div>
+                    <div class="card-body" id="planWorkspace">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-image" style="font-size: 3rem;"></i>
+                            <p class="mt-3">Upload an image to start planning your landscape</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Recommendations -->
+                <div class="card" id="recommendationsCard" style="display: none;">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-lightbulb"></i> AI Recommendations</h5>
+                    </div>
+                    <div class="card-body" id="recommendations">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading recommendations...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
+    <script src="/js/landscape.js"></script>
+</body>
+</html>

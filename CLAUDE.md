@@ -54,6 +54,7 @@ Each module follows this internal package convention:
 | `foosball`     | `FoosballFacade`       | Table soccer game tracking, stats, tournaments, ELO rating                           |
 | `trivia`       | `TriviaFacade`         | AI-powered FPU trivia, WebSocket multiplayer                                         |
 | `skatetricks`  | `SkateTricksFacade`    | YOLO pose estimation + Bedrock AI trick detection                                    |
+| `landscape`    | `LandscapeFacade`      | AI-powered landscape planning with USDA plant database integration                   |
 | `tankgame`     | `TankGameFacade`       | WebSocket tank game with player progression                                          |
 | `user`         | `UserFacade`           | User management                                                                      |
 | `notification` | `NotificationFacade`   | Notification delivery                                                                |
@@ -64,7 +65,7 @@ Each module follows this internal package convention:
 ### Key Technical Patterns
 
 - **Database schema**: Managed exclusively by Liquibase (`src/main/resources/db/changelog/`). Hibernate DDL is set to `none`. Add new changesets; never alter existing ones.
-- **Caching**: Caffeine (`CacheConfig`). Used for Bible verse and Dad joke responses (24-hour TTL).
+- **Caching**: Caffeine (`CacheConfig`). Used for Bible verse, Dad joke responses, and plant data (24-hour TTL).
 - **Retry**: Spring Retry (`RetryConfig`) for fault-tolerant external API calls.
 - **Scheduled jobs**: ShedLock (`ShedlockConfig`) prevents duplicate execution in distributed environments.
 - **AI**: Spring AI with AWS Bedrock Converse API (`us.anthropic.claude-opus-4-6-v1`) for trivia question generation. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
@@ -115,6 +116,7 @@ The `skatetricks` module uses **AWS S3 Vectors** as a vector store for Retrieval
 - `fetchSimilarExamples()` in `BedrockTrickAnalyzer` — RAG retrieval for frame analysis
 
 **Configuration** (`application.yml`):
+
 ```yaml
 skatetricks:
   vectorstore:
@@ -126,6 +128,72 @@ skatetricks:
 **AWS prerequisite:** `amazon.titan-embed-text-v2:0` must be enabled in the Bedrock Model Access console in `us-east-1`.
 
 **Known gap:** `analyzeVideo()` (direct video path) does not query the vector store — no pose data is available in that path to use as a query embedding.
+
+#### Landscape Planning Module
+
+The `landscape` module provides AI-powered landscape design with plant selection based on USDA hardiness zones. Users can upload images of their yard, receive personalized plant recommendations, and create annotated landscape plans.
+
+**Architecture:**
+- **Claude Opus 4.6** (`us.anthropic.claude-opus-4-6-v1`) — analyzes landscape images to recommend suitable plants based on visible conditions, sunlight exposure, and hardiness zone compatibility
+- **USDA Plants Database API** — authoritative plant data with hardiness zone, light/water requirements, and native status
+- **AWS S3 + CloudFront** — stores uploaded landscape images with CDN delivery
+
+**Key features:**
+1. **Image Upload**: Users upload photos of their yard (JPEG/PNG, max 100MB)
+2. **AI Analysis**: Claude analyzes the image considering sunlight exposure, existing vegetation, space constraints, and climate compatibility
+3. **Plant Search**: Search USDA Plants Database with filters for hardiness zone, sun requirements, and water needs
+4. **Plan Management**: Save, load, and share landscape plans with plant placements
+5. **Caching**: Plant data and search results cached for 24 hours with Caffeine
+
+**Database schema** (`landscape` schema):
+- `landscape_plans` — plan metadata (user, name, description, image URLs, hardiness zone)
+- `plant_placements` — user-placed plants on the image (coordinates, notes, quantity)
+- `recommended_plants` — AI recommendations (plant info, reasoning, confidence score)
+
+**Configuration** (`application.yml`):
+
+```yaml
+landscape:
+  usda-api:
+    base-url: https://plants.sc.egov.usda.gov/api
+    timeout: 10000
+  storage:
+    bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq
+    cdn-domain: https://cdn.thonbecker.com
+    folder-prefix: landscape-plans/
+```
+
+**Key classes:**
+- `LandscapeFacade` — public API with 7 methods for plan creation, plant search, and placement management
+- `LandscapeAiService` — uses Claude to analyze images and generate plant recommendations
+- `PlantApiService` — integrates with USDA Plants Database (with caching and retry logic)
+- `LandscapeImageStorageService` — uploads images to S3 with timestamped keys
+
+**HTTP Client Pattern:**
+Uses Spring's declarative HTTP client (`@GetExchange`) with WebClient backend for type-safe USDA API calls.
+
+### Future Enhancements
+
+The following features are planned for future development:
+
+#### Landscape Module Enhancements
+
+- **Canvas-based Plant Placement**: Implement Fabric.js for visual plant placement on images with drag-and-drop
+- **PDF Export**: Generate printable landscape plans with plant lists, care instructions, and layout diagrams
+- **Plant Compatibility Matrix**: Analyze companion planting and suggest compatible plant combinations
+- **Seasonal Bloom Timeline**: Show when plants bloom throughout the year with a visual calendar
+- **Cost Estimation**: Calculate estimated costs based on plant quantities and local nursery pricing
+- **Maintenance Calendar**: Generate a yearly maintenance schedule for the selected plants
+- **Community Sharing**: Allow users to share plans publicly and browse community-created designs
+- **3D Visualization**: Integrate with 3D rendering libraries to show landscape maturity over time
+
+#### General Features
+
+- **Mobile App**: Native mobile applications for iOS and Android
+- **Enhanced RAG Pipeline**: Expand S3 Vectors usage to other modules beyond skatetricks
+- **Real-time Collaboration**: Add WebSocket support for collaborative landscape planning
+- **Weather Integration**: Pull local weather data to inform plant recommendations
+- **Garden Journal**: Track plant growth, add photos, and record observations over time
 
 ### Deployment
 

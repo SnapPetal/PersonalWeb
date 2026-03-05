@@ -81,6 +81,16 @@ skatetricks:
     index: skatetricks-tricks
     dimension: 1024
 
+# Landscape Planning Configuration
+landscape:
+  usda-api:
+    base-url: https://plants.sc.egov.usda.gov/api
+    timeout: 10000
+  storage:
+    bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq
+    cdn-domain: https://cdn.thonbecker.com
+    folder-prefix: landscape-plans/
+
 # Spring Modulith Configuration (2.0.1)
 spring.modulith:
   # Event publication and handling

@@ -1,0 +1,149 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Create landscape schema -->
+    <changeSet id="023-create-landscape-schema" author="claude">
+        <sql>CREATE SCHEMA IF NOT EXISTS landscape</sql>
+    </changeSet>
+
+    <!-- Landscape Plans Table -->
+    <changeSet id="023-create-landscape-plans-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="landscape_plans" schemaName="landscape"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="landscape_plans" schemaName="landscape">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="image_s3_key" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="image_cdn_url" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hardiness_zone" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="zip_code" type="VARCHAR(10)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Indexes -->
+        <createIndex indexName="idx_landscape_plans_user_id" tableName="landscape_plans" schemaName="landscape">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex indexName="idx_landscape_plans_created_at" tableName="landscape_plans" schemaName="landscape">
+            <column name="created_at" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Plant Placements Table -->
+    <changeSet id="023-create-plant-placements-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="plant_placements" schemaName="landscape"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="plant_placements" schemaName="landscape">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="plan_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_placement_plan"
+                            references="landscape.landscape_plans(id)"
+                            deleteCascade="true"/>
+            </column>
+            <column name="usda_symbol" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="plant_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="common_name" type="VARCHAR(255)"/>
+            <column name="x_coord" type="NUMERIC(6,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="y_coord" type="NUMERIC(6,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="TEXT"/>
+            <column name="quantity" type="INT" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Indexes -->
+        <createIndex indexName="idx_plant_placements_plan_id" tableName="plant_placements" schemaName="landscape">
+            <column name="plan_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Recommended Plants Table -->
+    <changeSet id="023-create-recommended-plants-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="recommended_plants" schemaName="landscape"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="recommended_plants" schemaName="landscape">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="plan_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_recommendation_plan"
+                            references="landscape.landscape_plans(id)"
+                            deleteCascade="true"/>
+            </column>
+            <column name="usda_symbol" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="plant_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="common_name" type="VARCHAR(255)"/>
+            <column name="recommendation_reason" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="confidence_score" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="light_requirement" type="VARCHAR(20)"/>
+            <column name="water_requirement" type="VARCHAR(20)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Indexes -->
+        <createIndex indexName="idx_recommended_plants_plan_id" tableName="recommended_plants" schemaName="landscape">
+            <column name="plan_id"/>
+        </createIndex>
+        <createIndex indexName="idx_recommended_plants_confidence" tableName="recommended_plants" schemaName="landscape">
+            <column name="confidence_score" descending="true"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

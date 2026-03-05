@@ -9,6 +9,10 @@ include::module-content.adoc[]
 plantuml::module-foosball.puml[,,format=svg]
 include::module-foosball.adoc[]
 
+== Landscape Planning
+plantuml::module-landscape.puml[,,format=svg]
+include::module-landscape.adoc[]
+
 == Shared Infrastructure
 plantuml::module-shared.puml[,,format=svg]
 include::module-shared.adoc[]

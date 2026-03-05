@@ -1,0 +1,133 @@
+/* Landscape Planner Styles */
+
+.landscape-page {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Plan Workspace */
+#planWorkspace {
+    min-height: 400px;
+    background-color: #fff;
+    position: relative;
+}
+
+#planCanvas {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.canvas-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* Plant Search Results */
+.plant-result {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.plant-result:hover {
+    background-color: #e9ecef;
+}
+
+.plant-result.selected {
+    background-color: #d1e7dd;
+    border-color: #198754;
+}
+
+/* Recommendations */
+.recommendation-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Upload Form */
+#createPlanBtn:disabled {
+    cursor: not-allowed;
+}
+
+.form-text a {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.form-text a:hover {
+    text-decoration: underline;
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    font-weight: 500;
+}
+
+/* Plant Placement Markers (if using canvas annotations) */
+.plant-marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background-color: #198754;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.plant-marker:hover {
+    transform: scale(1.2);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading States */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    #planWorkspace {
+        min-height: 300px;
+    }
+}
+
+/* Badge Styling */
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+/* List Group */
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+
+/* Alert */
+.alert {
+    border-radius: 0.375rem;
+}
