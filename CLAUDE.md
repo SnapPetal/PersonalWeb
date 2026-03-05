@@ -68,7 +68,7 @@ Each module follows this internal package convention:
 - **Caching**: Caffeine (`CacheConfig`). Used for Bible verse, Dad joke responses, and plant data (24-hour TTL).
 - **Retry**: Spring Retry (`RetryConfig`) for fault-tolerant external API calls.
 - **Scheduled jobs**: ShedLock (`ShedlockConfig`) prevents duplicate execution in distributed environments.
-- **AI**: Spring AI with AWS Bedrock Converse API (`us.anthropic.claude-opus-4-6-v1`) for trivia question generation. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
+- **AI**: Spring AI with AWS Bedrock Converse API (`anthropic.claude-sonnet-4-6`) for trivia question generation and landscape recommendations. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
 - **WebSockets**: STOMP over SockJS for trivia and tank game real-time communication.
 - **Frontend**: Thymeleaf templates + HTMX for partial page updates + Bootstrap 5. Frontend libraries served as WebJars.
 - **CSRF**: Cookie-based CSRF tokens (`CookieCsrfTokenRepository`). All HTMX POST requests include the CSRF token from the cookie.
@@ -96,7 +96,7 @@ Always run `mvn spotless:apply` before committing Java, JS, or Markdown changes.
 The `skatetricks` module uses **AWS S3 Vectors** as a vector store for Retrieval-Augmented Generation (RAG) to improve trick detection accuracy over time.
 
 **Two-model architecture:**
-- **Claude Opus 4.6** (`us.anthropic.claude-opus-4-6-v1`) — visual trick analysis via Spring AI / Bedrock Converse API
+- **Claude Sonnet 4.6** (`anthropic.claude-sonnet-4-6`) — visual trick analysis via Spring AI / Bedrock Converse API
 - **Titan Text Embeddings V2** (`amazon.titan-embed-text-v2:0`) — 1024-dimension normalized float embeddings via `BedrockRuntimeClient.invokeModel()` directly (no Spring AI wrapper)
 
 **Store flow** (verified attempt → vector store):
@@ -134,7 +134,7 @@ skatetricks:
 The `landscape` module provides AI-powered landscape design with plant selection based on USDA hardiness zones. Users can upload images of their yard, receive personalized plant recommendations, and create annotated landscape plans.
 
 **Architecture:**
-- **Claude Opus 4.6** (`us.anthropic.claude-opus-4-6-v1`) — analyzes landscape images to recommend suitable plants based on visible conditions, sunlight exposure, and hardiness zone compatibility
+- **Claude Sonnet 4.6** (`anthropic.claude-sonnet-4-6`) — analyzes landscape images to recommend suitable plants based on visible conditions, sunlight exposure, and hardiness zone compatibility
 - **USDA Plants Database API** — authoritative plant data with hardiness zone, light/water requirements, and native status
 - **AWS S3 + CloudFront** — stores uploaded landscape images with CDN delivery
 

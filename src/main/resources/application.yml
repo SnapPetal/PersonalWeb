@@ -43,9 +43,7 @@ spring:
         chat:
           enabled: true
           options:
-            model: us.anthropic.claude-opus-4-6-v1
-            temperature: 0.3
-            max-tokens: 1500
+            model: anthropic.claude-sonnet-4-6
       aws:
         region: ${AWS_REGION:us-east-1}
         access-key: ${AWS_ACCESS_KEY_ID}

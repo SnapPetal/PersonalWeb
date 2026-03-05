@@ -65,11 +65,11 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
 
                 Return the response as a JSON array with this exact structure:
                 [
-                  {
+                  {{
                     "questionText": "What is Baby Step 1 in Dave Ramsey's Financial Peace plan?",
                     "options": ["Pay off all debt", "Save $1,000 for emergencies", "Invest 15% in retirement", "Pay off the mortgage"],
                     "correctAnswerIndex": 1
-                  }
+                  }}
                 ]
 
                 Make sure the questions are accurate to Dave Ramsey's actual teachings.
