@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en-US" xmlns:th="http://www.thymeleaf.org">
+<html lang="en-US" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -15,7 +16,25 @@
     <div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-tree"></i> Landscape Planner</h2>
-            <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back Home</a>
+            <div class="d-flex gap-2 align-items-center">
+                <!-- Authentication Status -->
+                <span sec:authorize="isAuthenticated()" class="text-muted">
+                    <i class="bi bi-person-circle"></i>
+                    <span sec:authentication="name">user@example.com</span>
+                </span>
+                <a sec:authorize="!isAuthenticated()"
+                   href="/oauth2/authorization/cognito"
+                   class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </a>
+                <form sec:authorize="isAuthenticated()"
+                      th:action="@{/logout}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                </form>
+                <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back Home</a>
+            </div>
         </div>
 
         <div class="row g-4">
