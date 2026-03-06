@@ -102,6 +102,7 @@ AWS Bedrock model identifiers follow the pattern `anthropic.claude-<model>-<vers
 - **Claude Haiku 4.5**: `anthropic.claude-haiku-4-5-20251001-v1:0`
 
 **To list available models**:
+
 ```bash
 aws-vault exec <profile> -- aws bedrock list-foundation-models \
   --query 'modelSummaries[?contains(modelId, `anthropic`)].[modelId,modelName]' \
@@ -109,6 +110,7 @@ aws-vault exec <profile> -- aws bedrock list-foundation-models \
 ```
 
 **Current configuration** (`application.yml`):
+
 ```yaml
 spring:
   ai:

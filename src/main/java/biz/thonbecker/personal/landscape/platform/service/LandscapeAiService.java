@@ -11,11 +11,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MimeTypeUtils;
 
 /**
  * Service for AI-powered plant recommendations using AWS Bedrock (Claude).
@@ -58,19 +61,20 @@ public class LandscapeAiService {
 
             final var base64Image = Base64.getEncoder().encodeToString(imageData);
 
-            final var promptText = """
+            final var promptText = String.format(
+                    """
                 You are an expert landscape designer and horticulturist. Analyze this landscape image
                 and recommend 5-8 suitable plants based on the visible conditions.
 
                 Context:
-                - USDA Hardiness Zone: {zone}
-                - User Description: {description}
+                - USDA Hardiness Zone: %s
+                - User Description: %s
 
                 In your analysis, consider:
                 1. Sunlight exposure (identify sunny vs shaded areas)
                 2. Existing vegetation and soil conditions
                 3. Space constraints and scale
-                4. Climate compatibility with zone {zone}
+                4. Climate compatibility with the specified hardiness zone
                 5. Aesthetic harmony and color schemes
                 6. Maintenance requirements
 
@@ -89,20 +93,22 @@ public class LandscapeAiService {
                     "usdaSymbol": "ACRU",
                     "commonName": "Red Maple",
                     "scientificName": "Acer rubrum",
-                    "recommendationReason": "Excellent shade tree for the north side, tolerates zone {zone}",
+                    "recommendationReason": "Excellent shade tree for the north side, tolerates zone 5-9",
                     "confidenceScore": 85,
                     "lightRequirement": "FULL_SUN",
                     "waterRequirement": "MEDIUM"
                   }
                 ]
-                """;
+                """, zone.name(), Objects.nonNull(userDescription) ? userDescription : "No description provided");
 
-            final var promptTemplate = new PromptTemplate(promptText);
-            final var prompt = promptTemplate.create(Map.of(
-                    "zone",
-                    zone.name(),
-                    "description",
-                    Objects.nonNull(userDescription) ? userDescription : "No description provided"));
+            // Create multimodal message with image and text
+            final var imageMedia = Media.builder()
+                    .mimeType(MimeTypeUtils.IMAGE_JPEG)
+                    .data(base64Image)
+                    .build();
+            final var userMessage =
+                    UserMessage.builder().text(promptText).media(imageMedia).build();
+            final var prompt = new Prompt(List.of(userMessage));
 
             final var response = chatModel.call(prompt).getResult().getOutput().getText();
             log.debug("AI Response: {}", response);
