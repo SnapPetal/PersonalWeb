@@ -58,6 +58,20 @@ spring:
         queue-capacity: 100
       thread-name-prefix: websocket-task-
 
+  # OAuth2 / Cognito Configuration
+  security:
+    oauth2:
+      client:
+        registration:
+          cognito:
+            client-id: ${COGNITO_CLIENT_ID}
+            client-secret: ${COGNITO_CLIENT_SECRET}
+            scope: openid,profile,email
+            client-name: AWS Cognito
+        provider:
+          cognito:
+            issuer-uri: https://cognito-idp.${AWS_REGION:us-east-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
+
 # Bible Verse API Configuration
 bible:
   verse:

@@ -13,8 +13,30 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
-        http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(auth -> auth
+                        // Public pages
+                        .requestMatchers(
+                                "/",
+                                "/landscape",
+                                "/trivia/**",
+                                "/foosball/**",
+                                "/skate-tricks/**",
+                                "/tank-game/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/webjars/**",
+                                "/error")
+                        .permitAll()
+                        // Require authentication for landscape plan operations
+                        .requestMatchers("/landscape/plans/**")
+                        .authenticated()
+                        // Allow everything else (for now)
+                        .anyRequest()
+                        .permitAll())
+                .oauth2Login(oauth2 -> oauth2.defaultSuccessUrl("/landscape", true))
+                .logout(logout -> logout.logoutSuccessUrl("/").permitAll())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
         return http.build();
