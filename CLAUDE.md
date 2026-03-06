@@ -33,8 +33,62 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 ## Local Development Setup
 
 1. Copy `.env.example` to `.env` and fill in AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`).
-2. Spring Boot Docker Compose integration auto-starts PostgreSQL from `docker-compose.yml` when running locally—no manual `docker-compose up` needed.
-3. The `dev` profile (`application-dev.yml`) overrides the datasource to `localhost:5432/dbmaster` with user `dbmasteruser` and no password.
+2. Add Cognito OAuth2 credentials to `.env`:
+   ```bash
+   COGNITO_USER_POOL_ID=us-east-1_pHStskbGS
+   COGNITO_CLIENT_ID=7vaut06m1c699il4qo6ri00724
+   COGNITO_CLIENT_SECRET=llh0jo5r7v6tjsodufvc24lnfcouegmq5b6ktjsqtfhq4r3gpd6
+   ```
+3. Spring Boot Docker Compose integration auto-starts PostgreSQL from `docker-compose.yml` when running locally—no manual `docker-compose up` needed.
+4. The `dev` profile (`application-dev.yml`) overrides the datasource to `localhost:5432/dbmaster` with user `dbmasteruser` and no password.
+
+## Authentication
+
+### AWS Cognito OAuth2
+
+The application uses **AWS Cognito** for user authentication via Spring Security OAuth2 Client.
+
+**User Pool Configuration:**
+- Pool ID: `us-east-1_pHStskbGS` (thonbecker-biz-users)
+- Domain: `thonbecker-biz.auth.us-east-1.amazoncognito.com`
+- App Client: `7vaut06m1c699il4qo6ri00724` (personal-web-oauth)
+- Callback URLs: `http://localhost:8080/login/oauth2/code/cognito`, `https://thonbecker.com/login/oauth2/code/cognito`
+- Logout URLs: `http://localhost:8080/`, `https://thonbecker.com/`
+- OAuth Scopes: `openid`, `profile`, `email`
+
+**Protected Endpoints:**
+- `/landscape/plans/**` - Requires authentication (landscape plan CRUD operations)
+- All other endpoints are public by default
+
+**Login Flow:**
+1. User clicks "Login" button on landscape planner page
+2. Redirects to Cognito hosted UI: `/oauth2/authorization/cognito`
+3. User authenticates with Cognito
+4. Redirects back to `/landscape` with OAuth code
+5. Spring Security exchanges code for tokens
+6. User session established, `principal.getName()` returns user email
+
+**Create Test User:**
+```bash
+aws-vault exec thonbecker -- aws cognito-idp admin-create-user \
+  --user-pool-id us-east-1_pHStskbGS \
+  --username your-email@example.com \
+  --user-attributes Name=email,Value=your-email@example.com Name=email_verified,Value=true \
+  --temporary-password TempPass123! \
+  --region us-east-1
+```
+
+**Thymeleaf Security Integration:**
+- Dependency: `thymeleaf-extras-springsecurity6`
+- Use `sec:authorize="isAuthenticated()"` to show/hide elements
+- Use `sec:authentication="name"` to display user email
+
+**GitHub Secrets (for production):**
+```bash
+COGNITO_USER_POOL_ID
+COGNITO_CLIENT_ID
+COGNITO_CLIENT_SECRET
+```
 
 ## Architecture
 
