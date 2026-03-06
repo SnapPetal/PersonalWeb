@@ -123,6 +123,38 @@ spring:
             max-tokens: 1500
 ```
 
+#### Spring AI Multimodal Messages (Images + Text)
+
+When sending images to Claude via Spring AI, use the `UserMessage` builder pattern with `Media`:
+
+```java
+// Encode image to Base64
+final var base64Image = Base64.getEncoder().encodeToString(imageData);
+
+// Create Media object with image
+final var imageMedia = Media.builder()
+    .mimeType(MimeTypeUtils.IMAGE_JPEG)
+    .data(base64Image)
+    .build();
+
+// Create UserMessage with both text and image
+final var userMessage = UserMessage.builder()
+    .text(promptText)
+    .media(imageMedia)
+    .build();
+
+// Create Prompt and call model
+final var prompt = new Prompt(List.of(userMessage));
+final var response = chatModel.call(prompt).getResult().getOutput().getText();
+```
+
+**Important**: Do NOT use `PromptTemplate` with multimodal messages - use `String.format()` for variable substitution instead. The image must be included via `.media()` on the UserMessage builder.
+
+**Correct imports**:
+
+- `org.springframework.ai.content.Media` (not `.chat.messages.Media`)
+- `org.springframework.ai.chat.messages.UserMessage`
+
 #### Spring AI PromptTemplate Gotcha
 
 When using Spring AI's `PromptTemplate` with JSON examples in prompts, **escape curly braces** to prevent them from being interpreted as template variables:
@@ -145,7 +177,7 @@ Return JSON like this:
 """
 ```
 
-This applies to both LandscapeAiService and FinancialPeaceQuestionGenerator prompt templates.
+This applies to FinancialPeaceQuestionGenerator (trivia module). For image analysis, prefer `String.format()` with multimodal UserMessage (see above).
 
 ### Infrastructure Notes
 
