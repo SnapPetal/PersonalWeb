@@ -419,6 +419,23 @@ The following features are planned for future development:
 - **Weather Integration**: Pull local weather data to inform plant recommendations
 - **Garden Journal**: Track plant growth, add photos, and record observations over time
 
+### Git Workflow
+
+**IMPORTANT**: Always push commits to remote immediately after creating them. Local commits that aren't pushed won't be deployed, which can cause confusion when production doesn't reflect local fixes.
+
+```bash
+# After creating a commit, always push:
+git push origin main
+```
+
+If the push is rejected due to remote changes, rebase and push:
+
+```bash
+git fetch origin
+git rebase origin/main
+git push origin main
+```
+
 ### Deployment
 
 Pushes to `main` trigger the GitHub Actions workflow (`.github/workflows/aws-deploy.yml`), which builds a Docker image using Spring Boot Buildpacks (Paketo, Java 25) and deploys to **AWS Lightsail** container service (`personal-service`).
