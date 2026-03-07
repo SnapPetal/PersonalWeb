@@ -118,8 +118,12 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     Known trick enum values and descriptions:
                     %s
 
-                    Respond ONLY with valid JSON (no markdown, no explanation):
-                    {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"], "trickSequence": [{"trick": "DROP_IN", "timeframe": "frames 1-8", "confidence": 90}, {"trick": "KICKFLIP", "timeframe": "frames 12-20", "confidence": 85}]}
+                    CRITICAL OUTPUT FORMAT REQUIREMENTS:
+                    - Your response MUST be ONLY valid JSON
+                    - DO NOT include any explanatory text before or after the JSON
+                    - DO NOT include markdown code fences (no ```)
+                    - Start your response immediately with { and end with }
+                    - Format: {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"], "trickSequence": [{"trick": "DROP_IN", "timeframe": "frames 1-8", "confidence": 90}, {"trick": "KICKFLIP", "timeframe": "frames 12-20", "confidence": 85}]}
 
                     The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
                     If only one trick is visible, trickSequence should contain just that one entry.
@@ -205,8 +209,12 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     Known trick enum values and descriptions:
                     %s
 
-                    Respond ONLY with valid JSON (no markdown, no explanation):
-                    {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"], "trickSequence": [{"trick": "DROP_IN", "timeframe": "0:00-0:02", "confidence": 90}, {"trick": "KICKFLIP", "timeframe": "0:03-0:05", "confidence": 85}]}
+                    CRITICAL OUTPUT FORMAT REQUIREMENTS:
+                    - Your response MUST be ONLY valid JSON
+                    - DO NOT include any explanatory text before or after the JSON
+                    - DO NOT include markdown code fences (no ```)
+                    - Start your response immediately with { and end with }
+                    - Format: {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"], "trickSequence": [{"trick": "DROP_IN", "timeframe": "0:00-0:02", "confidence": 90}, {"trick": "KICKFLIP", "timeframe": "0:03-0:05", "confidence": 85}]}
 
                     The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
                     If only one trick is visible, trickSequence should contain just that one entry.
@@ -312,6 +320,8 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
     private String extractJson(String response) {
         String cleaned = response.trim();
+
+        // First, try to strip markdown code fences
         if (cleaned.startsWith("```json")) {
             cleaned = cleaned.substring(7);
         } else if (cleaned.startsWith("```")) {
@@ -320,6 +330,21 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
         if (cleaned.endsWith("```")) {
             cleaned = cleaned.substring(0, cleaned.length() - 3);
         }
+        cleaned = cleaned.trim();
+
+        // If the response doesn't start with {, look for JSON embedded in text
+        if (!cleaned.startsWith("{")) {
+            final var firstBrace = cleaned.indexOf('{');
+            final var lastBrace = cleaned.lastIndexOf('}');
+            if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+                log.debug(
+                        "Extracting JSON from position {} to {} (found explanatory text before JSON)",
+                        firstBrace,
+                        lastBrace);
+                cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+            }
+        }
+
         return cleaned.trim();
     }
 
