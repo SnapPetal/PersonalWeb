@@ -10,6 +10,7 @@ import ai.djl.modality.cv.translator.YoloPoseTranslatorFactory;
 import ai.djl.modality.cv.translator.YoloV8TranslatorFactory;
 import ai.djl.repository.zoo.Criteria;
 import ai.djl.repository.zoo.ZooModel;
+import jakarta.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -61,6 +62,18 @@ class PoseEstimationService implements AutoCloseable {
 
     private volatile @Nullable ZooModel<Image, DetectedObjects> objectModel;
     private volatile boolean objectModelLoadAttempted;
+
+    /**
+     * Pre-loads YOLO models at startup to avoid timeouts on first request.
+     * Models take 30+ seconds to download and initialize on first load.
+     */
+    @PostConstruct
+    void warmupModels() {
+        log.info("Pre-loading YOLO models at startup to prevent first-request timeout...");
+        ensureModelLoaded();
+        ensureObjectModelLoaded();
+        log.info("YOLO model warmup complete");
+    }
 
     PoseData.@Nullable SequencePoseData estimatePoses(List<String> base64Frames) {
         ZooModel<Image, Joints[]> loadedModel = ensureModelLoaded();
