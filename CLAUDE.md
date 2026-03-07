@@ -34,6 +34,7 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 
 1. Copy `.env.example` to `.env` and fill in AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`).
 2. Add Cognito OAuth2 credentials to `.env`:
+
    ```bash
    COGNITO_USER_POOL_ID=us-east-1_pHStskbGS
    COGNITO_CLIENT_ID=7vaut06m1c699il4qo6ri00724
@@ -69,6 +70,7 @@ The application uses **AWS Cognito** for user authentication via Spring Security
 6. User session established, `principal.getName()` returns user email
 
 **Create Test User:**
+
 ```bash
 aws-vault exec thonbecker -- aws cognito-idp admin-create-user \
   --user-pool-id us-east-1_pHStskbGS \
@@ -84,6 +86,7 @@ aws-vault exec thonbecker -- aws cognito-idp admin-create-user \
 - Use `sec:authentication="name"` to display user email
 
 **GitHub Secrets (for production):**
+
 ```bash
 COGNITO_USER_POOL_ID
 COGNITO_CLIENT_ID
@@ -122,7 +125,7 @@ Each module follows this internal package convention:
 - **Caching**: Caffeine (`CacheConfig`). Used for Bible verse, Dad joke responses, and plant data (24-hour TTL).
 - **Retry**: Spring Retry (`RetryConfig`) for fault-tolerant external API calls.
 - **Scheduled jobs**: ShedLock (`ShedlockConfig`) prevents duplicate execution in distributed environments.
-- **AI**: Spring AI with AWS Bedrock Converse API (`anthropic.claude-sonnet-4-6`) for trivia question generation and landscape recommendations. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
+- **AI**: Spring AI with AWS Bedrock Converse API (inference profile `us.anthropic.claude-sonnet-4-6`) for trivia question generation and landscape recommendations. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
 - **WebSockets**: STOMP over SockJS for trivia and tank game real-time communication.
 - **Frontend**: Thymeleaf templates + HTMX for partial page updates + Bootstrap 5. Frontend libraries served as WebJars.
 - **CSRF**: Cookie-based CSRF tokens (`CookieCsrfTokenRepository`). All HTMX POST requests include the CSRF token from the cookie.
@@ -145,22 +148,29 @@ Always run `mvn spotless:apply` before committing Java, JS, or Markdown changes.
 
 ### AWS Bedrock Configuration
 
-#### Model Identifiers
+#### Inference Profiles (Required)
 
-AWS Bedrock model identifiers follow the pattern `anthropic.claude-<model>-<version>`. **Critical**: Not all models use the same versioning suffix.
+**CRITICAL**: AWS Bedrock now requires using **inference profiles** instead of direct model IDs for on-demand throughput. Direct model invocation (e.g., `anthropic.claude-sonnet-4-6`) will fail with:
 
-**Working model identifiers** (verified with `aws bedrock list-foundation-models`):
-- **Claude Sonnet 4.6**: `anthropic.claude-sonnet-4-6` (no version suffix)
-- **Claude Opus 4.6**: `anthropic.claude-opus-4-6-v1` (has `-v1` suffix)
-- **Claude Sonnet 4.5**: `anthropic.claude-sonnet-4-5-20250929-v1:0`
-- **Claude Haiku 4.5**: `anthropic.claude-haiku-4-5-20251001-v1:0`
+```
+ValidationException: Invocation of model ID anthropic.claude-sonnet-4-6 with on-demand throughput isn't supported.
+Retry your request with the ID or ARN of an inference profile that contains this model.
+```
 
-**To list available models**:
+**Working inference profile IDs** (verified with `aws bedrock list-inference-profiles`):
+- **Claude Sonnet 4.6**: `us.anthropic.claude-sonnet-4-6` (US multi-region) or `global.anthropic.claude-sonnet-4-6` (global)
+- **Claude Opus 4.6**: `us.anthropic.claude-opus-4-6-v1` (US multi-region) or `global.anthropic.claude-opus-4-6-v1` (global)
+- **Claude Sonnet 4.5**: `us.anthropic.claude-sonnet-4-5-20250929-v1:0` (US multi-region)
+- **Claude Haiku 4.5**: `us.anthropic.claude-haiku-4-5-20251001-v1:0` (US multi-region)
+
+**US inference profiles** route requests across us-east-1, us-east-2, and us-west-2 for automatic failover.
+**Global inference profiles** route requests globally across all supported AWS regions.
+
+**To list available inference profiles**:
 
 ```bash
-aws-vault exec <profile> -- aws bedrock list-foundation-models \
-  --query 'modelSummaries[?contains(modelId, `anthropic`)].[modelId,modelName]' \
-  --output table --region us-east-1
+aws-vault exec <profile> -- aws bedrock list-inference-profiles \
+  --region us-east-1 --output json | jq '.inferenceProfileSummaries[] | select(.inferenceProfileName | contains("Claude"))'
 ```
 
 **Current configuration** (`application.yml`):
@@ -172,7 +182,7 @@ spring:
       converse:
         chat:
           options:
-            model: anthropic.claude-sonnet-4-6
+            model: us.anthropic.claude-sonnet-4-6  # Inference profile ID (NOT direct model ID)
             temperature: 0.3
             max-tokens: 1500
 ```
@@ -240,7 +250,7 @@ This applies to FinancialPeaceQuestionGenerator (trivia module). For image analy
 The `skatetricks` module uses **AWS S3 Vectors** as a vector store for Retrieval-Augmented Generation (RAG) to improve trick detection accuracy over time.
 
 **Two-model architecture:**
-- **Claude Sonnet 4.6** (`anthropic.claude-sonnet-4-6`) — visual trick analysis via Spring AI / Bedrock Converse API
+- **Claude Sonnet 4.6** (inference profile `us.anthropic.claude-sonnet-4-6`) — visual trick analysis via Spring AI / Bedrock Converse API
 - **Titan Text Embeddings V2** (`amazon.titan-embed-text-v2:0`) — 1024-dimension normalized float embeddings via `BedrockRuntimeClient.invokeModel()` directly (no Spring AI wrapper)
 
 **Store flow** (verified attempt → vector store):
@@ -278,7 +288,7 @@ skatetricks:
 The `landscape` module provides AI-powered landscape design with plant selection based on USDA hardiness zones. Users can upload images of their yard, receive personalized plant recommendations, and create annotated landscape plans.
 
 **Architecture:**
-- **Claude Sonnet 4.6** (`anthropic.claude-sonnet-4-6`) — analyzes landscape images to recommend suitable plants based on visible conditions, sunlight exposure, and hardiness zone compatibility
+- **Claude Sonnet 4.6** (inference profile `us.anthropic.claude-sonnet-4-6`) — analyzes landscape images to recommend suitable plants based on visible conditions, sunlight exposure, and hardiness zone compatibility
 - **USDA Plants Database API** — authoritative plant data with hardiness zone, light/water requirements, and native status
 - **AWS S3 + CloudFront** — stores uploaded landscape images with CDN delivery
 

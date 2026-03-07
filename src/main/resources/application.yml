@@ -43,7 +43,7 @@ spring:
         chat:
           enabled: true
           options:
-            model: anthropic.claude-sonnet-4-6
+            model: us.anthropic.claude-sonnet-4-6
       aws:
         region: ${AWS_REGION:us-east-1}
         access-key: ${AWS_ACCESS_KEY_ID}
