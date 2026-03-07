@@ -33,8 +33,10 @@ class SkateTricksController {
     // Temporary storage for converted videos (auto-expires after 10 minutes)
     private final Map<String, byte[]> convertedVideos = new ConcurrentHashMap<>();
     private final Map<String, ConversionStatus> conversionStatuses = new ConcurrentHashMap<>();
+    private final Map<String, AnalysisStatus> analysisStatuses = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService conversionExecutor = Executors.newFixedThreadPool(2);
+    private final ExecutorService analysisExecutor = Executors.newFixedThreadPool(2);
 
     SkateTricksController(SkateTricksFacade skateTricksFacade, SimpMessagingTemplate messagingTemplate) {
         this.skateTricksFacade = skateTricksFacade;
@@ -158,7 +160,7 @@ class SkateTricksController {
     }
 
     @PostMapping("/skatetricks/analyze/{videoId}")
-    public ResponseEntity<TrickAnalysisResult> analyzeVideo(
+    public ResponseEntity<AnalysisResponse> analyzeVideo(
             @PathVariable String videoId, @RequestParam("sessionId") String sessionId) {
 
         log.info("Analyze request for video: {} (stored videos: {})", videoId, convertedVideos.keySet());
@@ -168,17 +170,58 @@ class SkateTricksController {
             return ResponseEntity.notFound().build();
         }
 
+        // Generate analysis ID
+        String analysisId = UUID.randomUUID().toString();
+
+        // Set initial status
+        analysisStatuses.put(analysisId, new AnalysisStatus("pending", null, null));
+
+        // Return immediately, process async
+        analysisExecutor.submit(() -> processAnalysis(analysisId, sessionId, videoData, videoId));
+
+        return ResponseEntity.accepted().body(new AnalysisResponse(analysisId, "pending"));
+    }
+
+    private void processAnalysis(String analysisId, String sessionId, byte[] videoData, String videoId) {
         try {
-            log.info("Analyzing converted video: {} ({} bytes) for session {}", videoId, videoData.length, sessionId);
+            log.info(
+                    "Starting analysis for analysisId={}, videoId={} ({} bytes)",
+                    analysisId,
+                    videoId,
+                    videoData.length);
+
+            // Update status to processing
+            analysisStatuses.put(analysisId, new AnalysisStatus("processing", null, null));
 
             TrickAnalysisResult result = skateTricksFacade.analyzeConvertedVideo(sessionId, videoData);
 
-            return ResponseEntity.ok(result);
+            log.info("Analysis complete for analysisId={}: {}", analysisId, result.trick());
+
+            // Store result
+            analysisStatuses.put(analysisId, new AnalysisStatus("complete", result, null));
+
+            // Schedule cleanup after 10 minutes
+            cleanupExecutor.schedule(
+                    () -> {
+                        analysisStatuses.remove(analysisId);
+                        log.debug("Cleaned up analysis result: {}", analysisId);
+                    },
+                    10,
+                    TimeUnit.MINUTES);
 
         } catch (Exception e) {
-            log.error("Failed to analyze video", e);
-            return ResponseEntity.internalServerError().build();
+            log.error("Failed to analyze video: {}", analysisId, e);
+            analysisStatuses.put(analysisId, new AnalysisStatus("error", null, e.getMessage()));
         }
+    }
+
+    @GetMapping("/skatetricks/analyze/{analysisId}/status")
+    public ResponseEntity<AnalysisStatusResponse> getAnalysisStatus(@PathVariable String analysisId) {
+        AnalysisStatus status = analysisStatuses.get(analysisId);
+        if (status == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(new AnalysisStatusResponse(status.status(), status.result(), status.error()));
     }
 
     @PostMapping("/skatetricks/attempts/{id}/verify")
@@ -199,6 +242,12 @@ class SkateTricksController {
     record ConversionStatus(String status, int progress, Long size, String error) {}
 
     record ConversionStatusUpdate(String videoId, String status, int progress, Long size) {}
+
+    record AnalysisResponse(String analysisId, String status) {}
+
+    record AnalysisStatus(String status, TrickAnalysisResult result, String error) {}
+
+    record AnalysisStatusResponse(String status, TrickAnalysisResult result, String error) {}
 
     record VerifyRequest(String correctedTrickName) {}
 }

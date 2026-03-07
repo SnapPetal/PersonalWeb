@@ -606,20 +606,62 @@
       }
 
       const result = await response.json();
-      frameCounter.textContent = "Analysis complete";
-      displayResult(result);
-      addToHistory(result);
+      console.log("Got analysisId:", result.analysisId);
+
+      // Start polling for analysis status
+      pollAnalysisStatus(result.analysisId);
     } catch (e) {
       console.error("Analysis error:", e);
       analysisResult.innerHTML =
-        '<div class="alert alert-danger">Failed to analyze video: ' +
+        '<div class="alert alert-danger">Failed to start analysis: ' +
         e.message +
         "</div>";
       frameCounter.textContent = "Analysis failed";
-    } finally {
       analyzeUploadBtn.disabled = false;
     }
   });
+
+  // Poll for analysis status
+  function pollAnalysisStatus(analysisId) {
+    fetch("/skatetricks/analyze/" + analysisId + "/status")
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("Failed to get analysis status: " + response.status);
+        }
+        return response.json();
+      })
+      .then(function (status) {
+        console.log("Analysis status:", status.status);
+
+        if (status.status === "complete" && status.result) {
+          frameCounter.textContent = "Analysis complete";
+          displayResult(status.result);
+          addToHistory(status.result);
+          analyzeUploadBtn.disabled = false;
+        } else if (status.status === "error") {
+          analysisResult.innerHTML =
+            '<div class="alert alert-danger">Analysis failed: ' +
+            (status.error || "Unknown error") +
+            "</div>";
+          frameCounter.textContent = "Analysis failed";
+          analyzeUploadBtn.disabled = false;
+        } else {
+          // Still processing, poll again in 2 seconds
+          setTimeout(function () {
+            pollAnalysisStatus(analysisId);
+          }, 2000);
+        }
+      })
+      .catch(function (error) {
+        console.error("Polling error:", error);
+        analysisResult.innerHTML =
+          '<div class="alert alert-danger">Analysis failed: ' +
+          error.message +
+          "</div>";
+        frameCounter.textContent = "Analysis failed";
+        analyzeUploadBtn.disabled = false;
+      });
+  }
 
   connectWebSocket();
 })();
