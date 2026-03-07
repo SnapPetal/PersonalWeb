@@ -283,6 +283,47 @@ skatetricks:
 
 **Known gap:** `analyzeVideo()` (direct video path) does not query the vector store — no pose data is available in that path to use as a query embedding.
 
+**Verifying vector store data:**
+
+Check if verified attempts are stored in the vector store:
+
+```bash
+# List all vectors in the index (shows vector IDs and metadata)
+aws-vault exec thonbecker -- aws s3-vectors list-vectors \
+  --bucket thonbecker-vectors \
+  --index-name skatetricks-tricks \
+  --region us-east-1 \
+  --output json | jq '.vectorList[] | {id: .id, metadata: .metadata}'
+
+# Count total vectors
+aws-vault exec thonbecker -- aws s3-vectors list-vectors \
+  --bucket thonbecker-vectors \
+  --index-name skatetricks-tricks \
+  --region us-east-1 \
+  --output json | jq '.vectorList | length'
+
+# Get specific vector by ID (e.g., attempt-123)
+aws-vault exec thonbecker -- aws s3-vectors get-vector \
+  --bucket thonbecker-vectors \
+  --index-name skatetricks-tricks \
+  --vector-id "attempt-123" \
+  --region us-east-1 \
+  --output json | jq '.'
+```
+
+**Expected metadata fields per vector:**
+- `trickName` — The verified trick name (e.g., "OLLIE")
+- `confidence` — Original AI confidence score (0-100)
+- `formScore` — Form quality score (0-100)
+- `attemptId` — Database FK to `skatetricks.trick_attempts.id`
+
+**Verification flow:**
+1. Upload video → AI analyzes → saves to DB with `verified=false`
+2. If confidence ≥ 80%, auto-verifies and writes to vector store immediately
+3. If confidence < 80%, user clicks "Confirm" or "Correct" → writes to vector store
+4. Vector ID format: `attempt-{attemptId}` (e.g., `attempt-42`)
+5. Each verification/correction upserts the vector (same ID replaces existing)
+
 #### Landscape Planning Module
 
 The `landscape` module provides AI-powered landscape design with plant selection based on USDA hardiness zones. Users can upload images of their yard, receive personalized plant recommendations, and create annotated landscape plans.
