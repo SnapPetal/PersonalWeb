@@ -324,6 +324,35 @@ aws-vault exec thonbecker -- aws s3-vectors get-vector \
 4. Vector ID format: `attempt-{attemptId}` (e.g., `attempt-42`)
 5. Each verification/correction upserts the vector (same ID replaces existing)
 
+**Confirming successful write:**
+
+Look for this log message after verification:
+
+```
+✅ Successfully stored attempt 36 (OLLIE) in vector store 'skatetricks-tricks'
+```
+
+If the write fails, you'll see:
+
+```
+❌ Failed to write attempt X to vector store: <error details>
+```
+
+**Testing RAG retrieval:**
+
+Upload a second video of the **same trick type** (e.g., another ollie). The system should:
+1. Generate YOLO pose data from the new video
+2. Query vector store for similar verified attempts (top-3 by cosine similarity)
+3. Inject similar examples into Claude's prompt as few-shot learning
+4. Potentially improve detection accuracy based on past verified attempts
+
+Check logs for:
+
+```
+Fetching similar examples from vector store for pose data...
+Found 2 similar verified attempts in vector store
+```
+
 #### Landscape Planning Module
 
 The `landscape` module provides AI-powered landscape design with plant selection based on USDA hardiness zones. Users can upload images of their yard, receive personalized plant recommendations, and create annotated landscape plans.
