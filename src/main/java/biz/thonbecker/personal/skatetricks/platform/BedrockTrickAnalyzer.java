@@ -4,9 +4,6 @@ import biz.thonbecker.personal.skatetricks.api.SupportedTrick;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
 import biz.thonbecker.personal.skatetricks.api.TrickSequenceEntry;
 import biz.thonbecker.personal.skatetricks.domain.TrickCatalog;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
@@ -17,6 +14,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -30,7 +28,7 @@ import software.amazon.awssdk.services.s3vectors.model.VectorData;
 class BedrockTrickAnalyzer implements TrickAnalyzer {
 
     private final ChatModel chatModel;
-    private final ObjectMapper objectMapper;
+    private final BeanOutputConverter<TrickAnalysisResponseSchema> outputConverter;
     private final PoseEstimationService poseEstimationService;
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
@@ -48,7 +46,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             S3VectorsClient s3VectorsClient,
             EmbeddingService embeddingService) {
         this.chatModel = chatModel;
-        this.objectMapper = new ObjectMapper();
+        this.outputConverter = new BeanOutputConverter<>(TrickAnalysisResponseSchema.class);
         this.poseEstimationService = poseEstimationService;
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
@@ -118,17 +116,14 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     Known trick enum values and descriptions:
                     %s
 
-                    CRITICAL OUTPUT FORMAT REQUIREMENTS:
-                    - Your response MUST be ONLY valid JSON
-                    - DO NOT include any explanatory text before or after the JSON
-                    - DO NOT include markdown code fences (no ```)
-                    - Start your response immediately with { and end with }
-                    - Format: {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"], "trickSequence": [{"trick": "DROP_IN", "timeframe": "frames 1-8", "confidence": 90}, {"trick": "KICKFLIP", "timeframe": "frames 12-20", "confidence": 85}]}
+                    %s
 
                     The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
                     If only one trick is visible, trickSequence should contain just that one entry.
                     Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if you truly cannot identify the trick.
-                    """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseDataText;
+                    """.formatted(TrickCatalog.buildTrickDescriptions(), outputConverter.getFormat())
+                    + similarExamples
+                    + poseDataText;
 
             String userPrompt =
                     ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
@@ -143,7 +138,20 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             String response = chatModel.call(prompt).getResult().getOutput().getText();
 
             log.info("AI analysis response: {}", response);
-            return parseResponse(response);
+
+            // Convert response using BeanOutputConverter
+            final var schema = outputConverter.convert(response);
+
+            // Map schema to domain model
+            return new TrickAnalysisResult(
+                    TrickCatalog.fromName(schema.trick()),
+                    schema.confidence(),
+                    schema.formScore(),
+                    schema.feedback(),
+                    schema.trickSequence().stream()
+                            .map(e -> new TrickSequenceEntry(
+                                    TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
+                            .toList());
 
         } catch (Exception e) {
             log.error("Error analyzing skateboard trick frames", e);
@@ -209,17 +217,12 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     Known trick enum values and descriptions:
                     %s
 
-                    CRITICAL OUTPUT FORMAT REQUIREMENTS:
-                    - Your response MUST be ONLY valid JSON
-                    - DO NOT include any explanatory text before or after the JSON
-                    - DO NOT include markdown code fences (no ```)
-                    - Start your response immediately with { and end with }
-                    - Format: {"trick": "ENUM_NAME", "confidence": 0-100, "formScore": 0-100, "feedback": ["observation 1", "observation 2", "suggestion"], "trickSequence": [{"trick": "DROP_IN", "timeframe": "0:00-0:02", "confidence": 90}, {"trick": "KICKFLIP", "timeframe": "0:03-0:05", "confidence": 85}]}
+                    %s
 
                     The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
                     If only one trick is visible, trickSequence should contain just that one entry.
                     Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING). Use UNKNOWN only if you truly cannot identify the trick.
-                    """.formatted(TrickCatalog.buildTrickDescriptions());
+                    """.formatted(TrickCatalog.buildTrickDescriptions(), outputConverter.getFormat());
 
             String userPrompt = "Watch this skateboarding video and identify the trick being performed. "
                     + "Pay close attention to the board movement, especially whether it leaves the ground.";
@@ -232,7 +235,20 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             String response = chatModel.call(prompt).getResult().getOutput().getText();
 
             log.info("AI video analysis response: {}", response);
-            return parseResponse(response);
+
+            // Convert response using BeanOutputConverter
+            final var schema = outputConverter.convert(response);
+
+            // Map schema to domain model
+            return new TrickAnalysisResult(
+                    TrickCatalog.fromName(schema.trick()),
+                    schema.confidence(),
+                    schema.formScore(),
+                    schema.feedback(),
+                    schema.trickSequence().stream()
+                            .map(e -> new TrickSequenceEntry(
+                                    TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
+                            .toList());
 
         } catch (Exception e) {
             log.error("Error analyzing skateboard trick video", e);
@@ -276,76 +292,6 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             log.warn("Could not fetch similar examples from vector store: {}", e.getMessage());
             return "";
         }
-    }
-
-    private TrickAnalysisResult parseResponse(String response) {
-        String json = null;
-        try {
-            json = extractJson(response);
-            log.debug("Extracted JSON (length {}): {}", json.length(), json);
-            JsonNode node = objectMapper.readTree(json);
-
-            SupportedTrick trick = TrickCatalog.fromName(node.path("trick").asText("UNKNOWN"));
-            int confidence = node.path("confidence").asInt(0);
-            int formScore = node.path("formScore").asInt(0);
-
-            List<String> feedback = new ArrayList<>();
-            JsonNode feedbackNode = node.path("feedback");
-            if (feedbackNode.isArray()) {
-                feedbackNode.forEach(f -> feedback.add(f.asText()));
-            }
-
-            List<TrickSequenceEntry> trickSequence = new ArrayList<>();
-            JsonNode sequenceNode = node.path("trickSequence");
-            if (sequenceNode.isArray()) {
-                for (JsonNode entry : sequenceNode) {
-                    SupportedTrick seqTrick =
-                            TrickCatalog.fromName(entry.path("trick").asText("UNKNOWN"));
-                    String timeframe = entry.path("timeframe").asText("");
-                    int seqConfidence = entry.path("confidence").asInt(0);
-                    trickSequence.add(new TrickSequenceEntry(seqTrick, timeframe, seqConfidence));
-                }
-            }
-
-            return new TrickAnalysisResult(trick, confidence, formScore, feedback, trickSequence);
-        } catch (Exception e) {
-            log.error(
-                    "Failed to parse AI response. Raw response length: {}, Extracted JSON: {}",
-                    response.length(),
-                    json != null ? json : "null",
-                    e);
-            return fallback();
-        }
-    }
-
-    private String extractJson(String response) {
-        String cleaned = response.trim();
-
-        // First, try to strip markdown code fences
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring(7);
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring(3);
-        }
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-        }
-        cleaned = cleaned.trim();
-
-        // If the response doesn't start with {, look for JSON embedded in text
-        if (!cleaned.startsWith("{")) {
-            final var firstBrace = cleaned.indexOf('{');
-            final var lastBrace = cleaned.lastIndexOf('}');
-            if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
-                log.debug(
-                        "Extracting JSON from position {} to {} (found explanatory text before JSON)",
-                        firstBrace,
-                        lastBrace);
-                cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-            }
-        }
-
-        return cleaned.trim();
     }
 
     private String buildPoseDataText(List<String> base64Frames) {
