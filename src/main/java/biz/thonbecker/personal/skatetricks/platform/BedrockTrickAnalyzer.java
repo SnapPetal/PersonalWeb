@@ -139,8 +139,11 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
             log.info("AI analysis response: {}", response);
 
+            // Extract JSON from response (Claude sometimes adds explanatory text)
+            final var jsonResponse = extractJson(response);
+
             // Convert response using BeanOutputConverter
-            final var schema = outputConverter.convert(response);
+            final var schema = outputConverter.convert(jsonResponse);
 
             // Map schema to domain model
             return new TrickAnalysisResult(
@@ -236,8 +239,11 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
             log.info("AI video analysis response: {}", response);
 
+            // Extract JSON from response (Claude sometimes adds explanatory text)
+            final var jsonResponse = extractJson(response);
+
             // Convert response using BeanOutputConverter
-            final var schema = outputConverter.convert(response);
+            final var schema = outputConverter.convert(jsonResponse);
 
             // Map schema to domain model
             return new TrickAnalysisResult(
@@ -317,6 +323,38 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             log.warn("Failed to generate pose data for prompt, continuing without it", e);
             return "";
         }
+    }
+
+    /**
+     * Extracts JSON from Claude's response, handling cases where explanatory text
+     * is added before or after the JSON object. This is used as a pre-processor
+     * before BeanOutputConverter to ensure clean JSON input.
+     */
+    private String extractJson(String response) {
+        String cleaned = response.trim();
+
+        // Strip markdown code fences if present
+        if (cleaned.startsWith("```json")) {
+            cleaned = cleaned.substring(7);
+        } else if (cleaned.startsWith("```")) {
+            cleaned = cleaned.substring(3);
+        }
+        if (cleaned.endsWith("```")) {
+            cleaned = cleaned.substring(0, cleaned.length() - 3);
+        }
+        cleaned = cleaned.trim();
+
+        // If response doesn't start with {, extract JSON from within text
+        if (!cleaned.startsWith("{")) {
+            final var firstBrace = cleaned.indexOf('{');
+            final var lastBrace = cleaned.lastIndexOf('}');
+            if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
+                log.debug("Extracting JSON from position {} to {} (found text before JSON)", firstBrace, lastBrace);
+                cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+            }
+        }
+
+        return cleaned.trim();
     }
 
     private TrickAnalysisResult fallback() {
