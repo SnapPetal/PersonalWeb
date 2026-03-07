@@ -44,6 +44,8 @@ spring:
           enabled: true
           options:
             model: us.anthropic.claude-sonnet-4-6
+            max-tokens: 4096
+            temperature: 0.3
       aws:
         region: ${AWS_REGION:us-east-1}
         access-key: ${AWS_ACCESS_KEY_ID}

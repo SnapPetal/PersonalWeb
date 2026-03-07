@@ -271,8 +271,10 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     }
 
     private TrickAnalysisResult parseResponse(String response) {
+        String json = null;
         try {
-            String json = extractJson(response);
+            json = extractJson(response);
+            log.debug("Extracted JSON (length {}): {}", json.length(), json);
             JsonNode node = objectMapper.readTree(json);
 
             SupportedTrick trick = TrickCatalog.fromName(node.path("trick").asText("UNKNOWN"));
@@ -299,7 +301,11 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
             return new TrickAnalysisResult(trick, confidence, formScore, feedback, trickSequence);
         } catch (Exception e) {
-            log.error("Failed to parse AI response: {}", response, e);
+            log.error(
+                    "Failed to parse AI response. Raw response length: {}, Extracted JSON: {}",
+                    response.length(),
+                    json != null ? json : "null",
+                    e);
             return fallback();
         }
     }
