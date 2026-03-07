@@ -167,10 +167,19 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
                     ? entity.getVerifiedTrickName()
                     : entity.getTrickName();
 
+            log.info(
+                    "Writing attempt {} ({}) to vector store bucket={}, index={}",
+                    entity.getId(),
+                    acceptedTrick,
+                    vectorBucket,
+                    vectorIndex);
+
             final var text = "trick:%s feedback:%s"
                     .formatted(acceptedTrick, Objects.nonNull(entity.getFeedback()) ? entity.getFeedback() : "");
 
+            log.debug("Embedding text (length={}): {}", text.length(), text);
             final var embedding = embeddingService.embed(text);
+            log.debug("Generated embedding with {} dimensions", embedding.size());
 
             final var metadata = Document.fromMap(Map.of(
                     "trickName", Document.fromString(acceptedTrick),
@@ -178,17 +187,31 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
                     "formScore", Document.fromNumber(entity.getFormScore()),
                     "attemptId", Document.fromNumber(entity.getId())));
 
+            final var vectorKey = "attempt-" + entity.getId();
+            log.info("Calling S3 Vectors putVectors with key={}", vectorKey);
+
             s3VectorsClient.putVectors(r -> r.vectorBucketName(vectorBucket)
                     .indexName(vectorIndex)
                     .vectors(List.of(PutInputVector.builder()
-                            .key("attempt-" + entity.getId())
+                            .key(vectorKey)
                             .data(VectorData.fromFloat32(embedding))
                             .metadata(metadata)
                             .build())));
 
-            log.info("Stored attempt {} ({}) in vector store '{}'", entity.getId(), acceptedTrick, vectorIndex);
+            log.info(
+                    "✅ Successfully stored attempt {} ({}) in vector store '{}'",
+                    entity.getId(),
+                    acceptedTrick,
+                    vectorIndex);
         } catch (Exception e) {
-            log.error("Failed to write attempt {} to vector store", entity.getId(), e);
+            log.error(
+                    "❌ Failed to write attempt {} to vector store: {} - {}",
+                    entity.getId(),
+                    e.getClass().getSimpleName(),
+                    e.getMessage(),
+                    e);
+            // Re-throw so user sees the error
+            throw new RuntimeException("Failed to write to vector store: " + e.getMessage(), e);
         }
     }
 

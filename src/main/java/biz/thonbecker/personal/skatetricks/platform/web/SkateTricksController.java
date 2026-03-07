@@ -182,11 +182,16 @@ class SkateTricksController {
     }
 
     @PostMapping("/skatetricks/attempts/{id}/verify")
-    public ResponseEntity<Void> verifyAttempt(
+    public ResponseEntity<?> verifyAttempt(
             @PathVariable Long id, @RequestBody(required = false) VerifyRequest request) {
-        String corrected = request != null ? request.correctedTrickName() : null;
-        skateTricksFacade.verifyAttempt(id, corrected);
-        return ResponseEntity.ok().build();
+        try {
+            String corrected = request != null ? request.correctedTrickName() : null;
+            skateTricksFacade.verifyAttempt(id, corrected);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Failed to verify attempt {}", id, e);
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to verify: " + e.getMessage()));
+        }
     }
 
     record ConvertResponse(String videoId, long size, String status) {}

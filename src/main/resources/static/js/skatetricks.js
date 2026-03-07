@@ -280,7 +280,13 @@
       body: JSON.stringify(body),
     })
       .then(function (response) {
-        if (!response.ok) throw new Error("Verify failed: " + response.status);
+        if (!response.ok) {
+          return response.json().then(function (errorData) {
+            throw new Error(
+              errorData.error || "Verify failed: " + response.status
+            );
+          });
+        }
         if (section) {
           section.innerHTML =
             '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Verified' +
@@ -296,7 +302,9 @@
         console.error("Verification error:", e);
         if (section) {
           section.innerHTML =
-            '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle me-1"></i>Verification failed — please try again.</div>';
+            '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle me-1"></i>' +
+            e.message +
+            "</div>";
         }
       });
   }
