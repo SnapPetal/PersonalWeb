@@ -265,6 +265,12 @@
       ? { correctedTrickName: correctedTrickName }
       : {};
 
+    // Show loading feedback
+    if (section) {
+      section.innerHTML =
+        '<span class="badge bg-info"><i class="bi bi-hourglass-split me-1"></i>Verifying...</span>';
+    }
+
     fetch("/skatetricks/attempts/" + attemptId + "/verify", {
       method: "POST",
       headers: Object.assign(
@@ -289,8 +295,8 @@
       .catch(function (e) {
         console.error("Verification error:", e);
         if (section) {
-          section.innerHTML +=
-            '<div class="text-danger small mt-1">Verification failed — please try again.</div>';
+          section.innerHTML =
+            '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle me-1"></i>Verification failed — please try again.</div>';
         }
       });
   }
@@ -300,6 +306,10 @@
     if (!select) return;
     confirmTrick(attemptId, select.value);
   }
+
+  // Make functions globally accessible for inline onclick handlers
+  window.confirmTrick = confirmTrick;
+  window.correctTrick = correctTrick;
 
   function updateHistoryVerified(attemptId, correctedTrickName) {
     var item = document.querySelector('[data-attempt-id="' + attemptId + '"]');
