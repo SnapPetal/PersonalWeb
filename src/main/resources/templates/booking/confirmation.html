@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Booking Confirmation - Thon Becker</title>
+
+    <!-- JS dependencies -->
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link href="/css/main.css" rel="stylesheet">
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">Thon Becker</a>
+        <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/booking">Book Another Meeting</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Success Message -->
+                <div th:if="${booking != null and booking.status().name() == 'CONFIRMED'}" class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h1 class="display-6 fw-bold text-success">Booking Confirmed!</h1>
+                    <p class="lead text-muted">Your meeting has been scheduled successfully</p>
+                </div>
+
+                <!-- Cancelled Message -->
+                <div th:if="${booking != null and booking.status().name() == 'CANCELLED'}" class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h1 class="display-6 fw-bold text-danger">Booking Cancelled</h1>
+                    <p class="lead text-muted">This booking has been cancelled</p>
+                </div>
+
+                <!-- Booking Details Card -->
+                <div th:if="${booking != null}" class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-event"></i>
+                            Booking Details
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <strong>Confirmation Code:</strong>
+                                <div class="mt-1">
+                                    <span class="badge bg-primary fs-6" th:text="${booking.confirmationCode()}">CODE</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Meeting Type:</strong>
+                                <p class="mb-0" th:text="${booking.bookingType().name()}">Type</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Date & Time:</strong>
+                                <p class="mb-0">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span th:text="${#temporals.format(booking.startTime(), 'EEEE, MMMM d, yyyy')}">Date</span>
+                                </p>
+                                <p class="mb-0">
+                                    <i class="bi bi-clock"></i>
+                                    <span th:text="${#temporals.format(booking.startTime(), 'h:mm a')}">Time</span>
+                                    - <span th:text="${#temporals.format(booking.endTime(), 'h:mm a')}">End Time</span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Duration:</strong>
+                                <p class="mb-0" th:text="${booking.bookingType().durationMinutes()} + ' minutes'">Duration</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Name:</strong>
+                                <p class="mb-0" th:text="${booking.attendeeName()}">Name</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Email:</strong>
+                                <p class="mb-0" th:text="${booking.attendeeEmail()}">Email</p>
+                            </div>
+                            <div th:if="${booking.attendeePhone() != null}" class="col-md-6">
+                                <strong>Phone:</strong>
+                                <p class="mb-0" th:text="${booking.attendeePhone()}">Phone</p>
+                            </div>
+                            <div th:if="${booking.message() != null}" class="col-12">
+                                <strong>Your Message:</strong>
+                                <p class="mb-0" th:text="${booking.message()}">Message</p>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>What's Next?</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>You'll receive a confirmation email with calendar details (.ics file)</li>
+                                <li>Save this confirmation code to view or cancel your booking later</li>
+                                <li>I'll reach out via email if I need any additional information</li>
+                            </ul>
+                        </div>
+
+                        <!-- Cancel Button -->
+                        <div th:if="${booking.status().name() == 'CONFIRMED'}" class="text-center mt-4">
+                            <button class="btn btn-danger" onclick="cancelBooking()">
+                                <i class="bi bi-x-circle"></i> Cancel This Booking
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="text-center mt-4">
+                    <a href="/" class="btn btn-outline-primary">
+                        <i class="bi bi-house"></i> Back to Home
+                    </a>
+                    <a href="/booking" class="btn btn-primary">
+                        <i class="bi bi-calendar-plus"></i> Book Another Meeting
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    function cancelBooking() {
+        if (!confirm('Are you sure you want to cancel this booking?')) {
+            return;
+        }
+
+        const confirmationCode = /*[[${booking.confirmationCode()}]]*/ '';
+
+        fetch(`/booking/confirmation/${confirmationCode}/cancel`, {
+            method: 'POST',
+            headers: {
+                'X-XSRF-TOKEN': getCsrfToken()
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Cancellation failed');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Failed to cancel booking. Please try again or contact support.');
+            console.error(error);
+        });
+    }
+
+    function getCsrfToken() {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'XSRF-TOKEN') {
+                return decodeURIComponent(value);
+            }
+        }
+        return '';
+    }
+</script>
+
+</body>
+</html>

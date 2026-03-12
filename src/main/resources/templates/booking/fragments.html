@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Time Slots Fragment -->
+<div th:fragment="time-slots">
+    <div th:if="${slots != null and !slots.isEmpty()}" class="d-grid gap-2">
+        <button th:each="slot : ${slots}"
+                type="button"
+                class="btn btn-outline-primary time-slot-btn"
+                onclick="selectTimeSlot(this)"
+                th:attr="data-start-time=${slot.startTime()}"
+                th:text="${#temporals.format(slot.startTime(), 'h:mm a')}">
+            Time Slot
+        </button>
+    </div>
+    <div th:if="${slots == null or slots.isEmpty()}" class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        No available time slots for this date. Please select another date.
+    </div>
+    <div th:if="${error != null}" class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span th:text="${error}">Error message</span>
+    </div>
+</div>
+
+</body>
+</html>

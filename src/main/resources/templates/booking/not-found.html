@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Booking Not Found - Thon Becker</title>
+
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link href="/css/main.css" rel="stylesheet">
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">Thon Becker</a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 text-center">
+                <i class="bi bi-search text-muted" style="font-size: 5rem;"></i>
+                <h1 class="display-5 fw-bold mt-3">Booking Not Found</h1>
+                <p class="lead text-muted">
+                    We couldn't find a booking with that confirmation code.
+                </p>
+                <div class="mt-4">
+                    <a href="/booking" class="btn btn-primary">
+                        <i class="bi bi-calendar-plus"></i> Book a Meeting
+                    </a>
+                    <a href="/" class="btn btn-outline-secondary">
+                        <i class="bi bi-house"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

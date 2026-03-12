@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Booking Admin - Thon Becker</title>
+
+    <!-- JS dependencies -->
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link href="/css/main.css" rel="stylesheet">
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">Thon Becker</a>
+        <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/booking">Public Booking Page</a>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" sec:authentication="name">User</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="py-5">
+    <div class="container">
+        <h1 class="display-6 fw-bold mb-4">Booking Administration</h1>
+
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="bookings-tab" data-bs-toggle="tab" data-bs-target="#bookings"
+                        type="button" role="tab">
+                    <i class="bi bi-calendar-check"></i> Bookings
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="availability-tab" data-bs-toggle="tab" data-bs-target="#availability"
+                        type="button" role="tab">
+                    <i class="bi bi-clock"></i> Availability
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="types-tab" data-bs-toggle="tab" data-bs-target="#types"
+                        type="button" role="tab">
+                    <i class="bi bi-tag"></i> Booking Types
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="adminTabsContent">
+            <!-- Bookings Tab -->
+            <div class="tab-pane fade show active" id="bookings" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">All Bookings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Type</th>
+                                        <th>Attendee</th>
+                                        <th>Date/Time</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="booking : ${bookings}">
+                                        <td>
+                                            <code th:text="${booking.confirmationCode()}">CODE</code>
+                                        </td>
+                                        <td th:text="${booking.bookingType().name()}">Type</td>
+                                        <td>
+                                            <div th:text="${booking.attendeeName()}">Name</div>
+                                            <small class="text-muted" th:text="${booking.attendeeEmail()}">Email</small>
+                                        </td>
+                                        <td>
+                                            <div th:text="${#temporals.format(booking.startTime(), 'MMM d, yyyy')}">Date</div>
+                                            <small th:text="${#temporals.format(booking.startTime(), 'h:mm a')}">Time</small>
+                                        </td>
+                                        <td>
+                                            <span th:class="'badge bg-' + ${booking.status().name() == 'CONFIRMED' ? 'success' :
+                                                  (booking.status().name() == 'CANCELLED' ? 'danger' : 'secondary')}"
+                                                  th:text="${booking.status().name()}">Status</span>
+                                        </td>
+                                        <td>
+                                            <button th:if="${booking.status().name() == 'CONFIRMED'}"
+                                                    class="btn btn-sm btn-danger"
+                                                    th:onclick="'cancelBooking(' + ${booking.id()} + ')'">
+                                                Cancel
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${bookings.isEmpty()}">
+                                        <td colspan="6" class="text-center text-muted">No bookings yet</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Availability Tab -->
+            <div class="tab-pane fade" id="availability" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Add Availability Slot</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="availabilityForm">
+                                    <div class="mb-3">
+                                        <label for="slotStartTime" class="form-label">Start Time</label>
+                                        <input type="datetime-local" class="form-control" id="slotStartTime" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="slotEndTime" class="form-label">End Time</label>
+                                        <input type="datetime-local" class="form-control" id="slotEndTime" required>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="createAvailabilitySlot()">
+                                        <i class="bi bi-plus-circle"></i> Add Slot
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Current Availability</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group">
+                                    <div th:each="slot : ${availabilitySlots}" class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div th:text="${#temporals.format(slot.startTime(), 'MMM d, yyyy h:mm a')}">Start</div>
+                                            <small class="text-muted">to</small>
+                                            <div th:text="${#temporals.format(slot.endTime(), 'MMM d, yyyy h:mm a')}">End</div>
+                                        </div>
+                                        <button class="btn btn-sm btn-danger"
+                                                th:onclick="'deleteAvailabilitySlot(' + ${slot.id()} + ')'">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                    <div th:if="${availabilitySlots.isEmpty()}" class="list-group-item text-center text-muted">
+                                        No availability slots configured
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Types Tab -->
+            <div class="tab-pane fade" id="types" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Booking Types</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Duration</th>
+                                        <th>Buffer</th>
+                                        <th>Color</th>
+                                        <th>Active</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="type : ${bookingTypes}">
+                                        <td>
+                                            <div th:text="${type.name()}">Name</div>
+                                            <small class="text-muted" th:text="${type.description()}">Description</small>
+                                        </td>
+                                        <td th:text="${type.durationMinutes()} + ' min'">Duration</td>
+                                        <td th:text="${type.bufferMinutes()} + ' min'">Buffer</td>
+                                        <td>
+                                            <span class="badge" th:style="'background-color: ' + ${type.color()}" th:text="${type.color()}">Color</span>
+                                        </td>
+                                        <td>
+                                            <span th:class="'badge bg-' + ${type.active() ? 'success' : 'secondary'}"
+                                                  th:text="${type.active() ? 'Active' : 'Inactive'}">Status</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    function createAvailabilitySlot() {
+        const startTime = document.getElementById('slotStartTime').value;
+        const endTime = document.getElementById('slotEndTime').value;
+
+        if (!startTime || !endTime) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        fetch('/booking/admin/availability', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': getCsrfToken()
+            },
+            body: JSON.stringify({
+                startTime: startTime,
+                endTime: endTime
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to create slot');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Failed to create availability slot');
+            console.error(error);
+        });
+    }
+
+    function deleteAvailabilitySlot(slotId) {
+        if (!confirm('Delete this availability slot?')) return;
+
+        fetch(`/booking/admin/availability/${slotId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-XSRF-TOKEN': getCsrfToken()
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to delete slot');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Failed to delete availability slot');
+            console.error(error);
+        });
+    }
+
+    function cancelBooking(bookingId) {
+        if (!confirm('Cancel this booking?')) return;
+
+        fetch(`/booking/admin/bookings/${bookingId}/cancel`, {
+            method: 'POST',
+            headers: {
+                'X-XSRF-TOKEN': getCsrfToken()
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to cancel booking');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Failed to cancel booking');
+            console.error(error);
+        });
+    }
+
+    function getCsrfToken() {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'XSRF-TOKEN') {
+                return decodeURIComponent(value);
+            }
+        }
+        return '';
+    }
+</script>
+
+</body>
+</html>

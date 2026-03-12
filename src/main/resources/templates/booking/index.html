@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Book a Meeting - Thon Becker</title>
+
+    <!-- JS dependencies -->
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <link href="/css/main.css" rel="stylesheet">
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">Thon Becker</a>
+        <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Header -->
+                <div class="text-center mb-5">
+                    <h1 class="display-5 fw-bold">Book a Meeting</h1>
+                    <p class="lead text-muted">Schedule a consultation to discuss your project or technical challenges</p>
+                </div>
+
+                <!-- Booking Types -->
+                <div class="row g-4 mb-5">
+                    <div th:each="type : ${bookingTypes}" class="col-md-4">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header text-white" th:style="'background-color: ' + ${type.color}">
+                                <h5 class="card-title mb-0" th:text="${type.name}">Meeting Type</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text" th:text="${type.description}">Description</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <span class="badge bg-secondary" th:text="${type.durationMinutes} + ' minutes'">Duration</span>
+                                    <button class="btn btn-primary btn-sm"
+                                            onclick="selectBookingType(this)"
+                                            th:attr="data-type-id=${type.id},data-type-name=${type.name}">
+                                        Select <i class="bi bi-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Booking Form (Initially Hidden) -->
+                <div id="bookingForm" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-calendar-check"></i>
+                                Complete Your Booking
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Date Selection -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Select Date</label>
+                                <input type="date" class="form-control" id="bookingDate"
+                                       th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                                       onchange="loadAvailableSlots()">
+                            </div>
+
+                            <!-- Time Slots -->
+                            <div id="timeSlotsContainer" class="mb-4" style="display: none;">
+                                <label class="form-label fw-bold">Select Time</label>
+                                <div id="timeSlots"></div>
+                            </div>
+
+                            <!-- Attendee Information -->
+                            <div id="attendeeForm" style="display: none;">
+                                <h6 class="mb-3">Your Information</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="attendeeName" class="form-label">Name *</label>
+                                        <input type="text" class="form-control" id="attendeeName" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="attendeeEmail" class="form-label">Email *</label>
+                                        <input type="email" class="form-control" id="attendeeEmail" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="attendeePhone" class="form-label">Phone (Optional)</label>
+                                        <input type="tel" class="form-control" id="attendeePhone">
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="attendeeMessage" class="form-label">Message (Optional)</label>
+                                        <textarea class="form-control" id="attendeeMessage" rows="3"
+                                                  placeholder="Tell me a bit about what you'd like to discuss..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 mt-4">
+                                    <button type="button" class="btn btn-success btn-lg" onclick="submitBooking()">
+                                        <i class="bi bi-check-circle"></i> Confirm Booking
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                        <i class="bi bi-arrow-left"></i> Start Over
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    let selectedBookingTypeId = null;
+    let selectedBookingTypeName = null;
+    let selectedStartTime = null;
+
+    function selectBookingType(button) {
+        selectedBookingTypeId = button.getAttribute('data-type-id');
+        selectedBookingTypeName = button.getAttribute('data-type-name');
+
+        document.getElementById('bookingForm').style.display = 'block';
+        document.getElementById('bookingForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function loadAvailableSlots() {
+        const date = document.getElementById('bookingDate').value;
+        if (!date || !selectedBookingTypeId) return;
+
+        const container = document.getElementById('timeSlotsContainer');
+        const slotsDiv = document.getElementById('timeSlots');
+
+        container.style.display = 'block';
+        slotsDiv.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+
+        fetch(`/booking/types/${selectedBookingTypeId}/slots?date=${date}`)
+            .then(response => response.text())
+            .then(html => {
+                slotsDiv.innerHTML = html;
+            })
+            .catch(error => {
+                slotsDiv.innerHTML = '<div class="alert alert-danger">Failed to load time slots</div>';
+            });
+    }
+
+    function selectTimeSlot(button) {
+        // Remove selection from all buttons
+        document.querySelectorAll('.time-slot-btn').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-primary');
+        });
+
+        // Mark this button as selected
+        button.classList.remove('btn-outline-primary');
+        button.classList.add('btn-primary');
+
+        selectedStartTime = button.getAttribute('data-start-time');
+        document.getElementById('attendeeForm').style.display = 'block';
+        document.getElementById('attendeeForm').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function submitBooking() {
+        const name = document.getElementById('attendeeName').value.trim();
+        const email = document.getElementById('attendeeEmail').value.trim();
+        const phone = document.getElementById('attendeePhone').value.trim();
+        const message = document.getElementById('attendeeMessage').value.trim();
+
+        if (!name || !email) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        if (!selectedStartTime) {
+            alert('Please select a time slot');
+            return;
+        }
+
+        const bookingData = {
+            bookingTypeId: parseInt(selectedBookingTypeId),
+            attendeeName: name,
+            attendeeEmail: email,
+            attendeePhone: phone || null,
+            startTime: selectedStartTime,
+            message: message || null
+        };
+
+        fetch('/booking/book', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': getCsrfToken()
+            },
+            body: JSON.stringify(bookingData)
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Booking failed');
+            return response.json();
+        })
+        .then(booking => {
+            window.location.href = `/booking/confirmation/${booking.confirmationCode}`;
+        })
+        .catch(error => {
+            alert('Failed to create booking. Please try again.');
+            console.error(error);
+        });
+    }
+
+    function resetForm() {
+        document.getElementById('bookingForm').style.display = 'none';
+        document.getElementById('timeSlotsContainer').style.display = 'none';
+        document.getElementById('attendeeForm').style.display = 'none';
+        document.getElementById('bookingDate').value = '';
+        document.getElementById('attendeeName').value = '';
+        document.getElementById('attendeeEmail').value = '';
+        document.getElementById('attendeePhone').value = '';
+        document.getElementById('attendeeMessage').value = '';
+        selectedBookingTypeId = null;
+        selectedStartTime = null;
+    }
+
+    function getCsrfToken() {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'XSRF-TOKEN') {
+                return decodeURIComponent(value);
+            }
+        }
+        return '';
+    }
+</script>
+
+</body>
+</html>

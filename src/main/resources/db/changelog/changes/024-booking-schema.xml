@@ -1,0 +1,176 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Create booking schema -->
+    <changeSet id="024-create-booking-schema" author="claude">
+        <sql>CREATE SCHEMA IF NOT EXISTS booking</sql>
+    </changeSet>
+
+    <!-- Booking Types Table -->
+    <changeSet id="024-create-booking-types-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="booking_types" schemaName="booking"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="booking_types" schemaName="booking">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="duration_minutes" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="buffer_minutes" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="color" type="VARCHAR(7)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Create indexes -->
+        <createIndex indexName="idx_booking_types_active" tableName="booking_types" schemaName="booking">
+            <column name="active"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Availability Slots Table -->
+    <changeSet id="024-create-availability-slots-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="availability_slots" schemaName="booking"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="availability_slots" schemaName="booking">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="start_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_bookings" type="INT" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Create indexes -->
+        <createIndex indexName="idx_availability_slots_time_range" tableName="availability_slots" schemaName="booking">
+            <column name="start_time"/>
+            <column name="end_time"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Bookings Table -->
+    <changeSet id="024-create-bookings-table" author="claude">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="bookings" schemaName="booking"/>
+            </not>
+        </preConditions>
+
+        <createTable tableName="bookings" schemaName="booking">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="confirmation_code" type="VARCHAR(20)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="booking_type_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_booking_type"
+                            references="booking.booking_types(id)"/>
+            </column>
+            <column name="attendee_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attendee_email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attendee_phone" type="VARCHAR(50)"/>
+            <column name="start_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_time" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="TEXT"/>
+            <column name="status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Create indexes -->
+        <createIndex indexName="idx_bookings_confirmation_code" tableName="bookings" schemaName="booking">
+            <column name="confirmation_code"/>
+        </createIndex>
+        <createIndex indexName="idx_bookings_user_id" tableName="bookings" schemaName="booking">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex indexName="idx_bookings_time_range" tableName="bookings" schemaName="booking">
+            <column name="start_time"/>
+            <column name="end_time"/>
+        </createIndex>
+        <createIndex indexName="idx_bookings_status" tableName="bookings" schemaName="booking">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Insert default booking types -->
+    <changeSet id="024-insert-default-booking-types" author="claude">
+        <insert tableName="booking_types" schemaName="booking">
+            <column name="name" value="30 Minute Consultation"/>
+            <column name="description" value="Quick consultation call to discuss your project requirements, technical challenges, or get advice on software architecture and development."/>
+            <column name="duration_minutes" valueNumeric="30"/>
+            <column name="buffer_minutes" valueNumeric="15"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="color" value="#4facfe"/>
+        </insert>
+
+        <insert tableName="booking_types" schemaName="booking">
+            <column name="name" value="1 Hour Technical Discussion"/>
+            <column name="description" value="In-depth technical discussion covering software architecture, system design, code review, or mentoring on specific technologies and frameworks."/>
+            <column name="duration_minutes" valueNumeric="60"/>
+            <column name="buffer_minutes" valueNumeric="15"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="color" value="#667eea"/>
+        </insert>
+
+        <insert tableName="booking_types" schemaName="booking">
+            <column name="name" value="Project Discovery Call"/>
+            <column name="description" value="Initial consultation to explore potential collaboration, understand your business needs, and discuss how I can help with your software development projects."/>
+            <column name="duration_minutes" valueNumeric="45"/>
+            <column name="buffer_minutes" valueNumeric="15"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="color" value="#43e97b"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

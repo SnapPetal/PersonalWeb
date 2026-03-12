@@ -59,6 +59,7 @@ The application uses **AWS Cognito** for user authentication via Spring Security
 
 **Protected Endpoints:**
 - `/landscape/plans/**` - Requires authentication (landscape plan CRUD operations)
+- `/booking/admin/**` - Requires authentication (booking administration)
 - All other endpoints are public by default
 
 **Login Flow:**
@@ -112,6 +113,7 @@ Each module follows this internal package convention:
 | `trivia`       | `TriviaFacade`         | AI-powered FPU trivia, WebSocket multiplayer                                         |
 | `skatetricks`  | `SkateTricksFacade`    | YOLO pose estimation + Bedrock AI trick detection                                    |
 | `landscape`    | `LandscapeFacade`      | AI-powered landscape planning with USDA plant database integration                   |
+| `booking`      | `BookingFacade`        | Appointment scheduling with calendar integration and email notifications             |
 | `tankgame`     | `TankGameFacade`       | WebSocket tank game with player progression                                          |
 | `user`         | `UserFacade`           | User management                                                                      |
 | `notification` | `NotificationFacade`   | Notification delivery                                                                |
@@ -396,6 +398,50 @@ landscape:
 
 **HTTP Client Pattern:**
 Uses Spring's declarative HTTP client (`@GetExchange`) with WebClient backend for type-safe USDA API calls.
+
+#### Booking Module
+
+The `booking` module provides appointment scheduling functionality, replacing the external Calendly integration. Users can book meetings directly through the website with calendar integration and email notifications.
+
+**Architecture:**
+- **iCal4j Library** (v4.0.7) — generates RFC-compliant `.ics` calendar files for email attachments
+- **Email Notifications** — booking confirmations, cancellations, and admin alerts (currently logs to console; AWS SES integration ready)
+- **Calendar Integration** — `.ics` files compatible with Google Calendar, Outlook, Apple Calendar
+
+**Key features:**
+1. **Public Booking Page** (`/booking`): Browse meeting types, select date/time, provide attendee info, receive 8-character confirmation code
+2. **Booking Types**: Multiple configurable meeting types (30 min, 1 hour, 45 min) with duration and buffer time
+3. **Availability Management**: Admin-defined time slots with conflict detection
+4. **Booking Management**: View/cancel bookings via confirmation code
+5. **Admin Dashboard** (`/booking/admin`): Manage bookings, availability slots, and booking types
+
+**Database schema** (`booking` schema):
+- `booking_types` — meeting type definitions (name, duration, buffer time, color)
+- `availability_slots` — available time blocks defined by admin
+- `bookings` — user bookings with confirmation codes, status tracking
+
+**Email sender configuration:**
+- Sender email: `thon.becker@gmail.com`
+- Admin notification email: `thon.becker@gmail.com`
+
+**Key classes:**
+- `BookingFacade` — public API with 17 methods for booking creation, availability checks, and admin operations
+- `CalendarService` — generates iCalendar files with meeting details, attendees, and organizer info
+- `EmailNotificationService` — sends booking confirmations, cancellations, and admin notifications (ready for AWS SES integration)
+- `BookingController` — public endpoints for booking creation and management
+- `BookingAdminController` — protected admin endpoints for system configuration
+
+**Default booking types** (pre-loaded):
+1. **30 Minute Consultation** — Quick project discussion
+2. **1 Hour Technical Discussion** — Deep dive on architecture/design
+3. **Project Discovery Call** (45 min) — Initial collaboration exploration
+
+**Domain Events:**
+- `BookingCreatedEvent` — published when a new booking is confirmed
+- `BookingCancelledEvent` — published when a booking is cancelled
+
+**AWS SES Integration (Optional):**
+To enable actual email sending, uncomment the AWS SES code blocks in `EmailNotificationService` and ensure AWS SES is configured with verified sender email.
 
 ### Future Enhancements
 

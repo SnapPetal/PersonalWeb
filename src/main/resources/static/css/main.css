@@ -202,10 +202,6 @@ a:focus, button:focus {
     color: var(--primary);
 }
 
-.calendly-link:hover {
-    cursor: pointer;
-}
-
 /* Form elements */
 .form-check-input:checked {
     background-color: var(--secondary);

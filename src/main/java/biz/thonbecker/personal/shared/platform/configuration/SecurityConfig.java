@@ -23,14 +23,20 @@ public class SecurityConfig {
                                 "/foosball/**",
                                 "/skate-tricks/**",
                                 "/tank-game/**",
+                                "/booking",
+                                "/booking/types/**",
+                                "/booking/book",
+                                "/booking/confirmation/**",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/webjars/**",
                                 "/error")
                         .permitAll()
-                        // Require authentication for landscape plan operations
+                        // Require authentication for protected operations
                         .requestMatchers("/landscape/plans/**")
+                        .authenticated()
+                        .requestMatchers("/booking/admin/**")
                         .authenticated()
                         // Allow everything else (for now)
                         .anyRequest()
