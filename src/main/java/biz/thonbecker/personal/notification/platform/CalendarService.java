@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.notification.platform;
 
-import biz.thonbecker.personal.shared.events.BookingCreatedEvent;
+import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
 import java.time.ZoneId;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.model.*;

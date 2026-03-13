@@ -114,20 +114,86 @@ Each module follows this internal package convention:
 
 **Event-driven modules** (like `notification`) have event listeners in `api/` instead of facade interfaces, since they only consume events and don't expose methods to other modules.
 
+#### Spring Modulith Event-Driven Architecture Principles
+
+**Core Principle: Events are part of the publishing module's "Provided Interface"**
+
+Domain events should live in the **publishing module's API package**, not in a shared events package. This follows the official Spring Modulith pattern where events are part of a module's public contract.
+
+**Why notification depends on booking.api (This is CORRECT):**
+- Event subscribers naturally depend on publishers' APIs to import event type definitions
+- This is a **compile-time dependency** for type imports, NOT runtime coupling
+- The modules remain decoupled at runtime through asynchronous event handling
+- No method calls occur between modules — only event publishing and listening
+
+**Example: Booking → Notification Event Flow**
+
+```java
+// 1. booking.api defines the event (part of booking's public API)
+package biz.thonbecker.personal.booking.api;
+public record BookingCreatedEvent(
+    Long bookingId, String confirmationCode,
+    String attendeeEmail, String attendeeName, /* ... */
+) {}
+
+// 2. booking.platform publishes the event
+package biz.thonbecker.personal.booking.platform;
+@Service
+class BookingFacadeImpl implements BookingFacade {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public Booking createBooking(...) {
+        // ... save booking ...
+        eventPublisher.publishEvent(new BookingCreatedEvent(...));
+        return booking; // No coupling - fire and forget!
+    }
+}
+
+// 3. notification.api subscribes to the event (imports from booking.api)
+package biz.thonbecker.personal.notification.api;
+import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
+
+@Component
+class NotificationEventListener {
+    @EventListener
+    void onBookingCreated(BookingCreatedEvent event) {
+        // Process event data - NO callbacks to booking module!
+        emailService.sendConfirmation(event);
+    }
+}
+```
+
+**Key Architectural Points:**
+1. **Events contain complete data** — subscribers never call back to the publisher
+2. **Allowed dependencies** — notification's `@ApplicationModule(allowedDependencies = {"booking"})` permits importing event types from booking.api
+3. **Zero runtime coupling** — publisher doesn't know about subscribers; subscribers process events asynchronously
+4. **Type safety** — event subscribers depend on event type definitions, ensuring compile-time validation
+5. **Module isolation** — only `api/` packages are visible externally; `platform/` and `domain/` remain internal
+
+**When to use shared vs module API:**
+- **Module API** (`booking.api`) — Events published by that specific module
+- **Shared** (`shared`) — Infrastructure configuration, NOT domain events
+
+This pattern enables:
+- Independent testing of publisher and subscriber modules
+- Independent deployment and scaling
+- Easy addition of new subscribers without modifying publishers
+- Compile-time validation of event contracts
+
 ### Modules
 
-|     Module     |       Public Facade        |                                  Purpose                                   |
-|----------------|----------------------------|----------------------------------------------------------------------------|
-| `foosball`     | `FoosballFacade`           | Table soccer game tracking, stats, tournaments, ELO rating                 |
-| `trivia`       | `TriviaFacade`             | AI-powered FPU trivia, WebSocket multiplayer                               |
-| `skatetricks`  | `SkateTricksFacade`        | YOLO pose estimation + Bedrock AI trick detection                          |
-| `landscape`    | `LandscapeFacade`          | AI-powered landscape planning with USDA plant database integration         |
-| `booking`      | `BookingFacade`            | Appointment scheduling with auto-availability, event publishing            |
-| `tankgame`     | `TankGameFacade`           | WebSocket tank game with player progression                                |
-| `user`         | `UserFacade`               | User management                                                            |
-| `notification` | _(event-driven only)_      | Email notifications via event subscribers (zero coupling to other modules) |
-| `content`      | _(no external facade)_     | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter            |
-| `shared`       | _(configuration + events)_ | Configuration classes + domain events for cross-module communication       |
+|     Module     |     Public Facade      |                                    Purpose                                     |
+|----------------|------------------------|--------------------------------------------------------------------------------|
+| `foosball`     | `FoosballFacade`       | Table soccer game tracking, stats, tournaments, ELO rating                     |
+| `trivia`       | `TriviaFacade`         | AI-powered FPU trivia, WebSocket multiplayer                                   |
+| `skatetricks`  | `SkateTricksFacade`    | YOLO pose estimation + Bedrock AI trick detection                              |
+| `landscape`    | `LandscapeFacade`      | AI-powered landscape planning with USDA plant database integration             |
+| `booking`      | `BookingFacade`        | Appointment scheduling with auto-availability, event publishing                |
+| `tankgame`     | `TankGameFacade`       | WebSocket tank game with player progression                                    |
+| `user`         | `UserFacade`           | User management                                                                |
+| `notification` | _(event-driven only)_  | Email notifications via event subscribers (zero coupling to other modules)     |
+| `content`      | _(no external facade)_ | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter                |
+| `shared`       | _(configuration only)_ | SecurityConfig, CacheConfig, AwsConfig, WebSocketConfig, RetryConfig, ShedLock |
 
 ### Key Technical Patterns
 
@@ -138,7 +204,7 @@ Each module follows this internal package convention:
 - **AI**: Spring AI with AWS Bedrock Converse API (inference profile `us.anthropic.claude-sonnet-4-6`) for trivia question generation and landscape recommendations. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
 - **WebSockets**: STOMP over SockJS for trivia and tank game real-time communication. Skatetricks video conversion uses WebSocket for progress updates, but analysis uses HTTP polling to avoid timeout issues with long-running AI inference.
 - **Async processing**: Skatetricks uses async endpoints with status polling for video conversion and analysis. Long-running operations (30+ seconds) are processed in background threads via `ExecutorService`. Client polls status endpoints (GET `/skatetricks/convert/{id}/status`, `/skatetricks/analyze/{id}/status`) every 2 seconds. YOLO models pre-load at startup (`@PostConstruct`) to prevent first-request timeouts.
-- **Event-Driven Architecture**: Modules communicate via immutable event records in `shared.events` package. Events contain ALL data needed for processing (no callbacks). Example: `BookingCreatedEvent` contains all booking details; notification module sends emails directly from event data without calling back to booking module. This ensures zero coupling between modules while maintaining reactive communication.
+- **Event-Driven Architecture**: Modules communicate via immutable event records defined in the publishing module's API package (e.g., `BookingCreatedEvent` in `booking.api`). Events contain ALL data needed for processing (no callbacks). Subscriber modules import event types from publisher APIs (allowed dependency) but maintain zero runtime coupling through asynchronous event handling. Example: notification module imports `BookingCreatedEvent` from booking.api, listens for events, and sends emails without calling back to booking module.
 - **Frontend**: Thymeleaf templates + HTMX for partial page updates + Bootstrap 5. Frontend libraries served as WebJars.
 - **Theme Toggle**: Sun/moon icon toggle in navbar (home page only) for light/dark mode switching. Theme preference stored in localStorage (`darkMode: enabled/disabled`). Booking pages automatically apply the saved theme without showing the toggle. Other pages (trivia, foosball, etc.) remain light mode only.
 - **CSRF**: Cookie-based CSRF tokens (`CookieCsrfTokenRepository`). All HTMX POST requests include the CSRF token from the cookie.
@@ -414,7 +480,7 @@ Uses Spring's declarative HTTP client (`@GetExchange`) with WebClient backend fo
 The `booking` module provides appointment scheduling functionality, replacing the external Calendly integration. Users can book meetings directly through the website with calendar integration and email notifications.
 
 **Architecture:**
-- **Event-Driven Notifications** — publishes `BookingCreatedEvent` and `BookingCancelledEvent` to `shared.events`; notification module handles all email sending
+- **Event-Driven Notifications** — publishes `BookingCreatedEvent` and `BookingCancelledEvent` from `booking.api`; notification module handles all email sending
 - **Automatic Availability Generation** — `AvailabilityScheduler` creates recurring weekly slots (Monday-Friday, 11 AM-12 PM and 6-9 PM) for 4 weeks ahead, runs on startup and daily at 2 AM
 - **iCal4j Library** (v4.0.7) — generates RFC-compliant `.ics` calendar files with Central Time (America/Chicago) timezone
 - **Calendar Integration** — `.ics` files compatible with Google Calendar, Outlook, Apple Calendar
@@ -450,7 +516,7 @@ The `booking` module provides appointment scheduling functionality, replacing th
 2. **1 Hour Technical Discussion** — Deep dive on architecture/design
 3. **Project Discovery Call** (45 min) — Initial collaboration exploration
 
-**Domain Events** (published to `shared.events`):
+**Domain Events** (published from `booking.api`):
 - `BookingCreatedEvent` — contains all booking details (attendee info, times, confirmation code, message)
 - `BookingCancelledEvent` — contains cancellation details for notification
 
@@ -462,10 +528,11 @@ The booking module publishes events with complete data; it never calls other mod
 The `notification` module is a **fully event-driven** module with no public facade API. It listens to events from other modules and sends appropriate notifications (email, SMS, push, etc.).
 
 **Architecture:**
-- **Zero Coupling** — notification module has NO dependencies on other business modules (booking, trivia, etc.)
-- **Event Subscribers** — listens to events in `shared.events` package
+- **Zero Runtime Coupling** — notification module depends on other modules' APIs ONLY for event type imports (compile-time dependency)
+- **Event Subscribers** — listens to events published by booking, trivia, foosball, user modules (imports event types from their API packages)
 - **No Public API** — other modules don't call notification; they publish events
 - **Email Service** — currently logs to console; ready for AWS SES integration
+- **Allowed Dependencies** — `@ApplicationModule(allowedDependencies = {"shared", "booking", "trivia", "foosball", "user"})` permits importing event types
 
 **Module Structure:**
 - `notification/api/` — event listeners (`NotificationEventListener`, `EventLoggingListener`)
@@ -477,12 +544,12 @@ The `notification` module is a **fully event-driven** module with no public faca
 - Admin notification email: `thon.becker@gmail.com`
 - Timezone: Central Time (America/Chicago) for calendar attachments
 
-**Event Subscriptions:**
-- `BookingCreatedEvent` → sends confirmation email to attendee + notification to admin
-- `BookingCancelledEvent` → sends cancellation notification to attendee
-- `QuizCompletedEvent`, `QuizStartedEvent`, `PlayerJoinedQuizEvent` → logs quiz activity
-- `GameRecordedEvent`, `PlayerCreatedEvent` → logs foosball activity
-- `UserRegisteredEvent`, `UserLoginEvent`, `UserProfileUpdatedEvent` → logs user activity
+**Event Subscriptions** (imports from other modules' APIs):
+- `booking.api.BookingCreatedEvent` → sends confirmation email to attendee + notification to admin
+- `booking.api.BookingCancelledEvent` → sends cancellation notification to attendee
+- Trivia events → logs quiz activity
+- Foosball events → logs game activity
+- User events → logs user activity
 
 **Key classes:**
 - `NotificationEventListener` — handles booking-related events, sends emails
@@ -508,26 +575,13 @@ This architecture ensures the notification module can be:
 
 #### Shared Module
 
-The `shared` module provides infrastructure configuration and cross-module contracts.
+The `shared` module provides infrastructure configuration shared across all modules.
 
 **Contents:**
-- `shared/platform/configuration/` — Spring configuration classes (SecurityConfig, CacheConfig, AwsConfig, etc.)
-- `shared/events/` — **Domain events** used for cross-module communication (e.g., `BookingCreatedEvent`, `BookingCancelledEvent`)
+- `shared/platform/configuration/` — Spring configuration classes (SecurityConfig, CacheConfig, AwsConfig, WebSocketConfig, RetryConfig, ShedLockConfig)
+- No domain events — events live in their publishing module's API package (e.g., booking events in `booking.api`)
 
-**Event-Driven Architecture Pattern:**
-Domain events in `shared.events` are immutable records containing complete data for subscribers:
-
-```java
-// Events are self-contained - no callbacks needed
-public record BookingCreatedEvent(
-    Long bookingId, String confirmationCode,
-    String attendeeEmail, String attendeeName, String attendeePhone,
-    String bookingTypeName, LocalDateTime startTime, LocalDateTime endTime,
-    String message
-) {}
-```
-
-**Key principle:** Events are owned by neither publisher nor subscriber - they're neutral contracts.
+**Key principle:** Shared module contains only infrastructure concerns, not business domain concepts like events.
 
 ### Future Enhancements
 
