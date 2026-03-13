@@ -103,27 +103,31 @@ COGNITO_CLIENT_SECRET
 
 ### Spring Modulith Modular Monolith
 
-The application is a **modular monolith** enforced by Spring Modulith. Module boundaries are validated at startup and by `ModuleStructureTest`. Cross-module communication must go through public facades or Spring Application Events—never by directly referencing internal packages.
+The application is a **modular monolith** enforced by Spring Modulith. Module boundaries are validated at startup and by `ModuleStructureTest`. Cross-module communication happens via:
+1. **Public Facades** — for direct method calls (e.g., `BookingFacade`)
+2. **Domain Events** — for reactive, decoupled communication (e.g., `BookingCreatedEvent`)
 
 Each module follows this internal package convention:
-- `api/` — Public facade interface and domain events exposed to other modules
+- `api/` — Public facade interfaces + event listeners (how modules expose and consume functionality)
 - `domain/` — Domain model objects (pure Java, no persistence annotations)
 - `platform/` — All implementation details: persistence entities, repositories, services, web controllers
 
+**Event-driven modules** (like `notification`) have event listeners in `api/` instead of facade interfaces, since they only consume events and don't expose methods to other modules.
+
 ### Modules
 
-|     Module     |     Public Facade      |                                       Purpose                                        |
-|----------------|------------------------|--------------------------------------------------------------------------------------|
-| `foosball`     | `FoosballFacade`       | Table soccer game tracking, stats, tournaments, ELO rating                           |
-| `trivia`       | `TriviaFacade`         | AI-powered FPU trivia, WebSocket multiplayer                                         |
-| `skatetricks`  | `SkateTricksFacade`    | YOLO pose estimation + Bedrock AI trick detection                                    |
-| `landscape`    | `LandscapeFacade`      | AI-powered landscape planning with USDA plant database integration                   |
-| `booking`      | `BookingFacade`        | Appointment scheduling with calendar integration and email notifications             |
-| `tankgame`     | `TankGameFacade`       | WebSocket tank game with player progression                                          |
-| `user`         | `UserFacade`           | User management                                                                      |
-| `notification` | _(event-driven only)_  | Email notifications + event logging (booking, trivia, foosball, user events)         |
-| `content`      | _(no external facade)_ | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter                      |
-| `shared`       | _(configuration only)_ | SecurityConfig, CacheConfig, AwsConfig, WebSocketConfig, RetryConfig, ShedlockConfig |
+|     Module     |       Public Facade        |                                  Purpose                                   |
+|----------------|----------------------------|----------------------------------------------------------------------------|
+| `foosball`     | `FoosballFacade`           | Table soccer game tracking, stats, tournaments, ELO rating                 |
+| `trivia`       | `TriviaFacade`             | AI-powered FPU trivia, WebSocket multiplayer                               |
+| `skatetricks`  | `SkateTricksFacade`        | YOLO pose estimation + Bedrock AI trick detection                          |
+| `landscape`    | `LandscapeFacade`          | AI-powered landscape planning with USDA plant database integration         |
+| `booking`      | `BookingFacade`            | Appointment scheduling with auto-availability, event publishing            |
+| `tankgame`     | `TankGameFacade`           | WebSocket tank game with player progression                                |
+| `user`         | `UserFacade`               | User management                                                            |
+| `notification` | _(event-driven only)_      | Email notifications via event subscribers (zero coupling to other modules) |
+| `content`      | _(no external facade)_     | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter            |
+| `shared`       | _(configuration + events)_ | Configuration classes + domain events for cross-module communication       |
 
 ### Key Technical Patterns
 
@@ -134,6 +138,7 @@ Each module follows this internal package convention:
 - **AI**: Spring AI with AWS Bedrock Converse API (inference profile `us.anthropic.claude-sonnet-4-6`) for trivia question generation and landscape recommendations. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
 - **WebSockets**: STOMP over SockJS for trivia and tank game real-time communication. Skatetricks video conversion uses WebSocket for progress updates, but analysis uses HTTP polling to avoid timeout issues with long-running AI inference.
 - **Async processing**: Skatetricks uses async endpoints with status polling for video conversion and analysis. Long-running operations (30+ seconds) are processed in background threads via `ExecutorService`. Client polls status endpoints (GET `/skatetricks/convert/{id}/status`, `/skatetricks/analyze/{id}/status`) every 2 seconds. YOLO models pre-load at startup (`@PostConstruct`) to prevent first-request timeouts.
+- **Event-Driven Architecture**: Modules communicate via immutable event records in `shared.events` package. Events contain ALL data needed for processing (no callbacks). Example: `BookingCreatedEvent` contains all booking details; notification module sends emails directly from event data without calling back to booking module. This ensures zero coupling between modules while maintaining reactive communication.
 - **Frontend**: Thymeleaf templates + HTMX for partial page updates + Bootstrap 5. Frontend libraries served as WebJars.
 - **Theme Toggle**: Sun/moon icon toggle in navbar (home page only) for light/dark mode switching. Theme preference stored in localStorage (`darkMode: enabled/disabled`). Booking pages automatically apply the saved theme without showing the toggle. Other pages (trivia, foosball, etc.) remain light mode only.
 - **CSRF**: Cookie-based CSRF tokens (`CookieCsrfTokenRepository`). All HTMX POST requests include the CSRF token from the cookie.
@@ -409,30 +414,34 @@ Uses Spring's declarative HTTP client (`@GetExchange`) with WebClient backend fo
 The `booking` module provides appointment scheduling functionality, replacing the external Calendly integration. Users can book meetings directly through the website with calendar integration and email notifications.
 
 **Architecture:**
-- **iCal4j Library** (v4.0.7) — generates RFC-compliant `.ics` calendar files for email attachments
-- **Email Notifications** — booking confirmations, cancellations, and admin alerts (currently logs to console; AWS SES integration ready)
+- **Event-Driven Notifications** — publishes `BookingCreatedEvent` and `BookingCancelledEvent` to `shared.events`; notification module handles all email sending
+- **Automatic Availability Generation** — `AvailabilityScheduler` creates recurring weekly slots (Monday-Friday, 11 AM-12 PM and 6-9 PM) for 4 weeks ahead, runs on startup and daily at 2 AM
+- **iCal4j Library** (v4.0.7) — generates RFC-compliant `.ics` calendar files with Central Time (America/Chicago) timezone
 - **Calendar Integration** — `.ics` files compatible with Google Calendar, Outlook, Apple Calendar
 
 **Key features:**
 1. **Public Booking Page** (`/booking`): Browse meeting types, select date/time, provide attendee info, receive 8-character confirmation code
 2. **Booking Types**: Multiple configurable meeting types (30 min, 1 hour, 45 min) with duration and buffer time
-3. **Availability Management**: Admin-defined time slots with conflict detection
+3. **Automatic Availability**: System generates recurring availability slots (weekdays only, 4-week rolling window)
 4. **Booking Management**: View/cancel bookings via confirmation code
 5. **Admin Dashboard** (`/booking/admin`): Manage bookings, availability slots, and booking types
 
 **Database schema** (`booking` schema):
 - `booking_types` — meeting type definitions (name, duration, buffer time, color)
-- `availability_slots` — available time blocks defined by admin
+- `availability_slots` — available time blocks (auto-generated by AvailabilityScheduler)
 - `bookings` — user bookings with confirmation codes, status tracking
 
-**Email sender configuration:**
-- Sender email: `thon.becker@gmail.com`
-- Admin notification email: `thon.becker@gmail.com`
+**Automatic Availability Configuration:**
+- **Schedule**: Monday-Friday only (weekends excluded)
+- **Morning slot**: 11:00 AM - 12:00 PM
+- **Evening slot**: 6:00 PM - 9:00 PM
+- **Generation frequency**: Daily at 2:00 AM (ShedLock prevents duplicates)
+- **Cleanup**: Daily at 3:00 AM removes past slots
+- **Rolling window**: Always maintains 4 weeks of future availability
 
 **Key classes:**
 - `BookingFacade` — public API with 17 methods for booking creation, availability checks, and admin operations
-- `CalendarService` — generates iCalendar files with meeting details, attendees, and organizer info
-- `EmailNotificationService` — sends booking confirmations, cancellations, and admin notifications (ready for AWS SES integration)
+- `AvailabilityScheduler` — generates recurring weekly availability slots automatically
 - `BookingController` — public endpoints for booking creation and management
 - `BookingAdminController` — protected admin endpoints for system configuration
 
@@ -441,12 +450,84 @@ The `booking` module provides appointment scheduling functionality, replacing th
 2. **1 Hour Technical Discussion** — Deep dive on architecture/design
 3. **Project Discovery Call** (45 min) — Initial collaboration exploration
 
-**Domain Events:**
-- `BookingCreatedEvent` — published when a new booking is confirmed
-- `BookingCancelledEvent` — published when a booking is cancelled
+**Domain Events** (published to `shared.events`):
+- `BookingCreatedEvent` — contains all booking details (attendee info, times, confirmation code, message)
+- `BookingCancelledEvent` — contains cancellation details for notification
 
-**AWS SES Integration (Optional):**
-To enable actual email sending, uncomment the AWS SES code blocks in `EmailNotificationService` and ensure AWS SES is configured with verified sender email.
+**Event-Driven Communication:**
+The booking module publishes events with complete data; it never calls other modules. The notification module subscribes to these events and handles email sending independently.
+
+#### Notification Module
+
+The `notification` module is a **fully event-driven** module with no public facade API. It listens to events from other modules and sends appropriate notifications (email, SMS, push, etc.).
+
+**Architecture:**
+- **Zero Coupling** — notification module has NO dependencies on other business modules (booking, trivia, etc.)
+- **Event Subscribers** — listens to events in `shared.events` package
+- **No Public API** — other modules don't call notification; they publish events
+- **Email Service** — currently logs to console; ready for AWS SES integration
+
+**Module Structure:**
+- `notification/api/` — event listeners (`NotificationEventListener`, `EventLoggingListener`)
+- `notification/platform/` — email formatting services (`EmailNotificationService`, `CalendarService`)
+- `notification/domain/` — internal notification models (not exposed externally)
+
+**Email Configuration:**
+- Sender email: `thon.becker@gmail.com`
+- Admin notification email: `thon.becker@gmail.com`
+- Timezone: Central Time (America/Chicago) for calendar attachments
+
+**Event Subscriptions:**
+- `BookingCreatedEvent` → sends confirmation email to attendee + notification to admin
+- `BookingCancelledEvent` → sends cancellation notification to attendee
+- `QuizCompletedEvent`, `QuizStartedEvent`, `PlayerJoinedQuizEvent` → logs quiz activity
+- `GameRecordedEvent`, `PlayerCreatedEvent` → logs foosball activity
+- `UserRegisteredEvent`, `UserLoginEvent`, `UserProfileUpdatedEvent` → logs user activity
+
+**Key classes:**
+- `NotificationEventListener` — handles booking-related events, sends emails
+- `EventLoggingListener` — logs domain events from trivia, foosball, user modules
+- `EmailNotificationService` — formats and sends booking confirmation/cancellation emails (works with event data directly)
+- `CalendarService` — generates `.ics` calendar attachments from event data
+
+**Best Practice Pattern:**
+
+```java
+// Event contains ALL data needed for notification
+@EventListener
+void onBookingCreated(BookingCreatedEvent event) {
+    emailService.sendConfirmation(event);  // No callback to booking module!
+}
+```
+
+This architecture ensures the notification module can be:
+- Tested independently
+- Scaled independently
+- Extended with new channels (SMS, push) without touching other modules
+- Replaced or disabled without breaking other modules
+
+#### Shared Module
+
+The `shared` module provides infrastructure configuration and cross-module contracts.
+
+**Contents:**
+- `shared/platform/configuration/` — Spring configuration classes (SecurityConfig, CacheConfig, AwsConfig, etc.)
+- `shared/events/` — **Domain events** used for cross-module communication (e.g., `BookingCreatedEvent`, `BookingCancelledEvent`)
+
+**Event-Driven Architecture Pattern:**
+Domain events in `shared.events` are immutable records containing complete data for subscribers:
+
+```java
+// Events are self-contained - no callbacks needed
+public record BookingCreatedEvent(
+    Long bookingId, String confirmationCode,
+    String attendeeEmail, String attendeeName, String attendeePhone,
+    String bookingTypeName, LocalDateTime startTime, LocalDateTime endTime,
+    String message
+) {}
+```
+
+**Key principle:** Events are owned by neither publisher nor subscriber - they're neutral contracts.
 
 ### Future Enhancements
 
