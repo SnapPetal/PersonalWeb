@@ -29,7 +29,7 @@
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script src="/js/bible-verse.js"></script>
     <script src="/js/experience-counter.js"></script>
-    <script src="/js/dark-mode.js"></script>
+    <script src="/js/theme-toggle.js"></script>
     <script src="/js/joke-player.js"></script>
 
     <!-- CSS Dependencies -->
@@ -38,7 +38,7 @@
     <link href="/css/main.css" rel="stylesheet">
     <link href="/css/bible-verse.css" rel="stylesheet">
     <link href="/css/htmx-indicators.css" rel="stylesheet">
-    <link href="/css/light-switch.css" rel="stylesheet">
+    <link href="/css/theme-toggle.css" rel="stylesheet">
 
     <script type="application/ld+json">
         {
@@ -56,13 +56,10 @@
     </script>
 </head>
 <body>
-<!-- Pull-String Light Switch (Fixed Top-Right Corner) -->
-<div class="light-switch-container" id="lightSwitch" role="button" tabindex="0" aria-label="Toggle dark mode">
-    <div class="light-bulb"></div>
-    <div class="pull-string">
-        <div class="string-knob"></div>
-    </div>
-</div>
+<!-- Theme Toggle (Fixed Top-Right Corner) -->
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+    <i class="bi bi-sun-fill" id="themeIcon"></i>
+</button>
 
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
