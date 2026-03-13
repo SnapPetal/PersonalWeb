@@ -2,8 +2,6 @@
 |===
 |Base package
 |`biz.thonbecker.personal.notification`
-|Bean references
-|* `b.t.p.b.api.BookingFacade` (in Booking)
 |Events listened to
 |* `b.t.p.f.api.GameRecordedEvent` (async) 
 * `b.t.p.f.api.PlayerCreatedEvent` (async) 

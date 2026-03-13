@@ -171,8 +171,11 @@ public class BookingFacadeImpl implements BookingFacade {
                 savedBooking.getConfirmationCode(),
                 savedBooking.getAttendeeEmail(),
                 savedBooking.getAttendeeName(),
+                savedBooking.getAttendeePhone(),
                 savedBooking.getBookingType().getName(),
-                savedBooking.getStartTime());
+                savedBooking.getStartTime(),
+                savedBooking.getEndTime(),
+                savedBooking.getMessage());
         eventPublisher.publishEvent(event);
 
         return convertBookingToDomain(savedBooking);
@@ -233,8 +236,14 @@ public class BookingFacadeImpl implements BookingFacade {
         bookingRepository.save(booking);
 
         // Publish event (notifications will be sent by event listener)
-        final var event =
-                new BookingCancelledEvent(booking.getId(), booking.getConfirmationCode(), booking.getAttendeeEmail());
+        final var event = new BookingCancelledEvent(
+                booking.getId(),
+                booking.getConfirmationCode(),
+                booking.getAttendeeEmail(),
+                booking.getAttendeeName(),
+                booking.getBookingType().getName(),
+                booking.getStartTime(),
+                booking.getEndTime());
         eventPublisher.publishEvent(event);
 
         log.info("Successfully cancelled booking {}", bookingId);
