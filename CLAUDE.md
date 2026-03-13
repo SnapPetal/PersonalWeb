@@ -42,6 +42,11 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
    ```
 3. Spring Boot Docker Compose integration auto-starts PostgreSQL from `docker-compose.yml` when running locally—no manual `docker-compose up` needed.
 4. The `dev` profile (`application-dev.yml`) overrides the datasource to `localhost:5432/dbmaster` with user `dbmasteruser` and no password.
+5. **Hot Reload**: Spring Boot DevTools is enabled in the `dev` profile for automatic restart when files change:
+   - Thymeleaf templates (`src/main/resources/templates/`)
+   - Static files (`src/main/resources/static/`)
+   - Configuration files (`src/main/resources/application*.yml`)
+   - LiveReload is enabled for automatic browser refresh (requires browser extension or IDE support)
 
 ## Authentication
 
