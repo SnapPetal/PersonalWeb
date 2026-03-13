@@ -121,10 +121,9 @@ Each module follows this internal package convention:
 | `booking`      | `BookingFacade`        | Appointment scheduling with calendar integration and email notifications             |
 | `tankgame`     | `TankGameFacade`       | WebSocket tank game with player progression                                          |
 | `user`         | `UserFacade`           | User management                                                                      |
-| `notification` | _(event-driven only)_  | Email notifications via event listeners (booking confirmations, cancellations)       |
+| `notification` | _(event-driven only)_  | Email notifications + event logging (booking, trivia, foosball, user events)         |
 | `content`      | _(no external facade)_ | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter                      |
 | `shared`       | _(configuration only)_ | SecurityConfig, CacheConfig, AwsConfig, WebSocketConfig, RetryConfig, ShedlockConfig |
-| `platform`     | _(internal)_           | EventLoggingListener for Spring Modulith events                                      |
 
 ### Key Technical Patterns
 

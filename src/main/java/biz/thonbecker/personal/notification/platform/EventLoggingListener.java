@@ -1,4 +1,4 @@
-package biz.thonbecker.personal.platform;
+package biz.thonbecker.personal.notification.platform;
 
 import biz.thonbecker.personal.foosball.api.GameRecordedEvent;
 import biz.thonbecker.personal.foosball.api.PlayerCreatedEvent;
@@ -14,18 +14,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 /**
- * Example event listener that demonstrates cross-module communication.
- * This listener logs all domain events from different modules, showing how
- * modules can react to events without direct dependencies on each other.
+ * Event listener that logs domain events from different modules.
  *
- * This is located outside the module structure (in the root infrastructure package)
- * so it can depend on multiple modules without violating modulith boundaries.
- *
- * In a real application, you might use event listeners to:
- * - Update statistics across modules
- * - Send notifications
- * - Trigger workflows
- * - Maintain eventual consistency
+ * <p>This demonstrates how the notification module can react to events from multiple
+ * modules without direct dependencies. These log statements could be extended to
+ * send actual notifications (email, SMS, push) based on the events.
  */
 @Component
 @Slf4j

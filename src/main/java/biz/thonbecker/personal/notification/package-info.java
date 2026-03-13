@@ -12,17 +12,23 @@
  * <ul>
  *   <li>shared - For infrastructure services</li>
  *   <li>booking - For fetching booking details and sending booking-related emails</li>
+ *   <li>trivia - For listening to quiz events</li>
+ *   <li>foosball - For listening to game events</li>
+ *   <li>user - For listening to user events</li>
  * </ul>
  *
  * <p>Event Subscriptions:
  * <ul>
  *   <li>BookingCreatedEvent - Send booking confirmation email to attendee and admin</li>
  *   <li>BookingCancelledEvent - Send cancellation notification to attendee</li>
+ *   <li>QuizCompletedEvent, QuizStartedEvent, PlayerJoinedQuizEvent - Log quiz events</li>
+ *   <li>GameRecordedEvent, PlayerCreatedEvent - Log foosball events</li>
+ *   <li>UserRegisteredEvent, UserLoginEvent, UserProfileUpdatedEvent - Log user events</li>
  * </ul>
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Notification Services",
-        allowedDependencies = {"shared", "booking"},
+        allowedDependencies = {"shared", "booking", "trivia", "foosball", "user"},
         type = org.springframework.modulith.ApplicationModule.Type.OPEN)
 @org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.notification;
