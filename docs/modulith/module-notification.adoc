@@ -2,13 +2,17 @@
 |===
 |Base package
 |`biz.thonbecker.personal.notification`
-|Spring components
-|_Services_
-
-* `b.t.p.n.api.NotificationFacade` (via `b.t.p.n.platform.NotificationFacadeImpl`)
+|Bean references
+|* `b.t.p.b.api.BookingFacade` (in Booking)
 |Events listened to
 |* `b.t.p.f.api.GameRecordedEvent` (async) 
+* `b.t.p.f.api.PlayerCreatedEvent` (async) 
+* `b.t.p.t.api.PlayerJoinedQuizEvent` (async) 
 * `b.t.p.t.api.QuizCompletedEvent` (async) 
 * `b.t.p.t.api.QuizStartedEvent` (async) 
+* `b.t.p.u.api.UserLoginEvent` (async) 
+* `b.t.p.u.api.UserProfileUpdatedEvent` (async) 
 * `b.t.p.u.api.UserRegisteredEvent` (async) 
+
+
 |===

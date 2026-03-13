@@ -1,6 +1,10 @@
 == PersonalApplication
 plantuml::components.puml[,,format=svg]
 
+== Booking
+plantuml::module-booking.puml[,,format=svg]
+include::module-booking.adoc[]
+
 == Content Services
 plantuml::module-content.puml[,,format=svg]
 include::module-content.adoc[]
@@ -36,8 +40,4 @@ include::module-user.adoc[]
 == Notification Services
 plantuml::module-notification.puml[,,format=svg]
 include::module-notification.adoc[]
-
-== Platform
-plantuml::module-platform.puml[,,format=svg]
-include::module-platform.adoc[]
 

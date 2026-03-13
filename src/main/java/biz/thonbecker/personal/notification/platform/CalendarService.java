@@ -1,4 +1,4 @@
-package biz.thonbecker.personal.booking.platform.service;
+package biz.thonbecker.personal.notification.platform;
 
 import biz.thonbecker.personal.booking.api.Booking;
 import java.time.ZoneId;
@@ -16,10 +16,10 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
-public class CalendarService {
+class CalendarService {
 
     private static final String PRODUCT_ID = "-//Thon Becker//Booking System//EN";
-    private static final ZoneId DEFAULT_ZONE = ZoneId.of("America/New_York");
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("America/Chicago");
 
     /**
      * Generates an iCalendar (.ics) file content for a booking.

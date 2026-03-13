@@ -1,7 +1,6 @@
 package biz.thonbecker.personal.notification.platform;
 
 import biz.thonbecker.personal.booking.api.Booking;
-import biz.thonbecker.personal.booking.platform.service.CalendarService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
