@@ -3,9 +3,17 @@ spring:
     url: jdbc:postgresql://localhost:5432/dbmaster
     username: dbmasteruser
     password:
-  
+
   liquibase:
     url: jdbc:postgresql://localhost:5432/dbmaster
     user: dbmasteruser
     password:
+
+  # DevTools configuration for hot reload
+  devtools:
+    restart:
+      enabled: true
+      additional-paths: src/main/resources
+    livereload:
+      enabled: true
   
