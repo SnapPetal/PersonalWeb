@@ -6,7 +6,6 @@ import biz.thonbecker.personal.booking.domain.exceptions.BookingTypeNotFoundExce
 import biz.thonbecker.personal.booking.domain.exceptions.InvalidBookingException;
 import biz.thonbecker.personal.booking.domain.exceptions.SlotNotAvailableException;
 import biz.thonbecker.personal.booking.platform.persistence.*;
-import biz.thonbecker.personal.booking.platform.service.EmailNotificationService;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,7 +28,6 @@ public class BookingFacadeImpl implements BookingFacade {
     private final BookingTypeRepository bookingTypeRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
     private final BookingRepository bookingRepository;
-    private final EmailNotificationService emailService;
     private final ApplicationEventPublisher eventPublisher;
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -167,17 +165,7 @@ public class BookingFacadeImpl implements BookingFacade {
         final var savedBooking = bookingRepository.save(booking);
         log.info("Created booking with confirmation code: {}", savedBooking.getConfirmationCode());
 
-        final var domainBooking = convertBookingToDomain(savedBooking);
-
-        // Send notifications
-        try {
-            emailService.sendBookingConfirmation(domainBooking);
-            emailService.sendBookingNotificationToAdmin(domainBooking);
-        } catch (final Exception e) {
-            log.error("Failed to send booking notifications: {}", e.getMessage(), e);
-        }
-
-        // Publish event
+        // Publish event (notifications will be sent by event listener)
         final var event = new BookingCreatedEvent(
                 savedBooking.getId(),
                 savedBooking.getConfirmationCode(),
@@ -187,7 +175,7 @@ public class BookingFacadeImpl implements BookingFacade {
                 savedBooking.getStartTime());
         eventPublisher.publishEvent(event);
 
-        return domainBooking;
+        return convertBookingToDomain(savedBooking);
     }
 
     @Override
@@ -244,16 +232,7 @@ public class BookingFacadeImpl implements BookingFacade {
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
 
-        final var domainBooking = convertBookingToDomain(booking);
-
-        // Send notification
-        try {
-            emailService.sendCancellationNotification(domainBooking);
-        } catch (final Exception e) {
-            log.error("Failed to send cancellation notification: {}", e.getMessage(), e);
-        }
-
-        // Publish event
+        // Publish event (notifications will be sent by event listener)
         final var event =
                 new BookingCancelledEvent(booking.getId(), booking.getConfirmationCode(), booking.getAttendeeEmail());
         eventPublisher.publishEvent(event);
