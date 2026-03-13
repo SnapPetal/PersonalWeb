@@ -12,7 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Listen for click on the theme toggle
   themeToggle.addEventListener("click", () => {
-    const isCurrentlyDark = document.documentElement.getAttribute("data-bs-theme") === "dark";
+    const isCurrentlyDark =
+      document.documentElement.getAttribute("data-bs-theme") === "dark";
 
     if (isCurrentlyDark) {
       // Switch to light mode
