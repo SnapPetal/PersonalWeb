@@ -2,18 +2,15 @@ package biz.thonbecker.personal.trivia.platform;
 
 import biz.thonbecker.personal.trivia.domain.Question;
 import biz.thonbecker.personal.trivia.domain.QuizDifficulty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,18 +21,16 @@ import org.springframework.stereotype.Component;
 @Slf4j
 class FinancialPeaceQuestionGenerator implements QuestionGenerator {
 
-    private final ChatModel chatModel;
-    private final ObjectMapper objectMapper;
+    private final ChatClient chatClient;
     private final AtomicLong questionIdGenerator = new AtomicLong(1);
 
     @Autowired(required = false)
     public FinancialPeaceQuestionGenerator(ChatModel chatModel) {
-        this.chatModel = chatModel;
-        this.objectMapper = new ObjectMapper();
+        this.chatClient = chatModel != null ? ChatClient.create(chatModel) : null;
     }
 
     public List<Question> generateQuestions(int count, QuizDifficulty difficulty) {
-        if (chatModel == null) {
+        if (chatClient == null) {
             log.warn("ChatModel not configured, using fallback questions");
             return generateFallbackQuestions(count);
         }
@@ -43,62 +38,44 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
         try {
             log.info("Generating {} {} questions about Financial Peace by Dave Ramsey", count, difficulty);
 
-            String promptText = """
-                You are a financial literacy expert specializing in Dave Ramsey's Financial Peace principles.
-                Generate {count} multiple-choice trivia questions about Dave Ramsey's Financial Peace teachings.
+            final var responses = chatClient
+                    .prompt()
+                    .user(u -> u.text("""
+                            You are a financial literacy expert specializing in Dave Ramsey's Financial Peace principles.
+                            Generate {count} multiple-choice trivia questions about Dave Ramsey's Financial Peace teachings.
 
-                Difficulty level: {difficulty}
+                            Difficulty level: {difficulty}
 
-                Topics to cover:
-                - The 7 Baby Steps
-                - Emergency Fund principles
-                - Debt Snowball method
-                - Budgeting strategies
-                - Saving and investing principles
-                - Insurance recommendations
-                - Wealth building
+                            Topics to cover:
+                            - The 7 Baby Steps
+                            - Emergency Fund principles
+                            - Debt Snowball method
+                            - Budgeting strategies
+                            - Saving and investing principles
+                            - Insurance recommendations
+                            - Wealth building
 
-                For each question, provide:
-                1. A clear question text
-                2. Exactly 4 answer options
-                3. The index (0-3) of the correct answer
+                            For each question, provide:
+                            1. A clear question text
+                            2. Exactly 4 answer options
+                            3. The index (0-3) of the correct answer
 
-                Return the response as a JSON array with this exact structure:
-                [
-                  {{
-                    "questionText": "What is Baby Step 1 in Dave Ramsey's Financial Peace plan?",
-                    "options": ["Pay off all debt", "Save $1,000 for emergencies", "Invest 15% in retirement", "Pay off the mortgage"],
-                    "correctAnswerIndex": 1
-                  }}
-                ]
+                            Make sure the questions are accurate to Dave Ramsey's actual teachings.
+                            Difficulty guidelines:
+                            - EASY: Basic concepts and definitions
+                            - MEDIUM: Application of principles and multi-step thinking
+                            - HARD: Detailed scenarios and edge cases
+                            """).param("count", String.valueOf(count)).param("difficulty", difficulty.name()))
+                    .call()
+                    .entity(new ParameterizedTypeReference<List<QuestionResponse>>() {});
 
-                Make sure the questions are accurate to Dave Ramsey's actual teachings.
-                Difficulty guidelines:
-                - EASY: Basic concepts and definitions
-                - MEDIUM: Application of principles and multi-step thinking
-                - HARD: Detailed scenarios and edge cases
-                """;
-
-            PromptTemplate promptTemplate = new PromptTemplate(promptText);
-            Prompt prompt = promptTemplate.create(Map.of(
-                    "count", String.valueOf(count),
-                    "difficulty", difficulty.name()));
-
-            String response = chatModel.call(prompt).getResult().getOutput().getText();
-            log.debug("AI Response: {}", response);
-
-            // Parse JSON response
-            List<Map<String, Object>> questionMaps = objectMapper.readValue(
-                    extractJsonFromResponse(response), new TypeReference<List<Map<String, Object>>>() {});
-
-            List<Question> questions = new ArrayList<>();
-            for (Map<String, Object> qMap : questionMaps) {
-                questions.add(new Question(
-                        questionIdGenerator.incrementAndGet(),
-                        (String) qMap.get("questionText"),
-                        (List<String>) qMap.get("options"),
-                        (Integer) qMap.get("correctAnswerIndex")));
-            }
+            final var questions = responses.stream()
+                    .map(q -> new Question(
+                            questionIdGenerator.incrementAndGet(),
+                            q.questionText(),
+                            q.options(),
+                            q.correctAnswerIndex()))
+                    .toList();
 
             log.info("Successfully generated {} AI questions", questions.size());
             return questions;
@@ -109,19 +86,7 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
         }
     }
 
-    private String extractJsonFromResponse(String response) {
-        // Remove markdown code blocks if present
-        String cleaned = response.trim();
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring(7);
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring(3);
-        }
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-        }
-        return cleaned.trim();
-    }
+    private record QuestionResponse(String questionText, List<String> options, int correctAnswerIndex) {}
 
     private List<Question> generateFallbackQuestions(int count) {
         log.info("Using fallback Financial Peace questions");

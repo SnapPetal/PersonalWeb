@@ -3,22 +3,19 @@ package biz.thonbecker.personal.landscape.platform.service;
 import biz.thonbecker.personal.landscape.api.HardinessZone;
 import biz.thonbecker.personal.landscape.api.LightRequirement;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.content.Media;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
+
+import static java.util.Objects.nonNull;
 
 /**
  * Service for AI-powered plant recommendations using AWS Bedrock (Claude).
@@ -30,12 +27,10 @@ import org.springframework.util.MimeTypeUtils;
 @Slf4j
 public class LandscapeAiService {
 
-    private final ChatModel chatModel;
-    private final ObjectMapper objectMapper;
+    private final ChatClient chatClient;
 
-    public LandscapeAiService(final ChatModel chatModel) {
-        this.chatModel = chatModel;
-        this.objectMapper = new ObjectMapper();
+    public LandscapeAiService(final ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
     }
 
     /**
@@ -50,7 +45,6 @@ public class LandscapeAiService {
      * @return List of plant recommendations with reasoning
      */
     @Retryable(
-            maxAttempts = 3,
             backoff = @Backoff(delay = 1000, multiplier = 2),
             retryFor = {Exception.class})
     public List<PlantRecommendation> analyzeImageAndRecommendPlants(
@@ -60,73 +54,45 @@ public class LandscapeAiService {
             log.info("Analyzing landscape image for zone {} with Claude AI", zone);
 
             final var base64Image = Base64.getEncoder().encodeToString(imageData);
+            final var description = nonNull(userDescription) ? userDescription : "No description provided";
 
-            final var promptText = String.format(
-                    """
-                You are an expert landscape designer and horticulturist. Analyze this landscape image
-                and recommend 5-8 suitable plants based on the visible conditions.
-
-                Context:
-                - USDA Hardiness Zone: %s
-                - User Description: %s
-
-                In your analysis, consider:
-                1. Sunlight exposure (identify sunny vs shaded areas)
-                2. Existing vegetation and soil conditions
-                3. Space constraints and scale
-                4. Climate compatibility with the specified hardiness zone
-                5. Aesthetic harmony and color schemes
-                6. Maintenance requirements
-
-                For each recommended plant, provide:
-                - USDA plant symbol (if known, otherwise use scientific name abbreviation)
-                - Common name
-                - Scientific name
-                - Reason for recommendation (specific to this landscape)
-                - Confidence score (0-100)
-                - Light requirement (FULL_SUN, PARTIAL_SHADE, or FULL_SHADE)
-                - Water requirement (LOW, MEDIUM, or HIGH)
-
-                Return your response as a JSON array with this exact structure:
-                [
-                  {
-                    "usdaSymbol": "ACRU",
-                    "commonName": "Red Maple",
-                    "scientificName": "Acer rubrum",
-                    "recommendationReason": "Excellent shade tree for the north side, tolerates zone 5-9",
-                    "confidenceScore": 85,
-                    "lightRequirement": "FULL_SUN",
-                    "waterRequirement": "MEDIUM"
-                  }
-                ]
-                """, zone.name(), Objects.nonNull(userDescription) ? userDescription : "No description provided");
-
-            // Create multimodal message with image and text
             final var imageMedia = Media.builder()
                     .mimeType(MimeTypeUtils.IMAGE_JPEG)
                     .data(base64Image)
                     .build();
-            final var userMessage =
-                    UserMessage.builder().text(promptText).media(imageMedia).build();
-            final var prompt = new Prompt(List.of(userMessage));
 
-            final var response = chatModel.call(prompt).getResult().getOutput().getText();
-            log.debug("AI Response: {}", response);
+            final var recommendations = chatClient
+                    .prompt()
+                    .user(u -> u.text("""
+                            You are an expert landscape designer and horticulturist. Analyze this landscape image
+                            and recommend 5-8 suitable plants based on the visible conditions.
 
-            final var recommendationMaps = objectMapper.readValue(
-                    extractJsonFromResponse(response), new TypeReference<List<Map<String, Object>>>() {});
+                            Context:
+                            - USDA Hardiness Zone: {zone}
+                            - User Description: {description}
 
-            final var recommendations = new ArrayList<PlantRecommendation>();
-            for (final var recMap : recommendationMaps) {
-                recommendations.add(new PlantRecommendation(
-                        (String) recMap.get("usdaSymbol"),
-                        (String) recMap.get("commonName"),
-                        (String) recMap.get("scientificName"),
-                        (String) recMap.get("recommendationReason"),
-                        (Integer) recMap.get("confidenceScore"),
-                        LightRequirement.valueOf((String) recMap.get("lightRequirement")),
-                        WaterRequirement.valueOf((String) recMap.get("waterRequirement"))));
-            }
+                            In your analysis, consider:
+                            1. Sunlight exposure (identify sunny vs shaded areas)
+                            2. Existing vegetation and soil conditions
+                            3. Space constraints and scale
+                            4. Climate compatibility with the specified hardiness zone
+                            5. Aesthetic harmony and color schemes
+                            6. Maintenance requirements
+
+                            For each recommended plant, provide:
+                            - USDA plant symbol (if known, otherwise use scientific name abbreviation)
+                            - Common name
+                            - Scientific name
+                            - Reason for recommendation (specific to this landscape)
+                            - Confidence score (0-100)
+                            - Light requirement (FULL_SUN, PARTIAL_SHADE, or FULL_SHADE)
+                            - Water requirement (LOW, MEDIUM, or HIGH)
+                            """)
+                            .param("zone", zone.name())
+                            .param("description", description)
+                            .media(imageMedia))
+                    .call()
+                    .entity(new ParameterizedTypeReference<List<PlantRecommendation>>() {});
 
             log.info("Successfully generated {} plant recommendations", recommendations.size());
             return recommendations;
@@ -135,25 +101,6 @@ public class LandscapeAiService {
             log.error("Error generating AI plant recommendations", e);
             return generateFallbackRecommendations(zone);
         }
-    }
-
-    /**
-     * Extracts JSON from Claude's response, removing markdown code blocks if present.
-     *
-     * @param response Raw response text
-     * @return Clean JSON string
-     */
-    private String extractJsonFromResponse(final String response) {
-        var cleaned = response.trim();
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring(7);
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring(3);
-        }
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-        }
-        return cleaned.trim();
     }
 
     /**

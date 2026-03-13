@@ -8,13 +8,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -27,8 +23,7 @@ import software.amazon.awssdk.services.s3vectors.model.VectorData;
 @Slf4j
 class BedrockTrickAnalyzer implements TrickAnalyzer {
 
-    private final ChatModel chatModel;
-    private final BeanOutputConverter<TrickAnalysisResponseSchema> outputConverter;
+    private final ChatClient chatClient;
     private final PoseEstimationService poseEstimationService;
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
@@ -45,8 +40,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             PoseEstimationService poseEstimationService,
             S3VectorsClient s3VectorsClient,
             EmbeddingService embeddingService) {
-        this.chatModel = chatModel;
-        this.outputConverter = new BeanOutputConverter<>(TrickAnalysisResponseSchema.class);
+        this.chatClient = chatModel != null ? ChatClient.create(chatModel) : null;
         this.poseEstimationService = poseEstimationService;
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
@@ -54,7 +48,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
     @Override
     public TrickAnalysisResult analyze(List<String> base64Frames) {
-        if (chatModel == null) {
+        if (chatClient == null) {
             log.warn("ChatModel not configured, returning fallback result");
             return fallback();
         }
@@ -111,41 +105,28 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     - Nosegrind: front truck only on edge, tail lifted while grinding
                     - Manual: riding on back wheels only, nose lifted, balancing - WHEELS NEVER LEAVE GROUND
                     - Cruising: normal flat-ground riding with all 4 wheels on ground, NO ramp or transition visible
-                    - Drop In: rider starts at TOP of ramp/halfpipe/bowl with tail on coping edge, then leans forward and rides DOWN the transition. Look for: curved ramp surface, rider going from horizontal to angled downward, coping/edge at top of ramp
+                    - Drop In: rider starts at TOP of ramp/halfpipe/bowl with board on coping edge, then leans forward and rides DOWN the transition. Look for: curved ramp surface, rider going from horizontal to angled downward, coping/edge at top of ramp
 
                     Known trick enum values and descriptions:
-                    %s
-
                     %s
 
                     The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
                     If only one trick is visible, trickSequence should contain just that one entry.
                     Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if you truly cannot identify the trick.
-                    """.formatted(TrickCatalog.buildTrickDescriptions(), outputConverter.getFormat())
-                    + similarExamples
-                    + poseDataText;
+                    """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseDataText;
 
             String userPrompt =
                     ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
                                     + "Frame 1 is earliest, frame %d is latest. Analyze the full progression of movement across all frames and identify all tricks performed in sequence.")
                             .formatted(base64Frames.size(), base64Frames.size());
 
-            UserMessage userMessage =
-                    UserMessage.builder().text(userPrompt).media(mediaList).build();
-            SystemMessage systemMessage = new SystemMessage(systemPrompt);
+            final var schema = chatClient
+                    .prompt()
+                    .system(systemPrompt)
+                    .user(u -> u.text(userPrompt).media(mediaList.toArray(new Media[0])))
+                    .call()
+                    .entity(TrickAnalysisResponseSchema.class);
 
-            Prompt prompt = new Prompt(List.<Message>of(systemMessage, userMessage));
-            String response = chatModel.call(prompt).getResult().getOutput().getText();
-
-            log.info("AI analysis response: {}", response);
-
-            // Extract JSON from response (Claude sometimes adds explanatory text)
-            final var jsonResponse = extractJson(response);
-
-            // Convert response using BeanOutputConverter
-            final var schema = outputConverter.convert(jsonResponse);
-
-            // Map schema to domain model
             return new TrickAnalysisResult(
                     TrickCatalog.fromName(schema.trick()),
                     schema.confidence(),
@@ -164,7 +145,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
     @Override
     public TrickAnalysisResult analyzeVideo(byte[] mp4VideoData) {
-        if (chatModel == null) {
+        if (chatClient == null) {
             log.warn("ChatModel not configured, returning fallback result");
             return fallback();
         }
@@ -220,32 +201,21 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     Known trick enum values and descriptions:
                     %s
 
-                    %s
-
                     The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
                     If only one trick is visible, trickSequence should contain just that one entry.
                     Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING). Use UNKNOWN only if you truly cannot identify the trick.
-                    """.formatted(TrickCatalog.buildTrickDescriptions(), outputConverter.getFormat());
+                    """.formatted(TrickCatalog.buildTrickDescriptions());
 
             String userPrompt = "Watch this skateboarding video and identify the trick being performed. "
                     + "Pay close attention to the board movement, especially whether it leaves the ground.";
 
-            UserMessage userMessage =
-                    UserMessage.builder().text(userPrompt).media(videoMedia).build();
-            SystemMessage systemMessage = new SystemMessage(systemPrompt);
+            final var schema = chatClient
+                    .prompt()
+                    .system(systemPrompt)
+                    .user(u -> u.text(userPrompt).media(videoMedia))
+                    .call()
+                    .entity(TrickAnalysisResponseSchema.class);
 
-            Prompt prompt = new Prompt(List.<Message>of(systemMessage, userMessage));
-            String response = chatModel.call(prompt).getResult().getOutput().getText();
-
-            log.info("AI video analysis response: {}", response);
-
-            // Extract JSON from response (Claude sometimes adds explanatory text)
-            final var jsonResponse = extractJson(response);
-
-            // Convert response using BeanOutputConverter
-            final var schema = outputConverter.convert(jsonResponse);
-
-            // Map schema to domain model
             return new TrickAnalysisResult(
                     TrickCatalog.fromName(schema.trick()),
                     schema.confidence(),
@@ -323,38 +293,6 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             log.warn("Failed to generate pose data for prompt, continuing without it", e);
             return "";
         }
-    }
-
-    /**
-     * Extracts JSON from Claude's response, handling cases where explanatory text
-     * is added before or after the JSON object. This is used as a pre-processor
-     * before BeanOutputConverter to ensure clean JSON input.
-     */
-    private String extractJson(String response) {
-        String cleaned = response.trim();
-
-        // Strip markdown code fences if present
-        if (cleaned.startsWith("```json")) {
-            cleaned = cleaned.substring(7);
-        } else if (cleaned.startsWith("```")) {
-            cleaned = cleaned.substring(3);
-        }
-        if (cleaned.endsWith("```")) {
-            cleaned = cleaned.substring(0, cleaned.length() - 3);
-        }
-        cleaned = cleaned.trim();
-
-        // If response doesn't start with {, extract JSON from within text
-        if (!cleaned.startsWith("{")) {
-            final var firstBrace = cleaned.indexOf('{');
-            final var lastBrace = cleaned.lastIndexOf('}');
-            if (firstBrace != -1 && lastBrace != -1 && lastBrace > firstBrace) {
-                log.debug("Extracting JSON from position {} to {} (found text before JSON)", firstBrace, lastBrace);
-                cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-            }
-        }
-
-        return cleaned.trim();
     }
 
     private TrickAnalysisResult fallback() {
