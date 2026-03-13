@@ -41,7 +41,7 @@ public class SecurityConfig {
                         // Allow everything else (for now)
                         .anyRequest()
                         .permitAll())
-                .oauth2Login(oauth2 -> oauth2.defaultSuccessUrl("/landscape", true))
+                .oauth2Login(oauth2 -> oauth2.defaultSuccessUrl("/", false))
                 .logout(logout -> logout.logoutSuccessUrl("/").permitAll())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
