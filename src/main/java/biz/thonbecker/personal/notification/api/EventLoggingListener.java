@@ -1,4 +1,4 @@
-package biz.thonbecker.personal.notification.platform;
+package biz.thonbecker.personal.notification.api;
 
 import biz.thonbecker.personal.foosball.api.GameRecordedEvent;
 import biz.thonbecker.personal.foosball.api.PlayerCreatedEvent;

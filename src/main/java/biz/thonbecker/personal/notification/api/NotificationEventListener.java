@@ -1,8 +1,9 @@
-package biz.thonbecker.personal.notification.platform;
+package biz.thonbecker.personal.notification.api;
 
 import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
 import biz.thonbecker.personal.booking.api.BookingFacade;
+import biz.thonbecker.personal.notification.platform.EmailNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;

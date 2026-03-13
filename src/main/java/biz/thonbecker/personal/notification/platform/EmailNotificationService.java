@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-class EmailNotificationService {
+public class EmailNotificationService {
 
     private final CalendarService calendarService;
 

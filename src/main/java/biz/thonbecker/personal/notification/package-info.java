@@ -28,7 +28,6 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Notification Services",
-        allowedDependencies = {"shared", "booking", "trivia", "foosball", "user"},
-        type = org.springframework.modulith.ApplicationModule.Type.OPEN)
+        allowedDependencies = {"shared", "booking", "trivia", "foosball", "user"})
 @org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.notification;
