@@ -20,7 +20,7 @@
     <htmx.org.version>2.0.8</htmx.org.version>
     <java.version>25</java.version>
     <jspecify.version>1.0.0</jspecify.version>
-    <lombok.version>1.18.42</lombok.version>
+    <lombok.version>1.18.44</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
     <plyr.version>3.7.8</plyr.version>
     <shedlock.version>7.6.0</shedlock.version>
