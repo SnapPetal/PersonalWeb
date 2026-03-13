@@ -8,13 +8,23 @@
     <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <script src="/js/dark-mode.js"></script>
 
     <!-- CSS Dependencies -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
     <link href="/css/main.css" rel="stylesheet">
+    <link href="/css/light-switch.css" rel="stylesheet">
 </head>
 <body>
+<!-- Pull-String Light Switch (Fixed Top-Right Corner) -->
+<div class="light-switch-container" id="lightSwitch" role="button" tabindex="0" aria-label="Toggle dark mode">
+    <div class="light-bulb"></div>
+    <div class="pull-string">
+        <div class="string-knob"></div>
+    </div>
+</div>
+
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
     <div class="container">
