@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.notification.platform;
 
-import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
-import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
+import biz.thonbecker.personal.shared.events.BookingCancelledEvent;
+import biz.thonbecker.personal.shared.events.BookingCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
  * Service for sending email notifications about bookings.
  *
  * <p>Currently logs emails to console. In production, integrate with AWS SES.
- * Works with event data directly to avoid dependencies on booking module.
+ * Works with event data from shared events package.
  */
 @Service
 @RequiredArgsConstructor

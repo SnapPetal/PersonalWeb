@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.notification.platform;
 
-import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
+import biz.thonbecker.personal.shared.events.BookingCreatedEvent;
 import java.time.ZoneId;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.model.*;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 /**
  * Service for generating iCalendar (.ics) files for bookings.
  *
- * <p>Works with event data directly to avoid dependencies on booking module.
+ * <p>Works with event data from shared events package.
  */
 @Service
 @Slf4j
