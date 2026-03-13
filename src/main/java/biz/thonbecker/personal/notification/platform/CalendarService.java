@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.notification.platform;
 
-import biz.thonbecker.personal.booking.api.Booking;
+import biz.thonbecker.personal.shared.events.BookingCreatedEvent;
 import java.time.ZoneId;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.model.*;
@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Service for generating iCalendar (.ics) files for bookings.
+ *
+ * <p>Works with event data directly to avoid dependencies on booking module.
  */
 @Service
 @Slf4j
@@ -24,11 +26,11 @@ class CalendarService {
     /**
      * Generates an iCalendar (.ics) file content for a booking.
      *
-     * @param booking The booking to create a calendar event for
+     * @param event The booking created event
      * @param organizerEmail Email address of the organizer
      * @return iCalendar file content as a string
      */
-    public String generateICalendar(final Booking booking, final String organizerEmail) {
+    public String generateICalendar(final BookingCreatedEvent event, final String organizerEmail) {
         try {
             // Create calendar
             final var calendar = new Calendar();
@@ -37,58 +39,52 @@ class CalendarService {
             calendar.add(new CalScale(CalScale.VALUE_GREGORIAN));
 
             // Convert LocalDateTime to ZonedDateTime
-            final var startZoned = booking.startTime().atZone(DEFAULT_ZONE);
-            final var endZoned = booking.endTime().atZone(DEFAULT_ZONE);
+            final var startZoned = event.startTime().atZone(DEFAULT_ZONE);
+            final var endZoned = event.endTime().atZone(DEFAULT_ZONE);
 
             // Create event
-            final var event = new VEvent(
-                    startZoned.toInstant(),
-                    endZoned.toInstant(),
-                    booking.bookingType().name());
+            final var vEvent = new VEvent(startZoned.toInstant(), endZoned.toInstant(), event.bookingTypeName());
 
             // Add unique ID
             final var uidGenerator = new RandomUidGenerator();
-            event.add(uidGenerator.generateUid());
+            vEvent.add(uidGenerator.generateUid());
 
             // Add description
             final var description = new StringBuilder();
-            description
-                    .append("Booking Type: ")
-                    .append(booking.bookingType().name())
-                    .append("\n");
-            description.append("Attendee: ").append(booking.attendeeName()).append("\n");
-            description.append("Email: ").append(booking.attendeeEmail()).append("\n");
-            if (booking.attendeePhone() != null && !booking.attendeePhone().isBlank()) {
-                description.append("Phone: ").append(booking.attendeePhone()).append("\n");
+            description.append("Booking Type: ").append(event.bookingTypeName()).append("\n");
+            description.append("Attendee: ").append(event.attendeeName()).append("\n");
+            description.append("Email: ").append(event.attendeeEmail()).append("\n");
+            if (event.attendeePhone() != null && !event.attendeePhone().isBlank()) {
+                description.append("Phone: ").append(event.attendeePhone()).append("\n");
             }
-            if (booking.message() != null && !booking.message().isBlank()) {
-                description.append("\nMessage:\n").append(booking.message());
+            if (event.message() != null && !event.message().isBlank()) {
+                description.append("\nMessage:\n").append(event.message());
             }
 
-            event.add(new Description(description.toString()));
+            vEvent.add(new Description(description.toString()));
 
             // Add organizer
             final var organizer = new Organizer("mailto:" + organizerEmail);
             organizer.add(new Cn("Thon Becker"));
-            event.add(organizer);
+            vEvent.add(organizer);
 
             // Add attendee
-            final var attendee = new Attendee("mailto:" + booking.attendeeEmail());
-            attendee.add(new Cn(booking.attendeeName()));
+            final var attendee = new Attendee("mailto:" + event.attendeeEmail());
+            attendee.add(new Cn(event.attendeeName()));
             attendee.add(Role.REQ_PARTICIPANT);
-            event.add(attendee);
+            vEvent.add(attendee);
 
             // Add status
-            event.add(new Status(Status.VALUE_CONFIRMED));
+            vEvent.add(new Status(Status.VALUE_CONFIRMED));
 
             // Add to calendar
-            calendar.add(event);
+            calendar.add(vEvent);
 
-            log.debug("Generated iCalendar for booking {}", booking.confirmationCode());
+            log.debug("Generated iCalendar for booking {}", event.confirmationCode());
             return calendar.toString();
 
         } catch (final Exception e) {
-            log.error("Failed to generate iCalendar for booking {}: {}", booking.confirmationCode(), e.getMessage(), e);
+            log.error("Failed to generate iCalendar for booking {}: {}", event.confirmationCode(), e.getMessage(), e);
             throw new RuntimeException("Failed to generate calendar file", e);
         }
     }
