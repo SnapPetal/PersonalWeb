@@ -136,6 +136,7 @@ Each module follows this internal package convention:
 - **WebSockets**: STOMP over SockJS for trivia and tank game real-time communication. Skatetricks video conversion uses WebSocket for progress updates, but analysis uses HTTP polling to avoid timeout issues with long-running AI inference.
 - **Async processing**: Skatetricks uses async endpoints with status polling for video conversion and analysis. Long-running operations (30+ seconds) are processed in background threads via `ExecutorService`. Client polls status endpoints (GET `/skatetricks/convert/{id}/status`, `/skatetricks/analyze/{id}/status`) every 2 seconds. YOLO models pre-load at startup (`@PostConstruct`) to prevent first-request timeouts.
 - **Frontend**: Thymeleaf templates + HTMX for partial page updates + Bootstrap 5. Frontend libraries served as WebJars.
+- **Theme Toggle**: Sun/moon icon toggle in navbar (home page only) for light/dark mode switching. Theme preference stored in localStorage (`darkMode: enabled/disabled`). Booking pages automatically apply the saved theme without showing the toggle. Other pages (trivia, foosball, etc.) remain light mode only.
 - **CSRF**: Cookie-based CSRF tokens (`CookieCsrfTokenRepository`). All HTMX POST requests include the CSRF token from the cookie.
 
 ### Code Formatting
