@@ -55,11 +55,14 @@ public interface LandscapeFacade {
      *
      * @param planId Plan identifier
      * @param usdaSymbol USDA plant symbol
+     * @param plantName Scientific name (if null, fetched from USDA API)
+     * @param commonName Common name (if null, fetched from USDA API)
      * @param x X coordinate on image (percentage 0-100)
      * @param y Y coordinate on image (percentage 0-100)
      * @param notes Optional placement notes
      */
-    void addPlantPlacement(Long planId, String usdaSymbol, double x, double y, String notes);
+    void addPlantPlacement(
+            Long planId, String usdaSymbol, String plantName, String commonName, double x, double y, String notes);
 
     /**
      * Retrieves a specific landscape plan by ID.
@@ -83,4 +86,20 @@ public interface LandscapeFacade {
      * @param planId Plan identifier
      */
     void deletePlan(Long planId);
+
+    /**
+     * Generates a seasonal analysis describing how the landscape would look in each season.
+     *
+     * @param planId Plan identifier
+     * @return Seasonal analysis with descriptions, care tips, and generated images
+     */
+    SeasonalAnalysis getSeasonalAnalysis(Long planId);
+
+    /**
+     * Fetches an image URL for a plant from Wikipedia.
+     *
+     * @param scientificName Scientific name of the plant
+     * @return Image URL, or null if not found
+     */
+    String getPlantImageUrl(String scientificName);
 }

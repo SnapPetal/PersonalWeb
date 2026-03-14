@@ -4,6 +4,7 @@ import static java.util.Objects.nonNull;
 
 import biz.thonbecker.personal.landscape.api.HardinessZone;
 import biz.thonbecker.personal.landscape.api.LightRequirement;
+import biz.thonbecker.personal.landscape.api.SeasonalAnalysis;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import java.util.Base64;
 import java.util.List;
@@ -138,6 +139,61 @@ public class LandscapeAiService {
                         60,
                         LightRequirement.FULL_SUN,
                         WaterRequirement.LOW));
+    }
+
+    /**
+     * Analyzes a landscape with its planted plants and describes how it would look across seasons.
+     *
+     * @param imageData Raw landscape image bytes
+     * @param zone USDA hardiness zone
+     * @param plantDescriptions List of plant names and positions placed on the landscape
+     * @return Seasonal analysis with descriptions for each season
+     */
+    @Retryable(
+            backoff = @Backoff(delay = 1000, multiplier = 2),
+            retryFor = {Exception.class})
+    public SeasonalAnalysis analyzeSeasons(
+            final byte[] imageData, final HardinessZone zone, final List<String> plantDescriptions) {
+
+        log.info("Generating seasonal analysis for zone {} with {} plants", zone, plantDescriptions.size());
+
+        final var base64Image = Base64.getEncoder().encodeToString(imageData);
+        final var plantList = String.join("\n- ", plantDescriptions);
+
+        final var imageMedia = Media.builder()
+                .mimeType(MimeTypeUtils.IMAGE_JPEG)
+                .data(base64Image)
+                .build();
+
+        return chatClient
+                .prompt()
+                .user(u -> u.text("""
+                        You are an expert landscape designer. Look at this landscape image. The following plants \
+                        have been placed in this yard:
+
+                        - {plantList}
+
+                        USDA Hardiness Zone: {zone}
+
+                        For each of the four seasons (Spring, Summer, Fall, Winter), provide:
+                        1. A vivid 2-3 sentence description of how this landscape would look with these plants \
+                        in that season. Describe colors, textures, blooms, foliage changes, and overall feel. \
+                        Be specific to the actual plants listed.
+                        2. A list of 2-3 care tips specific to that season for these plants.
+
+                        Return your response as JSON with this structure:
+                        {{
+                          "spring": {{ "description": "...", "careTips": ["tip1", "tip2"] }},
+                          "summer": {{ "description": "...", "careTips": ["tip1", "tip2"] }},
+                          "fall": {{ "description": "...", "careTips": ["tip1", "tip2"] }},
+                          "winter": {{ "description": "...", "careTips": ["tip1", "tip2"] }}
+                        }}
+                        """)
+                        .param("plantList", plantList)
+                        .param("zone", zone.name())
+                        .media(imageMedia))
+                .call()
+                .entity(SeasonalAnalysis.class);
     }
 
     /**

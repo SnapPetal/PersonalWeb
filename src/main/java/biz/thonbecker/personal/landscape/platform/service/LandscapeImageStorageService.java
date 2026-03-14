@@ -28,6 +28,7 @@ public class LandscapeImageStorageService {
 
     private final S3Client s3Client;
 
+    @lombok.Getter
     @Value("${landscape.storage.bucket}")
     private String bucketName;
 

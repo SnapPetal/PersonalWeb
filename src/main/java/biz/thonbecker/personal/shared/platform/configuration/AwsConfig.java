@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.polly.PollyClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
@@ -54,6 +55,22 @@ public class AwsConfig {
         final var credentialsProvider = StaticCredentialsProvider.create(credentials);
 
         return S3Client.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    /**
+     * Creates a configured BedrockRuntimeClient bean for image generation.
+     *
+     * @return Configured BedrockRuntimeClient
+     */
+    @Bean
+    public BedrockRuntimeClient bedrockRuntimeClient() {
+        final var credentials = AwsBasicCredentials.create(accessKey, secretKey);
+        final var credentialsProvider = StaticCredentialsProvider.create(credentials);
+
+        return BedrockRuntimeClient.builder()
                 .region(Region.of(awsRegion))
                 .credentialsProvider(credentialsProvider)
                 .build();

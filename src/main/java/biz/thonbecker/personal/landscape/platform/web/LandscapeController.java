@@ -4,6 +4,7 @@ import biz.thonbecker.personal.landscape.api.HardinessZone;
 import biz.thonbecker.personal.landscape.api.LandscapeFacade;
 import biz.thonbecker.personal.landscape.api.LandscapePlan;
 import biz.thonbecker.personal.landscape.api.LightRequirement;
+import biz.thonbecker.personal.landscape.api.SeasonalAnalysis;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import biz.thonbecker.personal.landscape.platform.web.model.AddPlantRequest;
 import java.io.IOException;
@@ -208,10 +209,56 @@ public class LandscapeController {
         try {
             log.info("Adding plant placement to plan {}: {}", planId, request.usdaSymbol());
             landscapeFacade.addPlantPlacement(
-                    planId, request.usdaSymbol(), request.xCoord(), request.yCoord(), request.notes());
+                    planId,
+                    request.usdaSymbol(),
+                    request.plantName(),
+                    request.commonName(),
+                    request.xCoord(),
+                    request.yCoord(),
+                    request.notes());
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to add plant placement to plan {}: {}", planId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Fetches a plant image URL from Wikipedia.
+     *
+     * @param name Scientific or common name of the plant
+     * @return JSON with imageUrl field
+     */
+    @GetMapping("/plants/image")
+    @ResponseBody
+    public ResponseEntity<java.util.Map<String, String>> getPlantImage(@RequestParam("name") final String name) {
+        try {
+            final var imageUrl = landscapeFacade.getPlantImageUrl(name);
+            if (imageUrl != null) {
+                return ResponseEntity.ok(java.util.Map.of("imageUrl", imageUrl));
+            }
+            return ResponseEntity.notFound().build();
+        } catch (final Exception e) {
+            log.error("Failed to fetch plant image for '{}': {}", name, e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Generates a seasonal analysis for a landscape plan.
+     *
+     * @param planId Plan identifier
+     * @return Seasonal analysis with descriptions for each season
+     */
+    @GetMapping("/plans/{planId}/seasons")
+    @ResponseBody
+    public ResponseEntity<SeasonalAnalysis> getSeasonalAnalysis(@PathVariable final Long planId) {
+        try {
+            log.info("Generating seasonal analysis for plan {}", planId);
+            final var analysis = landscapeFacade.getSeasonalAnalysis(planId);
+            return ResponseEntity.ok(analysis);
+        } catch (final Exception e) {
+            log.error("Failed to generate seasonal analysis for plan {}: {}", planId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }

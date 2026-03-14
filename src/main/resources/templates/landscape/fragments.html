@@ -48,6 +48,11 @@
                      th:data-usda-symbol="${rec.usdaSymbol()}"
                      th:data-scientific-name="${rec.scientificName()}"
                      th:data-common-name="${rec.commonName()}">
+                    <div class="plant-image-wrapper">
+                        <div class="plant-image-placeholder">
+                            <i class="bi bi-flower3"></i>
+                        </div>
+                    </div>
                     <div class="card-body">
                         <h6 class="card-title" th:text="${rec.commonName()} ?: ${rec.scientificName()}"></h6>
                         <p class="card-text small text-muted mb-2" th:text="${rec.scientificName()}"></p>

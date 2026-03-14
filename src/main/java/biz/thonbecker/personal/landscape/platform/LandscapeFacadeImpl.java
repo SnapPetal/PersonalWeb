@@ -4,16 +4,21 @@ import biz.thonbecker.personal.landscape.api.*;
 import biz.thonbecker.personal.landscape.domain.exceptions.PlanNotFoundException;
 import biz.thonbecker.personal.landscape.platform.persistence.*;
 import biz.thonbecker.personal.landscape.platform.service.LandscapeAiService;
+import biz.thonbecker.personal.landscape.platform.service.LandscapeImageGenerationService;
 import biz.thonbecker.personal.landscape.platform.service.LandscapeImageStorageService;
 import biz.thonbecker.personal.landscape.platform.service.PlantApiService;
+import biz.thonbecker.personal.landscape.platform.service.PlantImageService;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 /**
  * Implementation of the Landscape Planning facade.
@@ -27,9 +32,12 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
 
     private final LandscapeImageStorageService imageStorageService;
     private final LandscapeAiService aiService;
+    private final LandscapeImageGenerationService imageGenerationService;
+    private final PlantImageService plantImageService;
     private final PlantApiService plantApiService;
     private final LandscapePlanRepository planRepository;
     private final PlantPlacementRepository placementRepository;
+    private final S3Client s3Client;
 
     @Override
     @Transactional
@@ -104,46 +112,40 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
 
         final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
 
-        final var recommendations = new ArrayList<PlantInfo>();
-        for (final var rec : plan.getRecommendations()) {
-            recommendations.add(new PlantInfo(
-                    rec.getUsdaSymbol(),
-                    rec.getPlantName(),
-                    rec.getCommonName(),
-                    null, // Family name not stored in recommendations
-                    List.of(), // Hardiness zones not stored
-                    Objects.nonNull(rec.getLightRequirement())
-                            ? LightRequirement.valueOf(rec.getLightRequirement())
-                            : null,
-                    Objects.nonNull(rec.getWaterRequirement())
-                            ? WaterRequirement.valueOf(rec.getWaterRequirement())
-                            : null,
-                    null, // Category not stored
-                    null, // Native status not stored
-                    null, // Height not stored
-                    null)); // Width not stored
-        }
-
-        return recommendations;
+        return plan.getRecommendations().stream()
+                .map(LandscapeFacadeImpl::convertRecommendation)
+                .toList();
     }
 
     @Override
     @Transactional
     public void addPlantPlacement(
-            final Long planId, final String usdaSymbol, final double x, final double y, final String notes) {
+            final Long planId,
+            final String usdaSymbol,
+            final String plantName,
+            final String commonName,
+            final double x,
+            final double y,
+            final String notes) {
 
         log.info("Adding plant placement to plan {}: {}", planId, usdaSymbol);
 
         final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
 
-        // Fetch plant details from USDA API
-        final var plantInfo = plantApiService.getPlantDetails(usdaSymbol);
+        // Use provided names; only call USDA API as fallback
+        var resolvedPlantName = plantName;
+        var resolvedCommonName = commonName;
+        if (Objects.isNull(resolvedPlantName) || resolvedPlantName.isBlank()) {
+            final var plantInfo = plantApiService.getPlantDetails(usdaSymbol);
+            resolvedPlantName = plantInfo.scientificName();
+            resolvedCommonName = plantInfo.commonName();
+        }
 
         final var placement = new PlantPlacementEntity();
         placement.setPlan(plan);
         placement.setUsdaSymbol(usdaSymbol);
-        placement.setPlantName(plantInfo.scientificName());
-        placement.setCommonName(plantInfo.commonName());
+        placement.setPlantName(resolvedPlantName);
+        placement.setCommonName(resolvedCommonName);
         placement.setXCoord(BigDecimal.valueOf(x));
         placement.setYCoord(BigDecimal.valueOf(y));
         placement.setNotes(notes);
@@ -159,7 +161,8 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
     public LandscapePlan getPlan(final Long planId) {
         log.debug("Fetching landscape plan {}", planId);
 
-        final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
+        final var plan =
+                planRepository.findByIdWithPlacements(planId).orElseThrow(() -> new PlanNotFoundException(planId));
 
         return convertToDomain(plan);
     }
@@ -186,12 +189,85 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         log.info("Successfully deleted landscape plan {}", planId);
     }
 
-    /**
-     * Converts a JPA entity to the domain model.
-     *
-     * @param entity JPA entity
-     * @return Domain landscape plan
-     */
+    @Override
+    @Transactional(readOnly = true)
+    public SeasonalAnalysis getSeasonalAnalysis(final Long planId) {
+        log.info("Generating seasonal analysis for plan {}", planId);
+
+        final var plan =
+                planRepository.findByIdWithPlacements(planId).orElseThrow(() -> new PlanNotFoundException(planId));
+
+        final var plantDescriptions = plan.getPlacements().stream()
+                .map(p -> {
+                    final var name = Objects.nonNull(p.getCommonName()) ? p.getCommonName() : p.getPlantName();
+                    return name + " (" + p.getUsdaSymbol() + ")";
+                })
+                .toList();
+
+        final var plantNames = plan.getPlacements().stream()
+                .map(p -> Objects.nonNull(p.getCommonName()) ? p.getCommonName() : p.getPlantName())
+                .toList();
+
+        // Fetch the original image from S3
+        final var getRequest = GetObjectRequest.builder()
+                .bucket(imageStorageService.getBucketName())
+                .key(plan.getImageS3Key())
+                .build();
+
+        try (final ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(getRequest)) {
+            final var imageData = s3Object.readAllBytes();
+
+            // Get text descriptions from Claude
+            final var textAnalysis = aiService.analyzeSeasons(
+                    imageData, HardinessZone.valueOf(plan.getHardinessZone()), plantDescriptions);
+
+            // Generate seasonal images with Nova Canvas
+            final var springImage = imageGenerationService.generateSeasonalImage(imageData, "spring", plantNames);
+            final var summerImage = imageGenerationService.generateSeasonalImage(imageData, "summer", plantNames);
+            final var fallImage = imageGenerationService.generateSeasonalImage(imageData, "fall", plantNames);
+            final var winterImage = imageGenerationService.generateSeasonalImage(imageData, "winter", plantNames);
+
+            // Merge text descriptions with generated images
+            return new SeasonalAnalysis(
+                    mergeWithImage(textAnalysis.spring(), springImage),
+                    mergeWithImage(textAnalysis.summer(), summerImage),
+                    mergeWithImage(textAnalysis.fall(), fallImage),
+                    mergeWithImage(textAnalysis.winter(), winterImage));
+
+        } catch (final Exception e) {
+            log.error("Failed to generate seasonal analysis for plan {}: {}", planId, e.getMessage(), e);
+            throw new RuntimeException("Failed to generate seasonal analysis", e);
+        }
+    }
+
+    @Override
+    public String getPlantImageUrl(final String scientificName) {
+        return plantImageService.getPlantImageUrl(scientificName);
+    }
+
+    private SeasonalAnalysis.SeasonalDescription mergeWithImage(
+            final SeasonalAnalysis.SeasonalDescription description, final String imageBase64) {
+        if (description == null) {
+            return null;
+        }
+        return new SeasonalAnalysis.SeasonalDescription(description.description(), description.careTips(), imageBase64);
+    }
+
+    private static PlantInfo convertRecommendation(final RecommendedPlantEntity rec) {
+        return new PlantInfo(
+                rec.getUsdaSymbol(),
+                rec.getPlantName(),
+                rec.getCommonName(),
+                null,
+                List.of(),
+                Objects.nonNull(rec.getLightRequirement()) ? LightRequirement.valueOf(rec.getLightRequirement()) : null,
+                Objects.nonNull(rec.getWaterRequirement()) ? WaterRequirement.valueOf(rec.getWaterRequirement()) : null,
+                null,
+                null,
+                null,
+                null);
+    }
+
     private LandscapePlan convertToDomain(final LandscapePlanEntity entity) {
         final var placements = entity.getPlacements().stream()
                 .map(p -> new PlantPlacement(
@@ -207,22 +283,7 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
                 .toList();
 
         final var recommendations = entity.getRecommendations().stream()
-                .map(r -> new PlantInfo(
-                        r.getUsdaSymbol(),
-                        r.getPlantName(),
-                        r.getCommonName(),
-                        null,
-                        List.of(),
-                        Objects.nonNull(r.getLightRequirement())
-                                ? LightRequirement.valueOf(r.getLightRequirement())
-                                : null,
-                        Objects.nonNull(r.getWaterRequirement())
-                                ? WaterRequirement.valueOf(r.getWaterRequirement())
-                                : null,
-                        null,
-                        null,
-                        null,
-                        null))
+                .map(LandscapeFacadeImpl::convertRecommendation)
                 .toList();
 
         return new LandscapePlan(
