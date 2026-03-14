@@ -8,25 +8,17 @@
  * <p>This module has no public API facade. All communication happens through event listeners.
  * Other modules should publish events, not call notification services directly.
  *
- * <p>Module Dependencies:
+ * <p>Module Dependencies (event types only, no method calls):
  * <ul>
- *   <li>shared - For infrastructure services and booking domain events</li>
- *   <li>trivia - For quiz-related event types only (no method calls)</li>
- *   <li>foosball - For game-related event types only (no method calls)</li>
- *   <li>user - For user-related event types only (no method calls)</li>
- * </ul>
- *
- * <p>Event Subscriptions:
- * <ul>
- *   <li>{@link biz.thonbecker.personal.shared.events.BookingCreatedEvent} - Send booking confirmation email to attendee and admin</li>
- *   <li>{@link biz.thonbecker.personal.shared.events.BookingCancelledEvent} - Send cancellation notification to attendee</li>
- *   <li>QuizCompletedEvent, QuizStartedEvent, PlayerJoinedQuizEvent - Log quiz events</li>
- *   <li>GameRecordedEvent, PlayerCreatedEvent - Log foosball events</li>
- *   <li>UserRegisteredEvent, UserLoginEvent, UserProfileUpdatedEvent - Log user events</li>
+ *   <li>shared - For infrastructure configuration</li>
+ *   <li>booking - For BookingCreatedEvent, BookingCancelledEvent</li>
+ *   <li>trivia - For QuizStartedEvent, QuizCompletedEvent, PlayerJoinedQuizEvent</li>
+ *   <li>foosball - For GameRecordedEvent, PlayerCreatedEvent</li>
+ *   <li>user - For UserRegisteredEvent, UserLoginEvent, UserProfileUpdatedEvent</li>
  * </ul>
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Notification Services",
-        allowedDependencies = {"shared", "trivia", "foosball", "user"})
+        allowedDependencies = {"shared", "booking :: api", "trivia", "foosball", "user"})
 @org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.notification;

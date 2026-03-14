@@ -6,8 +6,6 @@ import biz.thonbecker.personal.booking.domain.exceptions.BookingTypeNotFoundExce
 import biz.thonbecker.personal.booking.domain.exceptions.InvalidBookingException;
 import biz.thonbecker.personal.booking.domain.exceptions.SlotNotAvailableException;
 import biz.thonbecker.personal.booking.platform.persistence.*;
-import biz.thonbecker.personal.shared.events.BookingCancelledEvent;
-import biz.thonbecker.personal.shared.events.BookingCreatedEvent;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
