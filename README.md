@@ -74,7 +74,7 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - **Spring HTTP Interfaces** - Declarative HTTP clients (`@GetExchange`, `@HttpExchange`) with WebClient backend
 - **Spring WebSocket** - Real-time communication (STOMP over SockJS)
 - **Spring AI** - AWS Bedrock Converse API (Claude Sonnet 4.6) + Titan Text Embeddings V2
-- **PostgreSQL 16** - Relational database (auto-started via Docker Compose)
+- **PostgreSQL 18** - Relational database (auto-started via Docker Compose)
 - **Liquibase** - Database migration and version control
 - **Caffeine Cache** - In-memory caching solution
 - **Thymeleaf** - Server-side template engine
