@@ -11,10 +11,8 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
- * Shared Testcontainers configuration for integration tests.
- *
- * <p>Provides a PostgreSQL container and stub OAuth2 client registration
- * so tests don't need a real Cognito connection.
+ * Shared test configuration providing Testcontainers PostgreSQL and a stub
+ * OAuth2 client registration so tests don't need a real Cognito connection.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfig {
@@ -28,15 +26,14 @@ public class TestcontainersConfig {
     @Bean
     ClientRegistrationRepository clientRegistrationRepository() {
         final var registration = ClientRegistration.withRegistrationId("cognito")
-                .clientId("test-client")
-                .clientSecret("test-secret")
+                .clientId("test")
+                .clientSecret("test")
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
-                .authorizationUri("https://test.auth.example.com/authorize")
-                .tokenUri("https://test.auth.example.com/token")
-                .userInfoUri("https://test.auth.example.com/userinfo")
-                .jwkSetUri("https://test.auth.example.com/.well-known/jwks.json")
-                .scope("openid", "profile", "email")
+                .authorizationUri("https://stub/authorize")
+                .tokenUri("https://stub/token")
+                .jwkSetUri("https://stub/jwks")
+                .scope("openid")
                 .build();
         return new InMemoryClientRegistrationRepository(List.of(registration));
     }
