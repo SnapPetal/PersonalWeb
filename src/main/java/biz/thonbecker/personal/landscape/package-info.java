@@ -32,7 +32,6 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Landscape Planning",
-        allowedDependencies = {"shared", "user"},
-        type = org.springframework.modulith.ApplicationModule.Type.OPEN)
+        allowedDependencies = {"shared", "user"})
 @org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.landscape;

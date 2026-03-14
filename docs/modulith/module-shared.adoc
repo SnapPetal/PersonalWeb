@@ -2,12 +2,4 @@
 |===
 |Base package
 |`biz.thonbecker.personal.shared`
-|Spring components
-|* `b.t.p.s.platform.configuration.AwsConfig`
-* `b.t.p.s.platform.configuration.CacheConfig`
-* `b.t.p.s.platform.configuration.JpaConfig`
-* `b.t.p.s.platform.configuration.RetryConfig`
-* `b.t.p.s.platform.configuration.SecurityConfig`
-* `b.t.p.s.platform.configuration.ShedlockConfig`
-* `b.t.p.s.platform.configuration.WebSocketConfig`
 |===

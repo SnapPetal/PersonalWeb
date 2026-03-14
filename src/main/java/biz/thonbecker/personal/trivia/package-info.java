@@ -30,7 +30,6 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Trivia Quiz",
-        allowedDependencies = {"shared"},
-        type = org.springframework.modulith.ApplicationModule.Type.OPEN)
+        allowedDependencies = {"shared"})
 @org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.trivia;

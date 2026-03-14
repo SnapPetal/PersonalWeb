@@ -2,10 +2,4 @@
 |===
 |Base package
 |`biz.thonbecker.personal.trivia`
-|Spring components
-|_Services_
-
-* `b.t.p.t.platform.TriviaService`
-|Aggregate roots
-|* `b.t.p.t.platform.QuizResultEntity`
 |===

@@ -2,8 +2,4 @@
 |===
 |Base package
 |`biz.thonbecker.personal.skatetricks`
-|Spring components
-|_Services_
-
-* `b.t.p.s.platform.SkateTricksService`
 |===

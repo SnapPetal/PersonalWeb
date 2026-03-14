@@ -49,6 +49,5 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Shared Infrastructure",
-        allowedDependencies = {},
-        type = org.springframework.modulith.ApplicationModule.Type.OPEN)
+        allowedDependencies = {})
 package biz.thonbecker.personal.shared;
