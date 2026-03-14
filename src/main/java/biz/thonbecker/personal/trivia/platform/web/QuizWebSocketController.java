@@ -1,9 +1,9 @@
 package biz.thonbecker.personal.trivia.platform.web;
 
 import biz.thonbecker.personal.trivia.api.QuizState;
-import biz.thonbecker.personal.trivia.api.TriviaFacade;
 import biz.thonbecker.personal.trivia.domain.Player;
 import biz.thonbecker.personal.trivia.domain.Quiz;
+import biz.thonbecker.personal.trivia.platform.TriviaService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -18,11 +18,11 @@ import org.springframework.stereotype.Controller;
 @Slf4j
 class QuizWebSocketController {
 
-    private final TriviaFacade triviaFacade;
+    private final TriviaService triviaService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    public QuizWebSocketController(TriviaFacade triviaFacade, SimpMessagingTemplate messagingTemplate) {
-        this.triviaFacade = triviaFacade;
+    public QuizWebSocketController(TriviaService triviaService, SimpMessagingTemplate messagingTemplate) {
+        this.triviaService = triviaService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -30,7 +30,7 @@ class QuizWebSocketController {
     public void createTriviaQuiz(TriviaQuizRequest request) {
         log.info("Received trivia quiz creation request: {}", request);
 
-        Quiz quiz = triviaFacade.createTriviaQuiz(
+        Quiz quiz = triviaService.createTriviaQuiz(
                 request.getTitle(), request.getQuestionCount(), request.getDifficulty(), request.getCreatorId());
 
         // Broadcast quiz creation to all subscribers
@@ -42,10 +42,10 @@ class QuizWebSocketController {
     public void joinQuiz(JoinQuizRequest request) {
         log.info("Player {} joining quiz {}", request.getPlayer().getName(), request.getQuizId());
 
-        triviaFacade.addPlayer(request.getQuizId(), request.getPlayer());
+        triviaService.addPlayer(request.getQuizId(), request.getPlayer());
 
         // Broadcast updated player list
-        List<Player> players = triviaFacade.getPlayers(request.getQuizId());
+        List<Player> players = triviaService.getPlayers(request.getQuizId());
         messagingTemplate.convertAndSend("/topic/quiz/players", players);
         log.info("Player list updated for quiz {}: {} players", request.getQuizId(), players.size());
     }
@@ -55,7 +55,7 @@ class QuizWebSocketController {
         log.info("Player {} attempting to start quiz: {}", request.getPlayerId(), request.getQuizId());
 
         try {
-            QuizState state = triviaFacade.startQuiz(request.getQuizId(), request.getPlayerId());
+            QuizState state = triviaService.startQuiz(request.getQuizId(), request.getPlayerId());
 
             if (state != null) {
                 // Broadcast quiz state to all subscribers of this specific quiz
@@ -74,7 +74,7 @@ class QuizWebSocketController {
     public void submitAnswer(AnswerSubmission submission) {
         log.info("Answer submitted for quiz {} by player {}", submission.getQuizId(), submission.getPlayerId());
 
-        QuizState state = triviaFacade.submitAnswer(
+        QuizState state = triviaService.submitAnswer(
                 submission.getQuizId(),
                 submission.getPlayerId(),
                 submission.getQuestionId(),
@@ -90,7 +90,7 @@ class QuizWebSocketController {
     public void nextQuestion(NextQuestionRequest request) {
         log.info("Moving to next question for quiz: {}", request.getQuizId());
 
-        QuizState state = triviaFacade.nextQuestion(request.getQuizId());
+        QuizState state = triviaService.nextQuestion(request.getQuizId());
 
         if (state != null) {
             messagingTemplate.convertAndSend("/topic/quiz/state/" + request.getQuizId(), state);

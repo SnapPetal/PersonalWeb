@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.skatetricks.platform.web;
 
-import biz.thonbecker.personal.skatetricks.api.SkateTricksFacade;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
+import biz.thonbecker.personal.skatetricks.platform.SkateTricksService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -12,11 +12,11 @@ import org.springframework.stereotype.Controller;
 @Slf4j
 class SkateTricksWebSocketController {
 
-    private final SkateTricksFacade skateTricksFacade;
+    private final SkateTricksService skateTricksService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    SkateTricksWebSocketController(SkateTricksFacade skateTricksFacade, SimpMessagingTemplate messagingTemplate) {
-        this.skateTricksFacade = skateTricksFacade;
+    SkateTricksWebSocketController(SkateTricksService skateTricksService, SimpMessagingTemplate messagingTemplate) {
+        this.skateTricksService = skateTricksService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -25,7 +25,7 @@ class SkateTricksWebSocketController {
         log.info("Received {} frames for session {}", request.frames().size(), request.sessionId());
 
         try {
-            TrickAnalysisResult result = skateTricksFacade.analyzeFrames(request.sessionId(), request.frames());
+            TrickAnalysisResult result = skateTricksService.analyzeFrames(request.sessionId(), request.frames());
             messagingTemplate.convertAndSend("/topic/skatetricks/result/" + request.sessionId(), result);
         } catch (Exception e) {
             log.error("Error analyzing frames for session {}", request.sessionId(), e);

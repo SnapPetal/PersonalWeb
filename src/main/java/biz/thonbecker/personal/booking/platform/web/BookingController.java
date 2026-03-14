@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.booking.platform.web;
 
 import biz.thonbecker.personal.booking.api.Booking;
-import biz.thonbecker.personal.booking.api.BookingFacade;
+import biz.thonbecker.personal.booking.platform.BookingService;
 import biz.thonbecker.personal.booking.platform.web.model.CreateBookingRequest;
 import jakarta.validation.Valid;
 import java.security.Principal;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class BookingController {
 
-    private final BookingFacade bookingFacade;
+    private final BookingService bookingService;
 
     /**
      * Main booking page.
@@ -33,7 +33,7 @@ public class BookingController {
      */
     @GetMapping
     public String bookingPage(final Model model) {
-        final var bookingTypes = bookingFacade.getActiveBookingTypes();
+        final var bookingTypes = bookingService.getActiveBookingTypes();
         model.addAttribute("bookingTypes", bookingTypes);
         return "booking/index";
     }
@@ -54,7 +54,7 @@ public class BookingController {
 
         try {
             log.debug("Fetching available slots for type {} on {}", bookingTypeId, date);
-            final var slots = bookingFacade.getAvailableSlots(bookingTypeId, date);
+            final var slots = bookingService.getAvailableSlots(bookingTypeId, date);
             model.addAttribute("slots", slots);
             model.addAttribute("bookingTypeId", bookingTypeId);
             model.addAttribute("date", date);
@@ -88,7 +88,7 @@ public class BookingController {
                     request.startTime(),
                     userId);
 
-            final var booking = bookingFacade.createBooking(
+            final var booking = bookingService.createBooking(
                     request.bookingTypeId(),
                     request.attendeeName(),
                     request.attendeeEmail(),
@@ -116,7 +116,7 @@ public class BookingController {
     @GetMapping("/confirmation/{confirmationCode}")
     public String viewBooking(@PathVariable final String confirmationCode, final Model model) {
         try {
-            final var booking = bookingFacade.getBookingByConfirmationCode(confirmationCode);
+            final var booking = bookingService.getBookingByConfirmationCode(confirmationCode);
             model.addAttribute("booking", booking);
             return "booking/confirmation";
         } catch (final Exception e) {
@@ -137,8 +137,8 @@ public class BookingController {
     public ResponseEntity<Void> cancelBooking(@PathVariable final String confirmationCode) {
         try {
             log.info("Cancelling booking: {}", confirmationCode);
-            final var booking = bookingFacade.getBookingByConfirmationCode(confirmationCode);
-            bookingFacade.cancelBooking(booking.id());
+            final var booking = bookingService.getBookingByConfirmationCode(confirmationCode);
+            bookingService.cancelBooking(booking.id());
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to cancel booking: {}", e.getMessage(), e);

@@ -1,6 +1,5 @@
 package biz.thonbecker.personal.skatetricks.platform;
 
-import biz.thonbecker.personal.skatetricks.api.SkateTricksFacade;
 import biz.thonbecker.personal.skatetricks.api.SupportedTrick;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisEvent;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
@@ -27,7 +26,7 @@ import software.amazon.awssdk.services.s3vectors.model.VectorData;
 
 @Service
 @Slf4j
-class SkateTricksFacadeImpl implements SkateTricksFacade {
+public class SkateTricksService {
 
     private final TrickAnalyzer trickAnalyzer;
     private final TrickAttemptRepository trickAttemptRepository;
@@ -42,7 +41,7 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
     @Value("${skatetricks.vectorstore.index}")
     private String vectorIndex;
 
-    SkateTricksFacadeImpl(
+    SkateTricksService(
             TrickAnalyzer trickAnalyzer,
             TrickAttemptRepository trickAttemptRepository,
             ApplicationEventPublisher eventPublisher,
@@ -57,7 +56,6 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         this.embeddingService = embeddingService;
     }
 
-    @Override
     @Transactional
     public TrickAnalysisResult analyzeFrames(String sessionId, List<String> base64Frames) {
         log.info("Analyzing {} frames for session {}", base64Frames.size(), sessionId);
@@ -67,7 +65,6 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         return result.withAttemptId(id);
     }
 
-    @Override
     @Transactional
     public TrickAnalysisResult analyzeVideo(String sessionId, byte[] videoData, String originalFilename) {
         log.info("Analyzing video for session {}: {} ({} bytes)", sessionId, originalFilename, videoData.length);
@@ -141,7 +138,6 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         return entity.getId();
     }
 
-    @Override
     @Transactional
     public void verifyAttempt(Long attemptId, String correctedTrickName) {
         TrickAttemptEntity entity = trickAttemptRepository
@@ -261,7 +257,6 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         }
     }
 
-    @Override
     public byte[] convertVideo(byte[] videoData, String originalFilename) {
         log.info("Converting video: {} ({} bytes)", originalFilename, videoData.length);
 
@@ -294,7 +289,6 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         }
     }
 
-    @Override
     @Transactional
     public TrickAnalysisResult analyzeConvertedVideo(String sessionId, byte[] mp4Data) {
         log.info("Analyzing converted video for session {} ({} bytes)", sessionId, mp4Data.length);
@@ -322,7 +316,6 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         }
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<TrickAnalysisResult> getSessionHistory(String sessionId) {
         return trickAttemptRepository.findBySessionIdOrderByCreatedAtDesc(sessionId).stream()

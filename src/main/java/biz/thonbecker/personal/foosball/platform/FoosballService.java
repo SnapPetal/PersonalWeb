@@ -1,167 +1,234 @@
 package biz.thonbecker.personal.foosball.platform;
 
-import biz.thonbecker.personal.foosball.platform.persistence.Game;
-import biz.thonbecker.personal.foosball.platform.persistence.GameRepository;
+import biz.thonbecker.personal.foosball.domain.Game;
+import biz.thonbecker.personal.foosball.domain.Player;
+import biz.thonbecker.personal.foosball.domain.PlayerStats;
+import biz.thonbecker.personal.foosball.domain.Team;
+import biz.thonbecker.personal.foosball.domain.TeamStats;
 import biz.thonbecker.personal.foosball.platform.persistence.GameWithPlayers;
-import biz.thonbecker.personal.foosball.platform.persistence.Player;
-import biz.thonbecker.personal.foosball.platform.persistence.PlayerRepository;
-import biz.thonbecker.personal.foosball.platform.persistence.PlayerStats;
-import biz.thonbecker.personal.foosball.platform.persistence.PlayerStatsRepository;
-import biz.thonbecker.personal.foosball.platform.persistence.TeamStats;
-import biz.thonbecker.personal.foosball.platform.persistence.TeamStatsRepository;
-import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Foosball service providing game recording, player management, and statistics.
+ */
 @Service
-@Transactional
 @Slf4j
+@RequiredArgsConstructor
 public class FoosballService {
 
-    private final PlayerRepository playerRepository;
-    private final GameRepository gameRepository;
-    private final PlayerStatsRepository playerStatsRepository;
-    private final TeamStatsRepository teamStatsRepository;
-    private final RatingService ratingService;
-
-    @Autowired
-    public FoosballService(
-            PlayerRepository playerRepository,
-            GameRepository gameRepository,
-            PlayerStatsRepository playerStatsRepository,
-            TeamStatsRepository teamStatsRepository,
-            RatingService ratingService) {
-        this.playerRepository = playerRepository;
-        this.gameRepository = gameRepository;
-        this.playerStatsRepository = playerStatsRepository;
-        this.teamStatsRepository = teamStatsRepository;
-        this.ratingService = ratingService;
-    }
-
-    // Player management
-    public Player createPlayer(String name) {
-        final var player = new Player(name);
-        return playerRepository.save(player);
-    }
-
-    public Optional<Player> findPlayerByName(String name) {
-        return playerRepository.findByName(name);
-    }
+    private final FoosballDataService foosballDataService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<Player> getAllPlayers() {
-        return playerRepository.findAllByOrderByNameAsc();
+        log.debug("Retrieving all players");
+        return foosballDataService.getAllPlayers().stream()
+                .map(this::toPlayerDomain)
+                .collect(Collectors.toList());
     }
 
-    // Game management
-    public Game recordGame(
-            Player whiteTeamPlayer1,
-            Player whiteTeamPlayer2,
-            Player blackTeamPlayer1,
-            Player blackTeamPlayer2,
-            Game.TeamColor winner) {
-        final var game = new Game(whiteTeamPlayer1, whiteTeamPlayer2, blackTeamPlayer1, blackTeamPlayer2);
-        game.setWinner(winner);
-        final var savedGame = gameRepository.save(game);
-
-        // Update player ratings based on a game result
-        ratingService.updateRatingsAfterGame(savedGame);
-        log.info("Updated ratings for game {}", savedGame.getId());
-
-        return savedGame;
-    }
-
-    public List<Game> getAllGames() {
-        final var games = new ArrayList<Game>();
-        gameRepository.findAll().forEach(games::add);
-        return games;
-    }
-
-    public Optional<Game> getGameById(Long id) {
-        return gameRepository.findById(id);
-    }
-
-    public List<GameWithPlayers> getRecentGames() {
-        return gameRepository.findRecentGames();
-    }
-
-    public List<GameWithPlayers> getLastGame() {
-        final var result = gameRepository.findLastGame();
-        if (!result.isEmpty()) {
-            final var game = result.getFirst();
-            log.info(
-                    "Repository returned GameWithPlayers: id={}, wp1={}, wp2={}, bp1={}, bp2={}",
-                    game.getId(),
-                    game.getWhiteTeamPlayer1Name(),
-                    game.getWhiteTeamPlayer2Name(),
-                    game.getBlackTeamPlayer1Name(),
-                    game.getBlackTeamPlayer2Name());
+    @Transactional
+    public void createPlayer(Player player) {
+        if (player == null) {
+            throw new IllegalArgumentException("Player cannot be null");
         }
-        return result;
+        if (player.getName() == null || player.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Player name cannot be null or empty");
+        }
+
+        log.info("Creating player: {}", player.getName());
+        final var createdPlayer = foosballDataService.createPlayer(player.getName());
+
+        // Publish event
+        eventPublisher.publishEvent(new biz.thonbecker.personal.foosball.api.PlayerCreatedEvent(
+                createdPlayer.getId().toString(), createdPlayer.getName(), Instant.now()));
     }
 
-    // Player statistics
-    public List<PlayerStats> getTopPlayersByWinPercentage(int minGames) {
-        return playerStatsRepository.findTopPlayersByWinPercentage(minGames);
+    public List<TeamStats> getTeamStats() {
+        log.debug("Retrieving team statistics");
+        return foosballDataService.getAllTeamStatsOrderedByWinPercentage().stream()
+                .map(this::toTeamStatsDomain)
+                .collect(Collectors.toList());
     }
 
-    public List<PlayerStats> getTopPlayersByTotalGames(int minGames) {
-        return playerStatsRepository.findTopPlayersByTotalGames(minGames);
+    @Transactional
+    public Game createGame(Game game) {
+        if (game == null) {
+            throw new IllegalArgumentException("Game cannot be null");
+        }
+        if (game.getWhiteTeam() == null || game.getBlackTeam() == null) {
+            throw new IllegalArgumentException("Both teams must be specified");
+        }
+        if (game.getResult() == null) {
+            throw new IllegalArgumentException("Game result must be specified - draws are not allowed");
+        }
+
+        log.info(
+                "Creating game: {} vs {}",
+                game.getWhiteTeam().getPlayer1() + "&" + game.getWhiteTeam().getPlayer2(),
+                game.getBlackTeam().getPlayer1() + "&" + game.getBlackTeam().getPlayer2());
+
+        // Look up or create players
+        final var whitePlayer1 = foosballDataService
+                .findPlayerByName(game.getWhiteTeam().getPlayer1())
+                .orElseGet(() ->
+                        foosballDataService.createPlayer(game.getWhiteTeam().getPlayer1()));
+        final var whitePlayer2 = foosballDataService
+                .findPlayerByName(game.getWhiteTeam().getPlayer2())
+                .orElseGet(() ->
+                        foosballDataService.createPlayer(game.getWhiteTeam().getPlayer2()));
+        final var blackPlayer1 = foosballDataService
+                .findPlayerByName(game.getBlackTeam().getPlayer1())
+                .orElseGet(() ->
+                        foosballDataService.createPlayer(game.getBlackTeam().getPlayer1()));
+        final var blackPlayer2 = foosballDataService
+                .findPlayerByName(game.getBlackTeam().getPlayer2())
+                .orElseGet(() ->
+                        foosballDataService.createPlayer(game.getBlackTeam().getPlayer2()));
+
+        // Convert GameResult to TeamColor
+        final var winner =
+                switch (game.getResult()) {
+                    case WHITE_TEAM_WIN -> biz.thonbecker.personal.foosball.platform.persistence.Game.TeamColor.WHITE;
+                    case BLACK_TEAM_WIN -> biz.thonbecker.personal.foosball.platform.persistence.Game.TeamColor.BLACK;
+                };
+
+        final var createdGame =
+                foosballDataService.recordGame(whitePlayer1, whitePlayer2, blackPlayer1, blackPlayer2, winner);
+
+        final var gameDomain = toGameDomainFromEntity(createdGame, game.getWhiteTeam(), game.getBlackTeam());
+
+        // Publish event
+        String winnerTeamName = determineWinnerTeamName(gameDomain);
+        eventPublisher.publishEvent(new biz.thonbecker.personal.foosball.api.GameRecordedEvent(
+                gameDomain.getId(),
+                gameDomain.getWhiteTeam().getPlayer1() + " & "
+                        + gameDomain.getWhiteTeam().getPlayer2(),
+                0, // Scores not tracked anymore
+                gameDomain.getBlackTeam().getPlayer1() + " & "
+                        + gameDomain.getBlackTeam().getPlayer2(),
+                0, // Scores not tracked anymore
+                gameDomain.getResult(),
+                winnerTeamName,
+                Instant.now()));
+
+        return gameDomain;
     }
 
-    public List<PlayerStats> getTopPlayersByWins(int minGames) {
-        return playerStatsRepository.findTopPlayersByWins(minGames);
+    private String determineWinnerTeamName(Game game) {
+        return switch (game.getResult()) {
+            case WHITE_TEAM_WIN ->
+                game.getWhiteTeam().getPlayer1() + " & " + game.getWhiteTeam().getPlayer2();
+            case BLACK_TEAM_WIN ->
+                game.getBlackTeam().getPlayer1() + " & " + game.getBlackTeam().getPlayer2();
+        };
     }
 
-    public List<PlayerStats> getAllPlayerStatsOrderedByWinPercentage() {
-        return playerStatsRepository.findAllPlayerStatsOrderedByWinPercentage();
+    public List<PlayerStats> getPlayerStats() {
+        log.debug("Retrieving player statistics");
+        // Use win percentage ordering (ELO ratings are tracked separately via Player.rating)
+        // Filter to only include players with at least 5 games
+        return foosballDataService.getAllPlayerStatsOrderedByWinPercentage().stream()
+                .map(this::toPlayerStatsDomain)
+                .filter(stats -> stats.getTotalGames() >= 5)
+                .collect(Collectors.toList());
     }
 
-    /**
-     * Get leaderboard (top 10 players by rating)
-     */
-    public List<Player> getLeaderboard() {
-        return playerRepository.findTop10ByOrderByRatingDesc();
+    public List<Game> getRecentGames() {
+        log.debug("Retrieving recent games");
+        return foosballDataService.getRecentGames().stream()
+                .map(this::toGameDomain)
+                .collect(Collectors.toList());
     }
 
-    // Team performance statistics
-    public List<TeamStats> getTopTeamsByWinPercentage(int minGames) {
-        return teamStatsRepository.findTopTeamsByWinPercentage(minGames);
+    public Game getLastGame() {
+        log.debug("Retrieving last game");
+        final var lastGames = foosballDataService.getLastGame();
+        if (!lastGames.isEmpty()) {
+            final var gameWithPlayers = lastGames.getFirst();
+            log.info(
+                    "GameWithPlayers raw data - WP1: {}, WP2: {}, BP1: {}, BP2: {}",
+                    gameWithPlayers.getWhiteTeamPlayer1Name(),
+                    gameWithPlayers.getWhiteTeamPlayer2Name(),
+                    gameWithPlayers.getBlackTeamPlayer1Name(),
+                    gameWithPlayers.getBlackTeamPlayer2Name());
+            return toGameDomain(gameWithPlayers);
+        }
+        return null;
     }
 
-    public List<TeamStats> getTopTeamsByAverageScore(int minGames) {
-        return teamStatsRepository.findTopTeamsByAverageScore(minGames);
+    public boolean isServiceAvailable() {
+        return true; // Local service is always available
     }
 
-    public List<TeamStats> getAllTeamStatsOrderedByWinPercentage() {
-        return teamStatsRepository.findAllTeamStatsOrderedByWinPercentage();
+    // Mapper methods
+    private Player toPlayerDomain(biz.thonbecker.personal.foosball.platform.persistence.Player entity) {
+        return new Player(entity.getId().toString(), entity.getName());
     }
 
-    // Overall statistics
-    public Long getTotalGames() {
-        return gameRepository.count();
+    private PlayerStats toPlayerStatsDomain(
+            biz.thonbecker.personal.foosball.platform.persistence.PlayerStats projection) {
+        return new PlayerStats(
+                projection.getName(),
+                projection.getRating(),
+                projection.getPeakRating(),
+                projection.getCurrentStreak(),
+                projection.getBestStreak(),
+                projection.getGamesPlayed(),
+                projection.getTotalGames().intValue(),
+                projection.getWins().intValue(),
+                projection.getTotalGames().intValue() - projection.getWins().intValue(),
+                0,
+                0,
+                0);
     }
 
-    public Long getTotalPlayers() {
-        return playerRepository.count();
+    private TeamStats toTeamStatsDomain(biz.thonbecker.personal.foosball.platform.persistence.TeamStats projection) {
+        return new TeamStats(
+                projection.getPlayer1Name(),
+                projection.getPlayer2Name(),
+                projection.getGamesPlayedTogether().intValue(),
+                projection.getWins().intValue(),
+                projection.getGamesPlayedTogether().intValue()
+                        - projection.getWins().intValue(),
+                0, // draws not tracked
+                0, // goals scored not tracked
+                0); // goals against not tracked
     }
 
-    public Long getGamesWithWinner() {
-        return gameRepository.countGamesWithWinner();
+    private Game toGameDomain(GameWithPlayers gameWithPlayers) {
+        Team whiteTeam = new Team(gameWithPlayers.getWhiteTeamPlayer1Name(), gameWithPlayers.getWhiteTeamPlayer2Name());
+        Team blackTeam = new Team(gameWithPlayers.getBlackTeamPlayer1Name(), gameWithPlayers.getBlackTeamPlayer2Name());
+
+        final var result = convertTeamColorToGameResult(gameWithPlayers.getWinner());
+        final var gameDomain = new Game(whiteTeam, blackTeam, result);
+        gameDomain.setId(gameWithPlayers.getId());
+        gameDomain.setPlayedAt(gameWithPlayers.getPlayedAt());
+
+        return gameDomain;
     }
 
-    public Double getAverageTotalScore() {
-        return gameRepository.getAverageTotalScore();
+    private Game toGameDomainFromEntity(
+            biz.thonbecker.personal.foosball.platform.persistence.Game entity, Team whiteTeam, Team blackTeam) {
+        final var result = convertTeamColorToGameResult(entity.getWinner());
+        final var gameDomain = new Game(whiteTeam, blackTeam, result);
+        gameDomain.setId(entity.getId());
+        gameDomain.setPlayedAt(entity.getPlayedAt());
+
+        return gameDomain;
     }
 
-    public Integer getHighestTotalScore() {
-        return gameRepository.getHighestTotalScore();
-    }
-
-    public Integer getLowestTotalScore() {
-        return gameRepository.getLowestTotalScore();
+    private biz.thonbecker.personal.foosball.domain.GameResult convertTeamColorToGameResult(
+            biz.thonbecker.personal.foosball.platform.persistence.Game.TeamColor winner) {
+        return switch (winner) {
+            case WHITE -> biz.thonbecker.personal.foosball.domain.GameResult.WHITE_TEAM_WIN;
+            case BLACK -> biz.thonbecker.personal.foosball.domain.GameResult.BLACK_TEAM_WIN;
+        };
     }
 }

@@ -127,18 +127,18 @@ See [Spring Modulith Documentation](docs/modulith/all-docs.adoc) for detailed mo
 
 ## Modules
 
-|     Module     |    Public Facade    |                          Purpose                           |
-|----------------|---------------------|------------------------------------------------------------|
-| `foosball`     | `FoosballFacade`    | Table soccer game tracking, stats, tournaments, ELO rating |
-| `trivia`       | `TriviaFacade`      | AI-powered FPU trivia, WebSocket multiplayer               |
-| `skatetricks`  | `SkateTricksFacade` | YOLO pose estimation + Bedrock AI trick detection          |
-| `landscape`    | `LandscapeFacade`   | AI-powered landscape planning with USDA plant database     |
-| `booking`      | `BookingFacade`     | Appointment scheduling with auto-availability              |
-| `tankgame`     | `TankGameFacade`    | WebSocket tank game with player progression                |
-| `user`         | `UserFacade`        | User management                                            |
-| `notification` | _(event-driven)_    | Email notifications via event subscribers                  |
-| `content`      | _(no facade)_       | Bible verse, Dad jokes (Polly TTS + S3)                    |
-| `shared`       | _(config + events)_ | Configuration classes + domain events                      |
+|     Module     |       Service        |                          Purpose                           |
+|----------------|----------------------|------------------------------------------------------------|
+| `foosball`     | `FoosballService`    | Table soccer game tracking, stats, tournaments, ELO rating |
+| `trivia`       | `TriviaService`      | AI-powered FPU trivia, WebSocket multiplayer               |
+| `skatetricks`  | `SkateTricksService` | YOLO pose estimation + Bedrock AI trick detection          |
+| `landscape`    | `LandscapeService`   | AI-powered landscape planning with USDA plant database     |
+| `booking`      | `BookingService`     | Appointment scheduling with auto-availability              |
+| `tankgame`     | `TankGameService`    | WebSocket tank game with player progression                |
+| `user`         | `UserService`        | User management                                            |
+| `notification` | _(event-driven)_     | Email notifications via event subscribers                  |
+| `content`      | _(no service)_       | Bible verse, Dad jokes (Polly TTS + S3)                    |
+| `shared`       | _(config + events)_  | Configuration classes + domain events                      |
 
 ## Testing
 

@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.foosball.platform.config;
 
-import biz.thonbecker.personal.foosball.platform.FoosballService;
+import biz.thonbecker.personal.foosball.platform.FoosballDataService;
 import biz.thonbecker.personal.foosball.platform.persistence.Game;
 import biz.thonbecker.personal.foosball.platform.persistence.Player;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class DataLoader {
 
-    private final FoosballService foosballService;
+    private final FoosballDataService foosballService;
 
     @Value("${foosball.sample-data.enabled:true}")
     private boolean sampleDataEnabled;

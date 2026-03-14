@@ -1,11 +1,11 @@
 package biz.thonbecker.personal.landscape.platform.web;
 
 import biz.thonbecker.personal.landscape.api.HardinessZone;
-import biz.thonbecker.personal.landscape.api.LandscapeFacade;
 import biz.thonbecker.personal.landscape.api.LandscapePlan;
 import biz.thonbecker.personal.landscape.api.LightRequirement;
 import biz.thonbecker.personal.landscape.api.SeasonalAnalysis;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
+import biz.thonbecker.personal.landscape.platform.LandscapeService;
 import biz.thonbecker.personal.landscape.platform.web.model.AddPlantRequest;
 import java.io.IOException;
 import java.security.Principal;
@@ -29,7 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class LandscapeController {
 
-    private final LandscapeFacade landscapeFacade;
+    private final LandscapeService landscapeService;
 
     /**
      * Main landscape planner page.
@@ -41,7 +41,7 @@ public class LandscapeController {
     @GetMapping
     public String landscapePlanner(final Model model, final Principal principal) {
         if (principal != null) {
-            final var userPlans = landscapeFacade.getUserPlans(principal.getName());
+            final var userPlans = landscapeService.getUserPlans(principal.getName());
             model.addAttribute("userPlans", userPlans);
         }
         model.addAttribute("hardinessZones", HardinessZone.values());
@@ -86,7 +86,7 @@ public class LandscapeController {
 
             log.info("Creating landscape plan for user: {}, zone: {}", userId, hardinessZone);
 
-            final var plan = landscapeFacade.createPlan(userId, name, description, imageBytes, hardinessZone, zipCode);
+            final var plan = landscapeService.createPlan(userId, name, description, imageBytes, hardinessZone, zipCode);
 
             log.info("Successfully created plan {} for user {}", plan.id(), userId);
             return ResponseEntity.ok(plan);
@@ -110,7 +110,7 @@ public class LandscapeController {
     @ResponseBody
     public ResponseEntity<LandscapePlan> getPlan(@PathVariable final Long planId) {
         try {
-            final var plan = landscapeFacade.getPlan(planId);
+            final var plan = landscapeService.getPlan(planId);
             return ResponseEntity.ok(plan);
         } catch (final Exception e) {
             log.error("Failed to retrieve plan {}: {}", planId, e.getMessage(), e);
@@ -131,7 +131,7 @@ public class LandscapeController {
             return ResponseEntity.status(401).build();
         }
 
-        final var plans = landscapeFacade.getUserPlans(principal.getName());
+        final var plans = landscapeService.getUserPlans(principal.getName());
         return ResponseEntity.ok(plans);
     }
 
@@ -160,7 +160,7 @@ public class LandscapeController {
 
         try {
             log.debug("Searching plants: query={}, zone={}", query, zone);
-            final var plants = landscapeFacade.searchPlants(query, zone, lightRequirement, waterRequirement);
+            final var plants = landscapeService.searchPlants(query, zone, lightRequirement, waterRequirement);
             model.addAttribute("plants", plants);
             log.info("Found {} plants matching search criteria", plants.size());
         } catch (final Exception e) {
@@ -182,7 +182,7 @@ public class LandscapeController {
     @GetMapping("/plans/{planId}/recommendations")
     public String getRecommendations(@PathVariable final Long planId, final Model model) {
         try {
-            final var recommendations = landscapeFacade.getRecommendations(planId);
+            final var recommendations = landscapeService.getRecommendations(planId);
             model.addAttribute("recommendations", recommendations);
             log.info("Retrieved {} recommendations for plan {}", recommendations.size(), planId);
         } catch (final Exception e) {
@@ -208,7 +208,7 @@ public class LandscapeController {
 
         try {
             log.info("Adding plant placement to plan {}: {}", planId, request.usdaSymbol());
-            landscapeFacade.addPlantPlacement(
+            landscapeService.addPlantPlacement(
                     planId,
                     request.usdaSymbol(),
                     request.plantName(),
@@ -224,22 +224,22 @@ public class LandscapeController {
     }
 
     /**
-     * Fetches a plant image URL from Wikipedia.
+     * Fetches a plant image URL from USDA Plants Database.
      *
-     * @param name Scientific or common name of the plant
+     * @param symbol USDA plant symbol (e.g., "ACRU")
      * @return JSON with imageUrl field
      */
     @GetMapping("/plants/image")
     @ResponseBody
-    public ResponseEntity<java.util.Map<String, String>> getPlantImage(@RequestParam("name") final String name) {
+    public ResponseEntity<java.util.Map<String, String>> getPlantImage(@RequestParam("symbol") final String symbol) {
         try {
-            final var imageUrl = landscapeFacade.getPlantImageUrl(name);
+            final var imageUrl = landscapeService.getPlantImageUrl(symbol);
             if (imageUrl != null) {
                 return ResponseEntity.ok(java.util.Map.of("imageUrl", imageUrl));
             }
             return ResponseEntity.notFound().build();
         } catch (final Exception e) {
-            log.error("Failed to fetch plant image for '{}': {}", name, e.getMessage());
+            log.error("Failed to fetch plant image for symbol '{}': {}", symbol, e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -255,7 +255,7 @@ public class LandscapeController {
     public ResponseEntity<SeasonalAnalysis> getSeasonalAnalysis(@PathVariable final Long planId) {
         try {
             log.info("Generating seasonal analysis for plan {}", planId);
-            final var analysis = landscapeFacade.getSeasonalAnalysis(planId);
+            final var analysis = landscapeService.getSeasonalAnalysis(planId);
             return ResponseEntity.ok(analysis);
         } catch (final Exception e) {
             log.error("Failed to generate seasonal analysis for plan {}: {}", planId, e.getMessage(), e);
@@ -274,7 +274,7 @@ public class LandscapeController {
     public ResponseEntity<Void> deletePlan(@PathVariable final Long planId) {
         try {
             log.info("Deleting landscape plan {}", planId);
-            landscapeFacade.deletePlan(planId);
+            landscapeService.deletePlan(planId);
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to delete plan {}: {}", planId, e.getMessage(), e);

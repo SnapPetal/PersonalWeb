@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.booking.platform.web;
 
-import biz.thonbecker.personal.booking.api.BookingFacade;
 import biz.thonbecker.personal.booking.api.BookingType;
+import biz.thonbecker.personal.booking.platform.BookingService;
 import biz.thonbecker.personal.booking.platform.web.model.CreateAvailabilitySlotRequest;
 import biz.thonbecker.personal.booking.platform.web.model.CreateBookingTypeRequest;
 import jakarta.validation.Valid;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class BookingAdminController {
 
-    private final BookingFacade bookingFacade;
+    private final BookingService bookingService;
 
     /**
      * Admin dashboard page.
@@ -33,9 +33,9 @@ public class BookingAdminController {
      */
     @GetMapping
     public String adminDashboard(final Model model) {
-        final var bookingTypes = bookingFacade.getAllBookingTypes();
-        final var bookings = bookingFacade.getAllBookings();
-        final var availabilitySlots = bookingFacade.getAllAvailabilitySlots();
+        final var bookingTypes = bookingService.getAllBookingTypes();
+        final var bookings = bookingService.getAllBookings();
+        final var availabilitySlots = bookingService.getAllAvailabilitySlots();
 
         model.addAttribute("bookingTypes", bookingTypes);
         model.addAttribute("bookings", bookings);
@@ -56,7 +56,7 @@ public class BookingAdminController {
         try {
             log.info("Creating booking type: {}", request.name());
 
-            final var bookingType = bookingFacade.createBookingType(
+            final var bookingType = bookingService.createBookingType(
                     request.name(),
                     request.description(),
                     request.durationMinutes(),
@@ -85,7 +85,7 @@ public class BookingAdminController {
         try {
             log.info("Creating availability slot: {} - {}", request.startTime(), request.endTime());
 
-            bookingFacade.createAvailabilitySlot(request.startTime(), request.endTime());
+            bookingService.createAvailabilitySlot(request.startTime(), request.endTime());
 
             log.info("Successfully created availability slot");
             return ResponseEntity.ok().build();
@@ -107,7 +107,7 @@ public class BookingAdminController {
     public ResponseEntity<Void> deleteAvailabilitySlot(@PathVariable final Long slotId) {
         try {
             log.info("Deleting availability slot: {}", slotId);
-            bookingFacade.deleteAvailabilitySlot(slotId);
+            bookingService.deleteAvailabilitySlot(slotId);
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to delete availability slot: {}", e.getMessage(), e);
@@ -123,7 +123,7 @@ public class BookingAdminController {
      */
     @GetMapping("/bookings")
     public String listBookings(final Model model) {
-        final var bookings = bookingFacade.getAllBookings();
+        final var bookings = bookingService.getAllBookings();
         model.addAttribute("bookings", bookings);
         return "booking/admin-fragments :: bookings-list";
     }
@@ -139,7 +139,7 @@ public class BookingAdminController {
     public ResponseEntity<Void> cancelBooking(@PathVariable final Long bookingId) {
         try {
             log.info("Admin cancelling booking: {}", bookingId);
-            bookingFacade.cancelBooking(bookingId);
+            bookingService.cancelBooking(bookingId);
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to cancel booking: {}", e.getMessage(), e);

@@ -1,10 +1,10 @@
 package biz.thonbecker.personal.foosball.platform.web;
 
-import biz.thonbecker.personal.foosball.api.FoosballFacade;
 import biz.thonbecker.personal.foosball.domain.Game;
 import biz.thonbecker.personal.foosball.domain.GameResult;
 import biz.thonbecker.personal.foosball.domain.Player;
 import biz.thonbecker.personal.foosball.domain.Team;
+import biz.thonbecker.personal.foosball.platform.FoosballService;
 import biz.thonbecker.personal.foosball.platform.TournamentService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -18,29 +18,29 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Foosball controller - handles web endpoints for foosball functionality.
- * Delegates to FoosballFacade for business logic.
+ * Delegates to FoosballService for business logic.
  */
 @Controller
 @RequestMapping("/foosball")
 @Slf4j
 public class FoosballController {
 
-    private final FoosballFacade foosballFacade;
+    private final FoosballService foosballService;
     private final TournamentService tournamentService;
 
-    public FoosballController(FoosballFacade foosballFacade, TournamentService tournamentService) {
-        this.foosballFacade = foosballFacade;
+    public FoosballController(FoosballService foosballService, TournamentService tournamentService) {
+        this.foosballService = foosballService;
         this.tournamentService = tournamentService;
     }
 
     @GetMapping
     public String foosballPage(Model model) {
-        boolean serviceAvailable = foosballFacade.isServiceAvailable();
+        boolean serviceAvailable = foosballService.isServiceAvailable();
         model.addAttribute("serviceAvailable", serviceAvailable);
 
         if (serviceAvailable) {
-            model.addAttribute("playerStats", foosballFacade.getPlayerStats());
-            model.addAttribute("players", foosballFacade.getAllPlayers());
+            model.addAttribute("playerStats", foosballService.getPlayerStats());
+            model.addAttribute("players", foosballService.getAllPlayers());
         }
 
         return "foosball";
@@ -48,26 +48,26 @@ public class FoosballController {
 
     @GetMapping("/players")
     public String getPlayers(Model model) {
-        model.addAttribute("players", foosballFacade.getAllPlayers());
+        model.addAttribute("players", foosballService.getAllPlayers());
         return "foosball-players";
     }
 
     @GetMapping("/team-stats")
     public String getTeamStats(Model model) {
-        model.addAttribute("teamStats", foosballFacade.getTeamStats());
+        model.addAttribute("teamStats", foosballService.getTeamStats());
         return "foosball-team-stats";
     }
 
     @GetMapping("/recent-games")
     public String getRecentGames(Model model) {
-        model.addAttribute("games", foosballFacade.getRecentGames());
+        model.addAttribute("games", foosballService.getRecentGames());
         model.addAttribute("ResultStatus", GameResult.class);
         return "foosball-recent-games";
     }
 
     @GetMapping("/tournaments")
     public String tournaments(Model model) {
-        model.addAttribute("players", foosballFacade.getAllPlayers());
+        model.addAttribute("players", foosballService.getAllPlayers());
         return "foosball-tournaments";
     }
 
@@ -82,7 +82,7 @@ public class FoosballController {
         model.addAttribute("bracket", bracket);
         model.addAttribute("registrations", registrations);
         model.addAttribute("matches", matches);
-        model.addAttribute("players", foosballFacade.getAllPlayers());
+        model.addAttribute("players", foosballService.getAllPlayers());
 
         return "foosball-tournament-detail";
     }
@@ -90,20 +90,20 @@ public class FoosballController {
     // HTMX Fragment Endpoints
     @GetMapping("/fragments/player-stats")
     public String getPlayerStatsFragment(Model model) {
-        model.addAttribute("playerStats", foosballFacade.getPlayerStats());
+        model.addAttribute("playerStats", foosballService.getPlayerStats());
         return "foosball-fragments :: playerStatsList";
     }
 
     @GetMapping("/fragments/games-list")
     public String getGamesListFragment(Model model) {
-        model.addAttribute("games", foosballFacade.getRecentGames());
+        model.addAttribute("games", foosballService.getRecentGames());
         return "foosball-fragments :: gamesList";
     }
 
     @GetMapping("/fragments/player-options")
     public String getPlayerOptionsFragment(Model model) {
         try {
-            model.addAttribute("players", foosballFacade.getAllPlayers());
+            model.addAttribute("players", foosballService.getAllPlayers());
         } catch (Exception e) {
             // If service is unavailable, provide empty list
             model.addAttribute("players", List.of());
@@ -114,7 +114,7 @@ public class FoosballController {
     @GetMapping("/fragments/last-game-teams")
     public String getLastGameTeamsFragment(Model model) {
         try {
-            final var lastGame = foosballFacade.getLastGame();
+            final var lastGame = foosballService.getLastGame();
             if (lastGame != null) {
                 String wp1 = lastGame.getWhiteTeam().getPlayer1();
                 String wp2 = lastGame.getWhiteTeam().getPlayer2();
@@ -136,7 +136,7 @@ public class FoosballController {
 
     @GetMapping("/fragments/player-table")
     public String getPlayerTableFragment(Model model) {
-        model.addAttribute("players", foosballFacade.getAllPlayers());
+        model.addAttribute("players", foosballService.getAllPlayers());
         return "foosball-players :: playerTable";
     }
 
@@ -145,7 +145,7 @@ public class FoosballController {
         try {
             if (name != null && !name.trim().isEmpty()) {
                 Player player = new Player(name.trim());
-                foosballFacade.createPlayer(player);
+                foosballService.createPlayer(player);
                 model.addAttribute("success", "Player '" + name.trim() + "' added successfully!");
             } else {
                 model.addAttribute("error", "Please provide a player name.");
@@ -205,7 +205,7 @@ public class FoosballController {
 
             Game game = new Game(whiteTeam, blackTeam, result);
 
-            Game createdGame = foosballFacade.createGame(game);
+            Game createdGame = foosballService.createGame(game);
             if (createdGame != null) {
                 model.addAttribute("success", "Game recorded successfully!");
             } else {

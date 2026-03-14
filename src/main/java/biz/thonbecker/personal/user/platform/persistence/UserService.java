@@ -1,6 +1,5 @@
 package biz.thonbecker.personal.user.platform.persistence;
 
-import biz.thonbecker.personal.user.api.UserFacade;
 import biz.thonbecker.personal.user.api.UserLoginEvent;
 import biz.thonbecker.personal.user.api.UserProfileUpdatedEvent;
 import biz.thonbecker.personal.user.api.UserRegisteredEvent;
@@ -15,13 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
-class UserFacadeImpl implements UserFacade {
+public class UserService {
 
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public UserFacadeImpl(
+    public UserService(
             UserRepository userRepository,
             UserProfileRepository userProfileRepository,
             ApplicationEventPublisher eventPublisher) {
@@ -30,7 +29,6 @@ class UserFacadeImpl implements UserFacade {
         this.eventPublisher = eventPublisher;
     }
 
-    @Override
     @Transactional
     public User registerUser(String username, String email) {
         if (username == null || username.trim().isEmpty()) {
@@ -73,27 +71,22 @@ class UserFacadeImpl implements UserFacade {
         return toUser(saved);
     }
 
-    @Override
     public Optional<User> findUserById(String userId) {
         return userRepository.findById(userId).map(this::toUser);
     }
 
-    @Override
     public Optional<User> findUserByUsername(String username) {
         return userRepository.findByUsername(username).map(this::toUser);
     }
 
-    @Override
     public Optional<User> findUserByEmail(String email) {
         return userRepository.findByEmail(email).map(this::toUser);
     }
 
-    @Override
     public List<User> getAllUsers() {
         return userRepository.findAll().stream().map(this::toUser).toList();
     }
 
-    @Override
     @Transactional
     public void recordLogin(String userId) {
         userRepository.findById(userId).ifPresent(user -> {
@@ -106,12 +99,10 @@ class UserFacadeImpl implements UserFacade {
         });
     }
 
-    @Override
     public Optional<UserProfile> getUserProfile(String userId) {
         return userProfileRepository.findById(userId).map(this::toUserProfile);
     }
 
-    @Override
     @Transactional
     public UserProfile updateUserProfile(UserProfile profile) {
         if (profile.getUserId() == null) {
@@ -143,7 +134,6 @@ class UserFacadeImpl implements UserFacade {
         return toUserProfile(saved);
     }
 
-    @Override
     @Transactional
     public void setUserEnabled(String userId, boolean enabled) {
         userRepository.findById(userId).ifPresent(user -> {

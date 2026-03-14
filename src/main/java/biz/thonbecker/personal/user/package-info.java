@@ -6,7 +6,7 @@
  *
  * <p>Public API:
  * <ul>
- *   <li>{@link biz.thonbecker.personal.user.api.UserFacade} - Main operations for user management</li>
+ *   <li>{@link biz.thonbecker.personal.user.platform.persistence.UserService} - Main operations for user management</li>
  *   <li>{@link biz.thonbecker.personal.user.domain.User} - User domain model</li>
  *   <li>{@link biz.thonbecker.personal.user.domain.UserProfile} - User profile information</li>
  *   <li>{@link biz.thonbecker.personal.user.api.UserRegisteredEvent} - Published when user registers</li>
@@ -21,7 +21,7 @@
  * <p>Integration Points:
  * <ul>
  *   <li>Publishes events when users are created or updated</li>
- *   <li>Other modules can query user information through the facade</li>
+ *   <li>Other modules can query user information through the service</li>
  * </ul>
  */
 @org.springframework.modulith.ApplicationModule(

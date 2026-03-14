@@ -9,7 +9,7 @@
 
 _Services_
 
-* `b.t.p.l.api.LandscapeFacade` (via `b.t.p.l.platform.LandscapeFacadeImpl`)
+* `b.t.p.l.platform.LandscapeService`
 * `b.t.p.l.platform.service.LandscapeAiService`
 * `b.t.p.l.platform.service.LandscapeImageGenerationService`
 * `b.t.p.l.platform.service.LandscapeImageStorageService`

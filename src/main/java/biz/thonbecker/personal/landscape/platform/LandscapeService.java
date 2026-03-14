@@ -21,14 +21,12 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 /**
- * Implementation of the Landscape Planning facade.
- *
- * <p>Coordinates image storage, AI analysis, plant search, and plan persistence.
+ * Landscape planning service coordinating image storage, AI analysis, plant search, and plan persistence.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class LandscapeFacadeImpl implements LandscapeFacade {
+public class LandscapeService {
 
     private final LandscapeImageStorageService imageStorageService;
     private final LandscapeAiService aiService;
@@ -39,7 +37,6 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
     private final PlantPlacementRepository placementRepository;
     private final S3Client s3Client;
 
-    @Override
     @Transactional
     public LandscapePlan createPlan(
             final String userId,
@@ -93,7 +90,6 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         return convertToDomain(savedPlan);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<PlantInfo> searchPlants(
             final String query,
@@ -105,7 +101,6 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         return plantApiService.searchPlants(query, zone, lightRequirement, waterRequirement);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<PlantInfo> getRecommendations(final Long planId) {
         log.debug("Fetching recommendations for plan {}", planId);
@@ -113,11 +108,10 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
 
         return plan.getRecommendations().stream()
-                .map(LandscapeFacadeImpl::convertRecommendation)
+                .map(LandscapeService::convertRecommendation)
                 .toList();
     }
 
-    @Override
     @Transactional
     public void addPlantPlacement(
             final Long planId,
@@ -156,7 +150,6 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         log.info("Successfully added plant placement for plan {}", planId);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public LandscapePlan getPlan(final Long planId) {
         log.debug("Fetching landscape plan {}", planId);
@@ -167,7 +160,6 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         return convertToDomain(plan);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<LandscapePlan> getUserPlans(final String userId) {
         log.debug("Fetching landscape plans for user {}", userId);
@@ -177,7 +169,6 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         return plans.stream().map(this::convertToDomain).toList();
     }
 
-    @Override
     @Transactional
     public void deletePlan(final Long planId) {
         log.info("Deleting landscape plan {}", planId);
@@ -189,7 +180,6 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         log.info("Successfully deleted landscape plan {}", planId);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public SeasonalAnalysis getSeasonalAnalysis(final Long planId) {
         log.info("Generating seasonal analysis for plan {}", planId);
@@ -240,9 +230,8 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
         }
     }
 
-    @Override
-    public String getPlantImageUrl(final String scientificName) {
-        return plantImageService.getPlantImageUrl(scientificName);
+    public String getPlantImageUrl(final String usdaSymbol) {
+        return plantImageService.getPlantImageUrl(usdaSymbol);
     }
 
     private SeasonalAnalysis.SeasonalDescription mergeWithImage(
@@ -283,7 +272,7 @@ public class LandscapeFacadeImpl implements LandscapeFacade {
                 .toList();
 
         final var recommendations = entity.getRecommendations().stream()
-                .map(LandscapeFacadeImpl::convertRecommendation)
+                .map(LandscapeService::convertRecommendation)
                 .toList();
 
         return new LandscapePlan(

@@ -12,7 +12,7 @@
 _Services_
 
 * `b.t.p.f.platform.CleanupService`
-* `b.t.p.f.api.FoosballFacade` (via `b.t.p.f.platform.FoosballFacadeImpl`)
+* `b.t.p.f.platform.FoosballDataService`
 * `b.t.p.f.platform.FoosballService`
 * `b.t.p.f.platform.RatingService`
 * `b.t.p.f.platform.TournamentService`

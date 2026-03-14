@@ -1,6 +1,6 @@
 package biz.thonbecker.personal.foosball.platform.web;
 
-import biz.thonbecker.personal.foosball.platform.FoosballService;
+import biz.thonbecker.personal.foosball.platform.FoosballDataService;
 import biz.thonbecker.personal.foosball.platform.persistence.Game;
 import biz.thonbecker.personal.foosball.platform.persistence.GameWithPlayers;
 import biz.thonbecker.personal.foosball.platform.persistence.Player;
@@ -24,10 +24,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/foosball")
 public class FoosballRestController {
 
-    private final FoosballService foosballService;
+    private final FoosballDataService foosballService;
 
     @Autowired
-    public FoosballRestController(FoosballService foosballService) {
+    public FoosballRestController(FoosballDataService foosballService) {
         this.foosballService = foosballService;
     }
 

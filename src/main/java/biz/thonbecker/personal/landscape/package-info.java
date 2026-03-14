@@ -8,7 +8,7 @@
  * <h2>Public API</h2>
  * Other modules should interact with this module ONLY through:
  * <ul>
- *   <li>{@link biz.thonbecker.personal.landscape.api.LandscapeFacade} - Main service interface</li>
+ *   <li>{@link biz.thonbecker.personal.landscape.platform.LandscapeService} - Main service implementation</li>
  *   <li>{@link biz.thonbecker.personal.landscape.api.LandscapePlan} - Domain model</li>
  *   <li>{@link biz.thonbecker.personal.landscape.api.PlantInfo} - Plant data model</li>
  *   <li>{@link biz.thonbecker.personal.landscape.api.HardinessZone} - Zone enumeration</li>

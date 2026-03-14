@@ -529,19 +529,19 @@
 
     setupMarkerEvents(icon, name);
 
-    // Try to load real plant image from Wikipedia
-    loadPlantImage(name, x, y, markerColor, markerEntry);
+    // Try to load real plant image from USDA
+    loadPlantImage(usdaSymbol, name, x, y, markerColor, markerEntry);
 
     updateSeasonalButton();
   }
 
   /**
-   * Fetches a plant image from Wikipedia and replaces the silhouette icon on the canvas
+   * Fetches a plant image from USDA and replaces the silhouette icon on the canvas
    */
-  function loadPlantImage(name, x, y, borderColor, markerEntry) {
-    if (!name) return;
+  function loadPlantImage(symbol, name, x, y, borderColor, markerEntry) {
+    if (!symbol) return;
 
-    fetch(`/landscape/plants/image?name=${encodeURIComponent(name)}`)
+    fetch(`/landscape/plants/image?symbol=${encodeURIComponent(symbol)}`)
       .then(function (response) {
         if (!response.ok) return null;
         return response.json();
@@ -972,33 +972,35 @@
    */
   function loadRecommendationImages() {
     document.querySelectorAll(".recommendation-card").forEach(function (card) {
-      const name = card.dataset.scientificName || card.dataset.commonName;
-      if (!name) return;
+      const symbol = card.dataset.usdaSymbol;
+      const wrapper = card.querySelector(".plant-image-wrapper");
+      if (!wrapper || !symbol) return;
 
-      fetch(`/landscape/plants/image?name=${encodeURIComponent(name)}`)
-        .then(function (response) {
-          if (!response.ok) return null;
-          return response.json();
-        })
-        .then(function (data) {
-          if (!data || !data.imageUrl) return;
-
-          const wrapper = card.querySelector(".plant-image-wrapper");
-          if (!wrapper) return;
-
-          const img = document.createElement("img");
-          img.src = data.imageUrl;
-          img.alt = name;
-          img.loading = "lazy";
-          img.onload = function () {
-            wrapper.innerHTML = "";
-            wrapper.appendChild(img);
-          };
-        })
-        .catch(function () {
-          // Keep placeholder on error
-        });
+      fetchPlantImage(symbol, wrapper);
     });
+  }
+
+  function fetchPlantImage(symbol, wrapper) {
+    fetch(`/landscape/plants/image?symbol=${encodeURIComponent(symbol)}`)
+      .then(function (response) {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then(function (data) {
+        if (!data || !data.imageUrl) return;
+
+        const img = document.createElement("img");
+        img.src = data.imageUrl;
+        img.alt = symbol;
+        img.loading = "lazy";
+        img.onload = function () {
+          wrapper.innerHTML = "";
+          wrapper.appendChild(img);
+        };
+      })
+      .catch(function () {
+        // Keep placeholder on error
+      });
   }
 
   function initializeLoadPlanLinks() {

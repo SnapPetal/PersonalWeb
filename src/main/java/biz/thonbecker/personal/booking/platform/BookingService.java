@@ -20,12 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Implementation of the Booking facade.
+ * Booking service providing appointment scheduling, availability management, and booking lifecycle.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BookingFacadeImpl implements BookingFacade {
+public class BookingService {
 
     private final BookingTypeRepository bookingTypeRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
@@ -35,7 +35,6 @@ public class BookingFacadeImpl implements BookingFacade {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String CONFIRMATION_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-    @Override
     @Transactional(readOnly = true)
     public List<BookingType> getActiveBookingTypes() {
         log.debug("Fetching active booking types");
@@ -44,7 +43,6 @@ public class BookingFacadeImpl implements BookingFacade {
                 .toList();
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<BookingType> getAllBookingTypes() {
         log.debug("Fetching all booking types");
@@ -53,7 +51,6 @@ public class BookingFacadeImpl implements BookingFacade {
                 .toList();
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<TimeSlot> getAvailableSlots(final Long bookingTypeId, final LocalDate date) {
         log.debug("Fetching available slots for booking type {} on {}", bookingTypeId, date);
@@ -104,7 +101,6 @@ public class BookingFacadeImpl implements BookingFacade {
         return slots;
     }
 
-    @Override
     @Transactional
     public Booking createBooking(
             final Long bookingTypeId,
@@ -183,7 +179,6 @@ public class BookingFacadeImpl implements BookingFacade {
         return convertBookingToDomain(savedBooking);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Booking getBookingByConfirmationCode(final String confirmationCode) {
         log.debug("Fetching booking by confirmation code: {}", confirmationCode);
@@ -193,7 +188,6 @@ public class BookingFacadeImpl implements BookingFacade {
                 .orElseThrow(() -> new BookingNotFoundException(confirmationCode));
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Booking getBooking(final Long bookingId) {
         log.debug("Fetching booking {}", bookingId);
@@ -203,7 +197,6 @@ public class BookingFacadeImpl implements BookingFacade {
                 .orElseThrow(() -> new BookingNotFoundException(bookingId));
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<Booking> getUserBookings(final String userId) {
         log.debug("Fetching bookings for user {}", userId);
@@ -212,7 +205,6 @@ public class BookingFacadeImpl implements BookingFacade {
                 .toList();
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<Booking> getAllBookings() {
         log.debug("Fetching all bookings");
@@ -221,7 +213,6 @@ public class BookingFacadeImpl implements BookingFacade {
                 .toList();
     }
 
-    @Override
     @Transactional
     public void cancelBooking(final Long bookingId) {
         log.info("Cancelling booking {}", bookingId);
@@ -251,7 +242,6 @@ public class BookingFacadeImpl implements BookingFacade {
         log.info("Successfully cancelled booking {}", bookingId);
     }
 
-    @Override
     @Transactional
     public BookingType createBookingType(
             final String name,
@@ -276,7 +266,6 @@ public class BookingFacadeImpl implements BookingFacade {
         return convertBookingTypeToDomain(saved);
     }
 
-    @Override
     @Transactional
     public void createAvailabilitySlot(final LocalDateTime startTime, final LocalDateTime endTime) {
         log.info("Creating availability slot: {} - {}", startTime, endTime);
@@ -294,14 +283,12 @@ public class BookingFacadeImpl implements BookingFacade {
         log.info("Created availability slot");
     }
 
-    @Override
     @Transactional
     public void deleteAvailabilitySlot(final Long slotId) {
         log.info("Deleting availability slot {}", slotId);
         availabilitySlotRepository.deleteById(slotId);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<TimeSlot> getAllAvailabilitySlots() {
         log.debug("Fetching all availability slots");

@@ -1,7 +1,7 @@
 package biz.thonbecker.personal.skatetricks.platform.web;
 
-import biz.thonbecker.personal.skatetricks.api.SkateTricksFacade;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
+import biz.thonbecker.personal.skatetricks.platform.SkateTricksService;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
@@ -27,7 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 class SkateTricksController {
 
-    private final SkateTricksFacade skateTricksFacade;
+    private final SkateTricksService skateTricksService;
     private final SimpMessagingTemplate messagingTemplate;
 
     // Temporary storage for converted videos (auto-expires after 10 minutes)
@@ -38,8 +38,8 @@ class SkateTricksController {
     private final ExecutorService conversionExecutor = Executors.newFixedThreadPool(2);
     private final ExecutorService analysisExecutor = Executors.newFixedThreadPool(2);
 
-    SkateTricksController(SkateTricksFacade skateTricksFacade, SimpMessagingTemplate messagingTemplate) {
-        this.skateTricksFacade = skateTricksFacade;
+    SkateTricksController(SkateTricksService skateTricksService, SimpMessagingTemplate messagingTemplate) {
+        this.skateTricksService = skateTricksService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -92,7 +92,7 @@ class SkateTricksController {
             updateConversionStatus(videoId, sessionId, "converting", 10, null);
 
             log.info("Starting conversion for videoId={}", videoId);
-            byte[] mp4Data = skateTricksFacade.convertVideo(videoBytes, filename);
+            byte[] mp4Data = skateTricksService.convertVideo(videoBytes, filename);
 
             // Store converted video
             convertedVideos.put(videoId, mp4Data);
@@ -193,7 +193,7 @@ class SkateTricksController {
             // Update status to processing
             analysisStatuses.put(analysisId, new AnalysisStatus("processing", null, null));
 
-            TrickAnalysisResult result = skateTricksFacade.analyzeConvertedVideo(sessionId, videoData);
+            TrickAnalysisResult result = skateTricksService.analyzeConvertedVideo(sessionId, videoData);
 
             log.info("Analysis complete for analysisId={}: {}", analysisId, result.trick());
 
@@ -229,7 +229,7 @@ class SkateTricksController {
             @PathVariable Long id, @RequestBody(required = false) VerifyRequest request) {
         try {
             String corrected = request != null ? request.correctedTrickName() : null;
-            skateTricksFacade.verifyAttempt(id, corrected);
+            skateTricksService.verifyAttempt(id, corrected);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("Failed to verify attempt {}", id, e);

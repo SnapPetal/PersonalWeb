@@ -6,7 +6,7 @@
  *
  * <h2>Public API</h2>
  * <ul>
- *   <li>{@link biz.thonbecker.personal.foosball.api.FoosballFacade} - Main entry point for other
+ *   <li>{@link biz.thonbecker.personal.foosball.platform.FoosballService} - Main entry point for other
  *       modules
  *   <li>{@link biz.thonbecker.personal.foosball.domain} - Domain models (Game, Player, Team,
  *       Stats)
@@ -19,7 +19,7 @@
  * <h2>Internal Implementation</h2>
  * <ul>
  *   <li>{@link biz.thonbecker.personal.foosball.platform} - All implementation details
- *   <li>FoosballFacadeImpl - Implementation of the public facade
+ *   <li>FoosballService - Game recording, player management, and statistics
  *   <li>FoosballService - Core business logic for games and players
  *   <li>TournamentService - Tournament bracket generation and management
  *   <li>CleanupService - Data cleanup operations
@@ -31,7 +31,6 @@
  * <pre>
  * foosball/
  * ├── api/                              (public interface)
- * │   ├── FoosballFacade
  * │   ├── GameRecordedEvent
  * │   └── PlayerCreatedEvent
  * ├── domain/                           (public domain models)
@@ -42,8 +41,8 @@
  * │   ├── PlayerStats
  * │   └── TeamStats
  * └── infrastructure/                   (internal - package-private)
- *     ├── FoosballFacadeImpl
  *     ├── FoosballService
+ *     ├── FoosballDataService
  *     ├── TournamentService
  *     ├── CleanupService
  *     ├── persistence/
@@ -64,20 +63,20 @@
  * <h2>Usage Example</h2>
  * <pre>{@code
  * @Autowired
- * private FoosballFacade foosballFacade;
+ * private FoosballService foosballService;
  *
  * // Create a player
  * Player player = new Player("John Doe");
- * foosballFacade.createPlayer(player);
+ * foosballService.createPlayer(player);
  *
  * // Record a game
  * Team whiteTeam = new Team("Alice", "Bob");
  * Team blackTeam = new Team("Charlie", "Dave");
  * Game game = new Game(whiteTeam, blackTeam, 10, 8);
- * foosballFacade.createGame(game);
+ * foosballService.createGame(game);
  *
  * // Get statistics
- * List<PlayerStats> stats = foosballFacade.getPlayerStats();
+ * List<PlayerStats> stats = foosballService.getPlayerStats();
  * }</pre>
  *
  * <h2>Database Schema</h2>

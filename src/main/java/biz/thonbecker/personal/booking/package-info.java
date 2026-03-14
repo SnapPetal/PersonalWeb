@@ -7,7 +7,7 @@
  * <h2>Public API</h2>
  *
  * External modules interact with this module through {@link
- * biz.thonbecker.personal.booking.api.BookingFacade}.
+ * biz.thonbecker.personal.booking.platform.BookingService}.
  *
  * <h2>Features</h2>
  *

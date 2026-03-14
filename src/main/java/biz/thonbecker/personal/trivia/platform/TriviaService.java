@@ -3,7 +3,6 @@ package biz.thonbecker.personal.trivia.platform;
 import biz.thonbecker.personal.trivia.api.*;
 import biz.thonbecker.personal.trivia.api.QuizResult;
 import biz.thonbecker.personal.trivia.api.QuizState;
-import biz.thonbecker.personal.trivia.api.TriviaFacade;
 import biz.thonbecker.personal.trivia.domain.*;
 import java.time.Instant;
 import java.util.*;
@@ -16,12 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Internal implementation of the Trivia Facade.
- * This class is NOT part of the public API and should not be used directly by other modules.
+ * Trivia service providing quiz creation, player management, and game flow.
  */
 @Service
 @Slf4j
-class TriviaFacadeImpl implements TriviaFacade {
+public class TriviaService {
 
     private static final int POINTS_PER_CORRECT_ANSWER = 100;
     private static final int DEFAULT_TIME_PER_QUESTION_SECONDS = 60;
@@ -33,7 +31,7 @@ class TriviaFacadeImpl implements TriviaFacade {
     private final QuizResultRepository quizResultRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public TriviaFacadeImpl(
+    public TriviaService(
             QuestionGenerator questionGenerator,
             QuizResultRepository quizResultRepository,
             ApplicationEventPublisher eventPublisher) {
@@ -42,7 +40,6 @@ class TriviaFacadeImpl implements TriviaFacade {
         this.eventPublisher = eventPublisher;
     }
 
-    @Override
     public Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty, String creatorId) {
         // Input validation
         if (title == null || title.trim().isEmpty()) {
@@ -76,12 +73,10 @@ class TriviaFacadeImpl implements TriviaFacade {
         return quiz;
     }
 
-    @Override
     public Optional<Quiz> getQuiz(Long quizId) {
         return Optional.ofNullable(quizzes.get(quizId));
     }
 
-    @Override
     @Transactional
     public void addPlayer(Long quizId, Player player) {
         if (quizId == null) {
@@ -114,13 +109,11 @@ class TriviaFacadeImpl implements TriviaFacade {
         }
     }
 
-    @Override
     public List<Player> getPlayers(Long quizId) {
         Quiz quiz = quizzes.get(quizId);
         return quiz != null ? quiz.getPlayers() : Collections.emptyList();
     }
 
-    @Override
     @Transactional
     public QuizState startQuiz(Long quizId, String playerId) {
         Quiz quiz = quizzes.get(quizId);
@@ -155,7 +148,6 @@ class TriviaFacadeImpl implements TriviaFacade {
         return buildQuizState(quiz);
     }
 
-    @Override
     public QuizState submitAnswer(Long quizId, String playerId, Long questionId, int selectedOption) {
         Quiz quiz = quizzes.get(quizId);
         if (quiz == null) {
@@ -181,7 +173,6 @@ class TriviaFacadeImpl implements TriviaFacade {
         return buildQuizState(quiz);
     }
 
-    @Override
     @Transactional
     public QuizState nextQuestion(Long quizId) {
         Quiz quiz = quizzes.get(quizId);
@@ -205,14 +196,12 @@ class TriviaFacadeImpl implements TriviaFacade {
         return buildQuizState(quiz);
     }
 
-    @Override
     public List<QuizResult> getWinners() {
         return quizResultRepository.findByIsWinnerTrueOrderByCompletedAtDesc().stream()
                 .map(this::toQuizResult)
                 .collect(Collectors.toList());
     }
 
-    @Override
     public List<QuizResult> getPlayerHistory(String playerId) {
         return quizResultRepository.findByPlayerIdOrderByCompletedAtDesc(playerId).stream()
                 .map(this::toQuizResult)

@@ -6,7 +6,7 @@
  * <h2>Public API</h2>
  * Other modules should interact with this module ONLY through:
  * <ul>
- *   <li>{@link biz.thonbecker.personal.trivia.api.TriviaFacade} - Main service interface</li>
+ *   <li>{@link biz.thonbecker.personal.trivia.platform.TriviaService} - Main service implementation</li>
  *   <li>{@link solutions.thonbecker.personal.trivia.domain} - Domain model types (Quiz, Question, Player, etc.)</li>
  *   <li>{@link solutions.thonbecker.personal.trivia.api} - API types (QuizState, QuizResult, etc.)</li>
  * </ul>
