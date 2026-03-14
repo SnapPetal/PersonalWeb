@@ -1,0 +1,13 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration
+  ai:
+    bedrock:
+      aws:
+        region: us-east-1
+        access-key: test
+        secret-key: test
