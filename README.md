@@ -2,14 +2,14 @@
 
 A modern, feature-rich personal portfolio website built with Spring Boot, showcasing professional experience and interactive applications.
 
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-brightgreen)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-brightgreen)
 ![Java](https://img.shields.io/badge/Java-25-orange)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.8-blue)
 ![HTMX](https://img.shields.io/badge/HTMX-2.0.8-purple)
 
-## 🌟 Features
+## Features
 
-### **Core Portfolio**
+### Core Portfolio
 
 - **Professional Experience Display** with dynamic year counter
 - **Responsive Design** using Bootstrap 5
@@ -17,31 +17,33 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - **Interactive Bible Verse** display with caching
 - **Dad Jokes Player** with AI text-to-speech and audio storage
 
-### **Interactive Applications**
+### Interactive Applications
 
-- **🏓 Foosball Management System** - Complete table soccer game tracking
-- **🎯 Dave Ramsey FPU Trivia** - AI-powered Financial Peace University trivia with real-time multiplayer
-- **📊 Statistics Dashboard** - Player and team performance analytics
+- **Foosball Management System** - Complete table soccer game tracking with ELO ratings and tournaments
+- **Dave Ramsey FPU Trivia** - AI-powered Financial Peace University trivia with real-time multiplayer
+- **Skatetricks AI** - YOLO pose estimation + Bedrock AI trick detection with RAG-based learning
+- **Landscape Planner** - AI-powered landscape design with USDA plant database integration
+- **Booking System** - Appointment scheduling with auto-availability and calendar integration
+- **Tank Game** - WebSocket-based multiplayer tank game with player progression
 
-### **Technical Features**
+### Technical Features
 
-- **🔒 CSRF Protection** for secure form submissions
-- **🌍 Environment Configuration** for AWS services
-- **⚡ Caching** with Caffeine for optimized performance
-- **🔄 Retry Logic** for external API calls
-- **📱 Progressive Web App** features
+- **Spring Modulith** - Modular monolith with enforced module boundaries
+- **Spring AI** - AWS Bedrock Converse API (Claude) for chat/vision, Titan V2 for embeddings
+- **Event-Driven Architecture** - Cross-module communication via domain events
+- **S3 Vectors RAG Pipeline** - Retrieval-augmented generation for skatetrick detection
+- **CSRF Protection** for secure form submissions
+- **Caffeine Caching** for optimized performance
+- **Spring Retry** for fault-tolerant external API calls
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
 - Java 25+
 - Maven 3.6+
-- PostgreSQL 16+ (for local development)
-- Docker (for running PostgreSQL locally)
-- AWS Bedrock access (for AI-powered trivia questions)
-- AWS Polly access (for text-to-speech dad jokes)
-- AWS S3 bucket (for audio file storage)
+- Docker (Spring Boot auto-starts PostgreSQL via Docker Compose)
+- AWS credentials (Bedrock, Polly, S3, S3 Vectors, Cognito)
 
 ### Installation
 
@@ -55,29 +57,31 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 
    ```bash
    cp .env.example .env
-   # Edit .env with your actual AWS credentials
+   # Edit .env with your actual AWS and Cognito credentials
    ```
 3. **Run the application**
 
    ```bash
-   mvn spring-boot:run
+   mvn spring-boot:run -Dspring-boot.run.profiles=dev
    ```
 
-## 🏗️ Architecture
+## Architecture
 
-### **Backend Stack**
+### Backend Stack
 
-- **Spring Boot 4.0.0** - Core framework
-- **Spring Security** - Authentication & CSRF protection
-- **Spring Cloud OpenFeign** - HTTP client for microservices
-- **Spring WebSocket** - Real-time communication for trivia
-- **Spring AI with AWS Bedrock** - AI-powered question generation
-- **PostgreSQL 16** - Relational database
+- **Spring Boot 4.0.3** - Core framework (Java 25)
+- **Spring Security + AWS Cognito** - OAuth2 authentication & CSRF protection
+- **Spring HTTP Interfaces** - Declarative HTTP clients (`@GetExchange`, `@HttpExchange`) with WebClient backend
+- **Spring WebSocket** - Real-time communication (STOMP over SockJS)
+- **Spring AI** - AWS Bedrock Converse API (Claude Sonnet 4.6) + Titan Text Embeddings V2
+- **PostgreSQL 16** - Relational database (auto-started via Docker Compose)
 - **Liquibase** - Database migration and version control
 - **Caffeine Cache** - In-memory caching solution
 - **Thymeleaf** - Server-side template engine
+- **DJL (Deep Java Library)** - PyTorch-backed YOLO pose estimation
+- **Spring Modulith** - Modular monolith architecture with enforced boundaries
 
-### **Frontend Stack**
+### Frontend Stack
 
 - **Bootstrap 5.3.8** - Responsive UI framework
 - **HTMX 2.0.8** - Dynamic HTML interactions
@@ -85,204 +89,116 @@ A modern, feature-rich personal portfolio website built with Spring Boot, showca
 - **SockJS & STOMP** - WebSocket communication
 - **Vanilla JavaScript** - Custom interactions
 
-### **Integration & Services**
+### Integration & Services
 
-- **AWS Polly** - Neural text-to-speech for dad jokes with SSML formatting
-- **AWS S3** - Audio file storage and CDN delivery
-- **External APIs** - Bible verse and dad jokes integration
-- **Spring Modulith** - Modular monolith architecture with enforced boundaries
+- **AWS Bedrock** - Claude Sonnet 4.6 (chat/vision) + Titan Text Embeddings V2
+- **AWS S3 Vectors** - Vector store for RAG pipeline
+- **AWS Polly** - Neural text-to-speech for dad jokes
+- **AWS S3 + CloudFront** - File storage and CDN delivery
+- **AWS Cognito** - OAuth2 user authentication
+- **USDA Plants Database** - Plant data for landscape planning
+- **iCal4j** - RFC-compliant calendar file generation
 
-## 📁 Project Structure
+## Project Structure
 
 This project follows a modular monolith architecture using Spring Modulith:
 
 ```
-src/
-├── main/
-│   ├── java/biz/thonbecker/personal/
-│   │   ├── foosball/                  # Foosball Module
-│   │   │   ├── api/                   # Public facade interfaces
-│   │   │   ├── domain/                # Domain models (Game, Player, Stats)
-│   │   │   └── platform/              # Implementation, persistence, web
-│   │   ├── trivia/                    # Trivia Module
-│   │   │   ├── api/                   # Public facade interfaces
-│   │   │   ├── domain/                # Domain models (Quiz, Question)
-│   │   │   └── platform/             # Implementation, persistence, web
-│   │   ├── shared/                    # Shared platform config
-│   │   ├── configuration/             # Spring configuration
-│   │   └── PersonalWebApplication.java
-│   ├── resources/
-│   │   ├── templates/                 # Thymeleaf HTML templates
-│   │   ├── static/                    # CSS, JS, images
-│   │   ├── db/changelog/              # Liquibase migrations
-│   │   └── application.yml            # Configuration
-└── test/
-    ├── java/                          # Unit tests
-    └── modulith/                      # Module structure tests
+src/main/java/biz/thonbecker/personal/
+├── foosball/          # Foosball game tracking, stats, tournaments, ELO
+├── trivia/            # AI-powered FPU trivia, WebSocket multiplayer
+├── skatetricks/       # YOLO pose estimation + Bedrock AI trick detection
+├── landscape/         # AI-powered landscape planning with USDA plant data
+├── booking/           # Appointment scheduling with auto-availability
+├── tankgame/          # WebSocket tank game with player progression
+├── user/              # User management
+├── notification/      # Event-driven email notifications (zero coupling)
+├── content/           # Bible verse, Dad jokes (Polly TTS + S3)
+└── shared/            # Configuration classes + domain events
 ```
+
+Each module follows this internal package convention:
+
+- `api/` - Public facade interfaces + event listeners
+- `domain/` - Domain model objects (pure Java)
+- `platform/` - Implementation details: persistence, services, web controllers
 
 See [Spring Modulith Documentation](docs/modulith/all-docs.adoc) for detailed module architecture.
 
-## 🔧 Configuration
+## Modules
 
-### **🔐 CSRF Protection**
+|     Module     |    Public Facade    |                          Purpose                           |
+|----------------|---------------------|------------------------------------------------------------|
+| `foosball`     | `FoosballFacade`    | Table soccer game tracking, stats, tournaments, ELO rating |
+| `trivia`       | `TriviaFacade`      | AI-powered FPU trivia, WebSocket multiplayer               |
+| `skatetricks`  | `SkateTricksFacade` | YOLO pose estimation + Bedrock AI trick detection          |
+| `landscape`    | `LandscapeFacade`   | AI-powered landscape planning with USDA plant database     |
+| `booking`      | `BookingFacade`     | Appointment scheduling with auto-availability              |
+| `tankgame`     | `TankGameFacade`    | WebSocket tank game with player progression                |
+| `user`         | `UserFacade`        | User management                                            |
+| `notification` | _(event-driven)_    | Email notifications via event subscribers                  |
+| `content`      | _(no facade)_       | Bible verse, Dad jokes (Polly TTS + S3)                    |
+| `shared`       | _(config + events)_ | Configuration classes + domain events                      |
 
-The application implements Cross-Site Request Forgery protection using Spring Security with token-based validation for all POST requests.
-
-### **🌍 Environment Configuration**
-
-Configure your development environment with AWS services using environment variables. See `.env.example` for required settings.
-
-## 🎮 Applications
-
-### **Foosball Management System**
-
-A complete table soccer game tracking system integrated as a Spring Modulith module:
-
-- **Player Management** - Create and track players with email validation
-- **Game Recording** - Record match results with team positions and scores
-- **Statistics & Analytics** - Comprehensive player and team performance metrics
-  - Win/loss records and percentages
-  - Head-to-head team statistics
-  - Player rankings by various criteria
-  - Game history and trends
-- **Tournament System** - Single-elimination tournament bracket generation
-- **Database Persistence** - PostgreSQL with Liquibase migrations
-- **HTMX Integration** - Dynamic UI updates without page reloads
-- **Module Architecture** - Hexagonal architecture with public facades and encapsulated implementation
-
-**Module:** `biz.thonbecker.personal.foosball`
-**Public API:** `FoosballFacade` interface
-
-### **Dave Ramsey FPU Trivia Game**
-
-- **AI-Powered Questions** - Spring AI with AWS Bedrock generates Dave Ramsey Financial Peace University questions
-- **WebSocket Integration** - Real-time multiplayer gameplay using STOMP protocol
-- **Difficulty Levels** - Easy, Medium, and Hard question difficulty
-- **Fallback Questions** - 20 pre-configured FPU questions when AI is unavailable
-- **Scoring System** - Live leaderboard updates and winner determination
-- **Database Persistence** - PostgreSQL stores quiz results and player statistics
-- **Event Logging** - Comprehensive game session tracking
-
-### **Bible Verse of the Day**
-
-- **Daily Verses** - Cached daily verse retrieval
-- **KJV Translation** - King James Version integration
-- **Retry Logic** - Fault-tolerant API calls
-- **Responsive Display** - Mobile-optimized presentation
-
-### **Dad Jokes with Text-to-Speech**
-
-- **AWS Polly Integration** - Neural text-to-speech with natural voice delivery
-- **SSML Formatting** - Enhanced comedic timing with pauses and prosody
-- **Smart Joke Detection** - Automatic setup/punchline parsing for Q&A, newline, and dash-separated formats
-- **S3 Storage** - Audio files stored in S3 with CDN delivery
-- **Daily Caching** - Jokes cached for 24 hours for consistent user experience
-- **Multiple Voice Support** - Configurable voice selection for text-to-speech
-
-## 🛡️ Security Features
-
-- **CSRF Token Protection** - All POST requests secured
-- **Secure Headers** - Spring Security configuration
-- **Environment Isolation** - Separate dev/prod configs
-
-## 🔄 API Endpoints
-
-### **Core APIs**
-
-- `GET /api/experience/count` - Professional experience counter
-- `GET /api/bible/verse-of-day` - Daily bible verse
-- `GET /api/joke` - Dad joke with audio
-
-### **Foosball APIs**
-
-**REST Endpoints:**
-- `GET /api/foosball/players` - Retrieve all players
-- `GET /api/foosball/stats/players` - Player statistics and rankings
-- `GET /api/foosball/stats/teams` - Team performance statistics
-- `GET /api/foosball/games` - Retrieve recent games
-- `POST /api/foosball/players` - Create new player
-- `POST /api/foosball/games` - Record new game
-
-**HTMX Endpoints:**
-- `GET /foosball/htmx/games` - Game list partial
-- `POST /foosball/htmx/games` - Record game with HTMX response
-- `GET /foosball/htmx/stats/players` - Player stats partial
-- `GET /foosball/htmx/stats/teams` - Team stats partial
-
-**Tournament Endpoints:**
-- `GET /api/tournaments` - List all tournaments
-- `POST /api/tournaments` - Create new tournament
-- `POST /api/tournaments/{id}/register` - Register player for tournament
-- `POST /api/tournaments/{id}/start` - Start tournament and generate bracket
-- `POST /api/tournaments/matches/{matchId}/result` - Record match result
-
-## 🧪 Testing
+## Testing
 
 ```bash
 # Run all tests
-./mvnw test
-
-# Run with coverage
-./mvnw test jacoco:report
+mvn test
 
 # Run integration tests
-./mvnw verify
+mvn verify
+
+# Run a single test class
+mvn test -Dtest=ModuleStructureTest
 ```
 
-## 📦 Deployment
+## Deployment
 
-### **Development**
+### Development
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-### **Production**
+### Production
+
+Pushes to `main` trigger the GitHub Actions workflow, which builds a Docker image using Spring Boot Buildpacks (Paketo, Java 25) and deploys to AWS Lightsail.
 
 ```bash
-# Build
-./mvnw clean package -Pproduction
+# Build production jar
+mvn clean package
 
-# Run
-java -jar target/personal-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+# Build Docker image
+mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 ```
 
-### **Docker** (Optional)
+## Code Formatting
 
-```dockerfile
-FROM openjdk:21-jre-slim
-COPY target/personal-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+Spotless enforces formatting as part of the build:
+
+```bash
+# Apply formatting (must pass before committing)
+mvn spotless:apply
+
+# Check formatting without applying
+mvn spotless:check
 ```
 
-## 🤝 Contributing
+- **Java**: Palantir Java Format
+- **JavaScript**: Prettier
+- **Markdown**: Flexmark
+- **POM**: SortPom
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📜 License
+## License
 
 This project is proprietary and confidential. All rights are reserved by Thon Becker. See the [LICENSE](LICENSE) file for details.
 
-## 📞 Contact
+## Contact
 
 - **GitHub**: [SnapPetal](https://github.com/SnapPetal)
 - **LinkedIn**: [Thon Becker](https://www.linkedin.com/in/thon-becker/)
 
-## 🎯 Roadmap
-
-- [ ] **Mobile App** - React Native companion app
-- [ ] **Analytics Dashboard** - Usage statistics and insights
-- [ ] **Blog System** - Technical writing platform
-- [ ] **Portfolio Expansion** - Additional interactive demos
-- [ ] **Performance Monitoring** - APM integration
-- [ ] **CI/CD Pipeline** - Automated deployment workflow
-
 ---
 
-**Built with ❤️ by Thon Becker** | © 2025 All Rights Reserved
+**Built with care by Thon Becker** | &copy; 2025 All Rights Reserved
