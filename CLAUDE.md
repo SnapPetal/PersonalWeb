@@ -6,25 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Run the application (dev profile uses local Docker PostgreSQL)
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 # Run all tests
-./mvnw test
+mvn test
 
 # Run integration/verification tests
-./mvnw verify
+mvn verify
 
 # Run a single test class
-./mvnw test -Dtest=ModuleStructureTest
+mvn test -Dtest=ModuleStructureTest
+
+# Run module integration tests (requires Docker for Testcontainers)
+mvn test -Dtest="BookingModuleTest,NotificationModuleTest"
 
 # Apply code formatting (must pass before committing)
-./mvnw spotless:apply
+mvn spotless:apply
 
 # Check formatting without applying
-./mvnw spotless:check
+mvn spotless:check
 
 # Build production jar
-./mvnw clean package
+mvn clean package
 
 # Build Docker image (used by CI)
 mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
@@ -103,45 +106,125 @@ COGNITO_CLIENT_SECRET
 
 ### Spring Modulith Modular Monolith
 
-The application is a **modular monolith** enforced by Spring Modulith. Module boundaries are validated at startup and by `ModuleStructureTest`. Cross-module communication happens via:
-1. **Public Facades** — for direct method calls (e.g., `BookingFacade`)
-2. **Domain Events** — for reactive, decoupled communication (e.g., `BookingCreatedEvent`)
+The application is a **modular monolith** enforced by Spring Modulith. All modules are **closed** by default — sub-packages are internal unless explicitly exported via `@NamedInterface`. Module boundaries are validated by `ModuleStructureTest`.
+
+Cross-module communication is **event-driven**:
+- Each module publishes domain events from its `api/` package
+- Consuming modules (like `notification`) declare dependencies on specific `api` named interfaces
+- No module calls another module's service directly — events are the only cross-module contract
 
 Each module follows this internal package convention:
-- `api/` — Public facade interfaces + event listeners (how modules expose and consume functionality)
+- `api/` — `@NamedInterface("api")` exported package containing domain events, value objects, and event listeners
 - `domain/` — Domain model objects (pure Java, no persistence annotations)
-- `platform/` — All implementation details: persistence entities, repositories, services, web controllers
-
-**Event-driven modules** (like `notification`) have event listeners in `api/` instead of facade interfaces, since they only consume events and don't expose methods to other modules.
+- `platform/` — All implementation details: services, persistence entities, repositories, web controllers
 
 ### Modules
 
-|     Module     |       Public Facade        |                                  Purpose                                   |
-|----------------|----------------------------|----------------------------------------------------------------------------|
-| `foosball`     | `FoosballFacade`           | Table soccer game tracking, stats, tournaments, ELO rating                 |
-| `trivia`       | `TriviaFacade`             | AI-powered FPU trivia, WebSocket multiplayer                               |
-| `skatetricks`  | `SkateTricksFacade`        | YOLO pose estimation + Bedrock AI trick detection                          |
-| `landscape`    | `LandscapeFacade`          | AI-powered landscape planning with USDA plant database integration         |
-| `booking`      | `BookingFacade`            | Appointment scheduling with auto-availability, event publishing            |
-| `tankgame`     | `TankGameFacade`           | WebSocket tank game with player progression                                |
-| `user`         | `UserFacade`               | User management                                                            |
-| `notification` | _(event-driven only)_      | Email notifications via event subscribers (zero coupling to other modules) |
-| `content`      | _(no external facade)_     | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter            |
-| `shared`       | _(configuration + events)_ | Configuration classes + domain events for cross-module communication       |
+|     Module     |       Service        |                                  Purpose                                   |
+|----------------|----------------------|----------------------------------------------------------------------------|
+| `foosball`     | `FoosballService`    | Table soccer game tracking, stats, tournaments, ELO rating                 |
+| `trivia`       | `TriviaService`      | AI-powered FPU trivia, WebSocket multiplayer                               |
+| `skatetricks`  | `SkateTricksService` | YOLO pose estimation + Bedrock AI trick detection                          |
+| `landscape`    | `LandscapeService`   | AI-powered landscape planning with USDA plant database integration         |
+| `booking`      | `BookingService`     | Appointment scheduling with auto-availability, event publishing            |
+| `tankgame`     | _(self-contained)_   | WebSocket tank game with player progression                                |
+| `user`         | `UserService`        | User management                                                            |
+| `notification` | _(event-driven)_     | Email notifications via event subscribers (zero coupling to other modules) |
+| `content`      | _(self-contained)_   | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter            |
+| `shared`       | _(config only)_      | Infrastructure configuration classes (Security, Cache, AWS, WebSocket)     |
+
+### Module Boundaries
+
+All modules use `@ApplicationModule` with **closed** boundaries (no `Type.OPEN`). The `api/` sub-package is exported via `@NamedInterface("api")` for modules that publish events consumed by other modules.
+
+**Dependency declarations** use `:: api` syntax to restrict access to only the exported interface:
+
+```java
+@ApplicationModule(
+    displayName = "Notification Services",
+    allowedDependencies = {"shared", "booking :: api", "trivia :: api", "foosball :: api", "user :: api"})
+```
+
+### Domain Events
+
+Each module owns the events it publishes in its `api/` package. Events are immutable records containing ALL data needed for processing (no callbacks to the source module).
+
+|           Event           | Published By |      Consumed By       |            Purpose             |
+|---------------------------|--------------|------------------------|--------------------------------|
+| `BookingCreatedEvent`     | booking      | notification           | Send confirmation email        |
+| `BookingCancelledEvent`   | booking      | notification           | Send cancellation email        |
+| `GameRecordedEvent`       | foosball     | notification (logging) | Log game activity              |
+| `PlayerCreatedEvent`      | foosball     | notification (logging) | Log player creation            |
+| `QuizStartedEvent`        | trivia       | notification (logging) | Log quiz start                 |
+| `QuizCompletedEvent`      | trivia       | notification (logging) | Log quiz completion            |
+| `PlayerJoinedQuizEvent`   | trivia       | notification (logging) | Log player join                |
+| `UserRegisteredEvent`     | user         | notification (logging) | Log registration               |
+| `UserLoginEvent`          | user         | notification (logging) | Log login                      |
+| `UserProfileUpdatedEvent` | user         | notification (logging) | Log profile update             |
+| `TrickAnalysisEvent`      | skatetricks  | _(none)_               | Published but no consumers yet |
+
+### Event Publication Registry
+
+Booking events use `@TransactionalEventListener` backed by Spring Modulith's **JPA event publication registry** (`event_publication` table). This provides guaranteed delivery — if a listener fails, the event persists with `completion_date = null` and can be replayed.
+
+Other event listeners (logging in notification module) use `@EventListener` since missed log entries are non-critical.
+
+**Dependencies:**
+- `spring-modulith-starter-jpa` — enables the JPA event publication registry at runtime
+- `spring-modulith-core` — module structure enforcement
+- `spring-modulith-starter-test` — `@ApplicationModuleTest` and `Scenario` API for testing
 
 ### Key Technical Patterns
 
 - **Database schema**: Managed exclusively by Liquibase (`src/main/resources/db/changelog/`). Hibernate DDL is set to `none`. **CRITICAL**: Never modify or delete existing changesets once they have been merged — Liquibase tracks applied changesets by ID and checksum. Altering a merged changeset will cause checksum validation failures on startup. Always create a new changeset file for schema changes.
-- **Caching**: Caffeine (`CacheConfig`). Used for Bible verse, Dad joke responses, and plant data (24-hour TTL).
+- **Caching**: Caffeine (`CacheConfig`). Used for Bible verse, Dad joke responses, plant data, plant images (24-hour TTL).
 - **Retry**: Spring Retry (`RetryConfig`) for fault-tolerant external API calls.
 - **Scheduled jobs**: ShedLock (`ShedlockConfig`) prevents duplicate execution in distributed environments.
-- **AI**: Spring AI with AWS Bedrock — Converse API (inference profile `us.anthropic.claude-sonnet-4-6`) for chat/vision, Titan Text Embeddings V2 (`amazon.titan-embed-text-v2:0`) via Spring AI `EmbeddingModel` for vector embeddings. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
+- **AI**: Spring AI with AWS Bedrock — Converse API (inference profile `us.anthropic.claude-sonnet-4-6`) for chat/vision, Titan Text Embeddings V2 (`amazon.titan-embed-text-v2:0`) via Spring AI `EmbeddingModel` for vector embeddings. Amazon Nova Canvas (`amazon.nova-canvas-v1:0`) via `BedrockRuntimeClient` for image generation. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
+- **Image Generation**: `LandscapeImageGenerationService` uses Nova Canvas `TEXT_IMAGE` with `CANNY_EDGE` conditioning to generate seasonal landscape variations from the user's photo. Images are resized to fit the 4,194,304 pixel limit before sending.
 - **WebSockets**: STOMP over SockJS for trivia and tank game real-time communication. Skatetricks video conversion uses WebSocket for progress updates, but analysis uses HTTP polling to avoid timeout issues with long-running AI inference.
 - **Async processing**: Skatetricks uses async endpoints with status polling for video conversion and analysis. Long-running operations (30+ seconds) are processed in background threads via `ExecutorService`. Client polls status endpoints (GET `/skatetricks/convert/{id}/status`, `/skatetricks/analyze/{id}/status`) every 2 seconds. YOLO models pre-load at startup (`@PostConstruct`) to prevent first-request timeouts.
-- **Event-Driven Architecture**: Modules communicate via immutable event records in `shared.events` package. Events contain ALL data needed for processing (no callbacks). Example: `BookingCreatedEvent` contains all booking details; notification module sends emails directly from event data without calling back to booking module. This ensures zero coupling between modules while maintaining reactive communication.
-- **Frontend**: Thymeleaf templates + HTMX for partial page updates + Bootstrap 5. Frontend libraries served as WebJars.
+- **Frontend**: Thymeleaf templates + HTMX for partial page updates + Bootstrap 5. Frontend libraries served as WebJars. Fabric.js for interactive canvas (landscape plant placement).
 - **Theme Toggle**: Sun/moon icon toggle in navbar (home page only) for light/dark mode switching. Theme preference stored in localStorage (`darkMode: enabled/disabled`). Booking pages automatically apply the saved theme without showing the toggle. Other pages (trivia, foosball, etc.) remain light mode only.
 - **CSRF**: Cookie-based CSRF tokens (`CookieCsrfTokenRepository`). All HTMX POST requests include the CSRF token from the cookie.
+
+### Testing
+
+#### Module Integration Tests
+
+Use `@IntegrationTest` (a custom meta-annotation) for module-level integration tests with Spring Modulith's `Scenario` API:
+
+```java
+@IntegrationTest
+class BookingModuleTest {
+
+    @Autowired
+    private BookingService bookingService;
+
+    @Test
+    void publishesBookingCreatedEvent(Scenario scenario) {
+        scenario.stimulate(() -> bookingService.createBooking(...))
+            .andWaitForEventOfType(BookingCreatedEvent.class)
+            .toArriveAndVerify(event -> {
+                assertThat(event.attendeeEmail()).isNotBlank();
+            });
+    }
+}
+```
+
+`@IntegrationTest` combines:
+- `@ApplicationModuleTest(extraIncludes = "shared")` — boots only the module under test + shared config
+- `@Import(TestcontainersConfig.class)` — Testcontainers PostgreSQL + stub OAuth2 `ClientRegistrationRepository`
+- `@ActiveProfiles("test")` — disables Docker Compose, stubs AWS credentials
+
+**Test infrastructure files:**
+- `TestcontainersConfig` — PostgreSQL container (`postgres:18.1`) with `@ServiceConnection` + stub OAuth2
+- `IntegrationTest` — meta-annotation combining all test setup
+- `application-test.yml` — disables Docker Compose, provides dummy AWS credentials
+
+#### Module Structure Tests
+
+`ModuleStructureTest` verifies module boundaries, generates C4 diagrams, and prints module structure. Runs without a database (no Spring context).
 
 ### Code Formatting
 
@@ -224,6 +307,31 @@ Spring AI provides `EmbeddingModel` auto-configuration for Bedrock Titan via `sp
 - `model` and `input-type` are direct properties under `spring.ai.bedrock.titan.embedding`, NOT nested under `options:`.
 - Spring Boot 4 uses Jackson 3 (`tools.jackson`), but Spring AI 2.0.0-M2 requires a Jackson 2.x `com.fasterxml.jackson.databind.ObjectMapper` bean. `AwsConfig` provides this explicitly.
 
+#### Bedrock Image Generation (Nova Canvas)
+
+The `LandscapeImageGenerationService` uses **Amazon Nova Canvas** (`amazon.nova-canvas-v1:0`) directly via the AWS SDK `BedrockRuntimeClient` (not Spring AI — Spring AI 2.0.0-M2 does not have a Bedrock image generation provider).
+
+**Usage pattern:**
+
+```java
+// TEXT_IMAGE with CANNY_EDGE conditioning preserves the structure of the input image
+Map.of(
+    "taskType", "TEXT_IMAGE",
+    "textToImageParams", Map.of(
+        "text", prompt,
+        "conditionImage", base64Image,
+        "controlMode", "CANNY_EDGE",
+        "controlStrength", 0.8),
+    "imageGenerationConfig", Map.of(
+        "width", 1024, "height", 1024,
+        "quality", "standard", "numberOfImages", 1));
+```
+
+**Key constraints:**
+- Input image must be ≤ 4,194,304 pixels (2048x2048). `LandscapeImageGenerationService.resizeIfNeeded()` handles this.
+- `amazon.nova-canvas-v1:0` must be enabled in the Bedrock Model Access console in `us-east-1`.
+- `BedrockRuntimeClient` bean is configured in `AwsConfig`.
+
 #### Spring AI Multimodal Messages (Images + Text)
 
 When sending images to Claude via Spring AI, use the `UserMessage` builder pattern with `Media`:
@@ -261,7 +369,7 @@ final var response = chatModel.call(prompt).getResult().getOutput().getText();
 When using Spring AI's `PromptTemplate` with JSON examples in prompts, **escape curly braces** to prevent them from being interpreted as template variables:
 
 ```java
-// ❌ WRONG - Throws IllegalArgumentException: "The template string is not valid"
+// WRONG - Throws IllegalArgumentException: "The template string is not valid"
 """
 Return JSON like this:
 {
@@ -269,7 +377,7 @@ Return JSON like this:
 }
 """
 
-// ✅ CORRECT - Escape braces in examples
+// CORRECT - Escape braces in examples
 """
 Return JSON like this:
 {{
@@ -290,8 +398,8 @@ The `skatetricks` module uses **AWS S3 Vectors** as a vector store for Retrieval
 - **Claude Sonnet 4.6** (inference profile `us.anthropic.claude-sonnet-4-6`) — visual trick analysis via Spring AI / Bedrock Converse API
 - **Titan Text Embeddings V2** (`amazon.titan-embed-text-v2:0`) — 1024-dimension normalized float embeddings via Spring AI `EmbeddingModel` (auto-configured by `spring-ai-starter-model-bedrock`)
 
-**Store flow** (verified attempt → vector store):
-1. Trick analyzed by Claude; YOLO pose data saved to `pose_data` column in DB via `SkateTricksFacadeImpl.saveResult()`
+**Store flow** (verified attempt -> vector store):
+1. Trick analyzed by Claude; YOLO pose data saved to `pose_data` column in DB via `SkateTricksService.saveResult()`
 2. Auto-verified if `confidence >= 80`; otherwise surfaced to user for confirmation/correction
 3. On verification: `writeToVectorStore()` embeds the **pose data text** (NOT trick name) via `EmbeddingService`, stores with `PutInputVector` keyed `attempt-{id}` and `Document` metadata (`trickName`, `confidence`, `formScore`, `attemptId`, `feedback`)
 4. Attempts without pose data (e.g., direct video analysis path) are skipped for vector store writes
@@ -306,7 +414,7 @@ The `skatetricks` module uses **AWS S3 Vectors** as a vector store for Retrieval
 **Key classes:**
 - `EmbeddingService` — wraps Spring AI `EmbeddingModel` (Titan Embed V2), returns `List<Float>` (1024 dims)
 - `VectorStoreInitializer` — `@PostConstruct` creates the index (`DataType.FLOAT32`, `DistanceMetric.COSINE`, dim=1024); supports `recreate` flag for index reset
-- `writeToVectorStore()` in `SkateTricksFacadeImpl` — embeds pose data, upserts (same key replaces on correction)
+- `writeToVectorStore()` in `SkateTricksService` — embeds pose data, upserts (same key replaces on correction)
 - `fetchSimilarExamples()` in `BedrockTrickAnalyzer` — RAG retrieval for frame analysis
 
 **Configuration** (`application.yml`):
@@ -324,97 +432,41 @@ skatetricks:
 
 **Known gap:** `analyzeVideo()` (direct video path) does not query the vector store and does not write to it — no pose data is available in that path.
 
-**Verifying vector store data:**
-
-Check if verified attempts are stored in the vector store:
-
-```bash
-# List all vectors in the index (shows vector IDs and metadata)
-aws-vault exec thonbecker -- aws s3-vectors list-vectors \
-  --bucket thonbecker-vectors \
-  --index-name skatetricks-tricks \
-  --region us-east-1 \
-  --output json | jq '.vectorList[] | {id: .id, metadata: .metadata}'
-
-# Count total vectors
-aws-vault exec thonbecker -- aws s3-vectors list-vectors \
-  --bucket thonbecker-vectors \
-  --index-name skatetricks-tricks \
-  --region us-east-1 \
-  --output json | jq '.vectorList | length'
-
-# Get specific vector by ID (e.g., attempt-123)
-aws-vault exec thonbecker -- aws s3-vectors get-vector \
-  --bucket thonbecker-vectors \
-  --index-name skatetricks-tricks \
-  --vector-id "attempt-123" \
-  --region us-east-1 \
-  --output json | jq '.'
-```
-
-**Expected metadata fields per vector:**
-- `trickName` — The verified trick name (e.g., "OLLIE")
-- `confidence` — Original AI confidence score (0-100)
-- `formScore` — Form quality score (0-100)
-- `attemptId` — Database FK to `skatetricks.trick_attempts.id`
-- `feedback` — AI feedback text for the attempt
-
-**Verification flow:**
-1. Upload video → AI analyzes → saves to DB with `verified=false`
-2. If confidence ≥ 80%, auto-verifies and writes to vector store immediately
-3. If confidence < 80%, user clicks "Confirm" or "Correct" → writes to vector store
-4. Vector ID format: `attempt-{attemptId}` (e.g., `attempt-42`)
-5. Each verification/correction upserts the vector (same ID replaces existing)
-
-**Confirming successful write:**
-
-Look for this log message after verification:
-
-```
-✅ Successfully stored attempt 36 (OLLIE) in vector store 'skatetricks-tricks'
-```
-
-If the write fails, you'll see:
-
-```
-❌ Failed to write attempt X to vector store: <error details>
-```
-
-**Testing RAG retrieval:**
-
-Upload a second video of the **same trick type** (e.g., another ollie). The system should:
-1. Generate YOLO pose data from the new video
-2. Query vector store for similar verified attempts (top-3 by cosine similarity)
-3. Inject similar examples into Claude's prompt as few-shot learning
-4. Potentially improve detection accuracy based on past verified attempts
-
-Check logs for:
-
-```
-Fetching similar examples from vector store for pose data...
-Found 2 similar verified attempts in vector store
-```
-
 #### Landscape Planning Module
 
-The `landscape` module provides AI-powered landscape design with plant selection based on USDA hardiness zones. Users can upload images of their yard, receive personalized plant recommendations, and create annotated landscape plans.
+The `landscape` module provides AI-powered landscape design with plant selection based on USDA hardiness zones.
 
 **Architecture:**
-- **Claude Sonnet 4.6** (inference profile `us.anthropic.claude-sonnet-4-6`) — analyzes landscape images to recommend suitable plants based on visible conditions, sunlight exposure, and hardiness zone compatibility
-- **USDA Plants Database API** — authoritative plant data with hardiness zone, light/water requirements, and native status
+- **Claude Sonnet 4.6** — analyzes landscape images to recommend suitable plants
+- **Amazon Nova Canvas** — generates seasonal landscape variation images via `BedrockRuntimeClient`
+- **USDA Plants Database API** — authoritative plant data with hardiness zone, light/water requirements
+- **USDA Plants Gallery** — plant images fetched by USDA symbol (`PlantImageService`)
 - **AWS S3 + CloudFront** — stores uploaded landscape images with CDN delivery
+- **Fabric.js** — interactive canvas for visual plant placement with click-to-place markers
 
 **Key features:**
 1. **Image Upload**: Users upload photos of their yard (JPEG/PNG, max 100MB)
-2. **AI Analysis**: Claude analyzes the image considering sunlight exposure, existing vegetation, space constraints, and climate compatibility
-3. **Plant Search**: Search USDA Plants Database with filters for hardiness zone, sun requirements, and water needs
-4. **Plan Management**: Save, load, and share landscape plans with plant placements
-5. **Caching**: Plant data and search results cached for 24 hours with Caffeine
+2. **AI Analysis**: Claude analyzes the image considering sunlight exposure, existing vegetation, space constraints
+3. **Plant Search**: Search USDA Plants Database with filters for hardiness zone, sun/water requirements
+4. **Interactive Plant Placement**: Fabric.js canvas — select a plant, click on the image to place it. Plant-type icons (tree, shrub, flower) with real plant photos from USDA gallery
+5. **Seasonal AI Preview**: Claude generates text descriptions + Nova Canvas generates images showing the landscape in spring, summer, fall, winter
+6. **Plan Management**: Save, load, and delete landscape plans with placements persisted to database
+7. **Caching**: Plant data, search results, and plant images cached for 24 hours with Caffeine
 
-**Database schema** (`landscape` schema):
-- `landscape_plans` — plan metadata (user, name, description, image URLs, hardiness zone)
-- `plant_placements` — user-placed plants on the image (coordinates, notes, quantity)
-- `recommended_plants` — AI recommendations (plant info, reasoning, confidence score)
+**Key classes:**
+- `LandscapeService` — coordinates image storage, AI analysis, plant search, placement, and seasonal preview
+- `LandscapeAiService` — uses Claude for plant recommendations and seasonal text descriptions
+- `LandscapeImageGenerationService` — uses Nova Canvas for seasonal image generation
+- `PlantImageService` — fetches plant photos from USDA gallery by symbol, cached 24 hours
+- `PlantApiService` — integrates with USDA Plants Database (with caching and retry logic)
+- `LandscapeImageStorageService` — uploads images to S3 with timestamped keys
+
+**Plant Image URL Pattern:**
+
+```
+https://plants.sc.egov.usda.gov/gallery/standard/{SYMBOL}_001_shp.jpg  (primary)
+https://plants.sc.egov.usda.gov/gallery/pubs/{SYMBOL}_001_php.jpg     (fallback)
+```
 
 **Configuration** (`application.yml`):
 
@@ -429,149 +481,59 @@ landscape:
     folder-prefix: landscape-plans/
 ```
 
-**Key classes:**
-- `LandscapeFacade` — public API with 7 methods for plan creation, plant search, and placement management
-- `LandscapeAiService` — uses Claude to analyze images and generate plant recommendations
-- `PlantApiService` — integrates with USDA Plants Database (with caching and retry logic)
-- `LandscapeImageStorageService` — uploads images to S3 with timestamped keys
-
-**HTTP Client Pattern:**
-Uses Spring's declarative HTTP client (`@GetExchange`) with WebClient backend for type-safe USDA API calls.
-
 #### Booking Module
 
-The `booking` module provides appointment scheduling functionality, replacing the external Calendly integration. Users can book meetings directly through the website with calendar integration and email notifications.
+The `booking` module provides appointment scheduling with event-driven notifications.
 
 **Architecture:**
-- **Event-Driven Notifications** — publishes `BookingCreatedEvent` and `BookingCancelledEvent` to `shared.events`; notification module handles all email sending
-- **Automatic Availability Generation** — `AvailabilityScheduler` creates recurring weekly slots (Monday-Friday, 11 AM-12 PM and 6-9 PM) for 4 weeks ahead, runs on startup and daily at 2 AM
-- **iCal4j Library** (v4.0.7) — generates RFC-compliant `.ics` calendar files with Central Time (America/Chicago) timezone
-- **Calendar Integration** — `.ics` files compatible with Google Calendar, Outlook, Apple Calendar
-
-**Key features:**
-1. **Public Booking Page** (`/booking`): Browse meeting types, select date/time, provide attendee info, receive 8-character confirmation code
-2. **Booking Types**: Multiple configurable meeting types (30 min, 1 hour, 45 min) with duration and buffer time
-3. **Automatic Availability**: System generates recurring availability slots (weekdays only, 4-week rolling window)
-4. **Booking Management**: View/cancel bookings via confirmation code
-5. **Admin Dashboard** (`/booking/admin`): Manage bookings, availability slots, and booking types
-
-**Database schema** (`booking` schema):
-- `booking_types` — meeting type definitions (name, duration, buffer time, color)
-- `availability_slots` — available time blocks (auto-generated by AvailabilityScheduler)
-- `bookings` — user bookings with confirmation codes, status tracking
-
-**Automatic Availability Configuration:**
-- **Schedule**: Monday-Friday only (weekends excluded)
-- **Morning slot**: 11:00 AM - 12:00 PM
-- **Evening slot**: 6:00 PM - 9:00 PM
-- **Generation frequency**: Daily at 2:00 AM (ShedLock prevents duplicates)
-- **Cleanup**: Daily at 3:00 AM removes past slots
-- **Rolling window**: Always maintains 4 weeks of future availability
+- **Event-Driven Notifications** — publishes `BookingCreatedEvent` and `BookingCancelledEvent` from `booking.api`; notification module handles email sending via `@TransactionalEventListener`
+- **Event Publication Registry** — `spring-modulith-starter-jpa` persists events to `event_publication` table for guaranteed delivery and replay
+- **Automatic Availability Generation** — `AvailabilityScheduler` creates recurring weekly slots (Monday-Friday, 11 AM-12 PM and 6-9 PM) for 4 weeks ahead
+- **iCal4j Library** — generates RFC-compliant `.ics` calendar files with Central Time (America/Chicago) timezone
 
 **Key classes:**
-- `BookingFacade` — public API with 17 methods for booking creation, availability checks, and admin operations
+- `BookingService` — booking creation, cancellation, availability management, event publishing
 - `AvailabilityScheduler` — generates recurring weekly availability slots automatically
 - `BookingController` — public endpoints for booking creation and management
 - `BookingAdminController` — protected admin endpoints for system configuration
 
-**Default booking types** (pre-loaded):
-1. **30 Minute Consultation** — Quick project discussion
-2. **1 Hour Technical Discussion** — Deep dive on architecture/design
-3. **Project Discovery Call** (45 min) — Initial collaboration exploration
-
-**Domain Events** (published to `shared.events`):
+**Domain Events** (in `booking.api`):
 - `BookingCreatedEvent` — contains all booking details (attendee info, times, confirmation code, message)
 - `BookingCancelledEvent` — contains cancellation details for notification
 
-**Event-Driven Communication:**
-The booking module publishes events with complete data; it never calls other modules. The notification module subscribes to these events and handles email sending independently.
-
 #### Notification Module
 
-The `notification` module is a **fully event-driven** module with no public facade API. It listens to events from other modules and sends appropriate notifications (email, SMS, push, etc.).
+The `notification` module is **fully event-driven** with no public service API.
 
 **Architecture:**
-- **Zero Coupling** — notification module has NO dependencies on other business modules (booking, trivia, etc.)
-- **Event Subscribers** — listens to events in `shared.events` package
-- **No Public API** — other modules don't call notification; they publish events
+- **Zero Coupling** — depends only on event types from other modules' `api` packages via `@NamedInterface`
+- **`@TransactionalEventListener`** — for booking events (guaranteed delivery via event publication registry)
+- **`@EventListener` + `@Async`** — for logging events (non-critical, fire-and-forget)
 - **Email Service** — currently logs to console; ready for AWS SES integration
 
-**Module Structure:**
-- `notification/api/` — event listeners (`NotificationEventListener`, `EventLoggingListener`)
-- `notification/platform/` — email formatting services (`EmailNotificationService`, `CalendarService`)
-- `notification/domain/` — internal notification models (not exposed externally)
-
-**Email Configuration:**
-- Sender email: `thon.becker@gmail.com`
-- Admin notification email: `thon.becker@gmail.com`
-- Timezone: Central Time (America/Chicago) for calendar attachments
-
-**Event Subscriptions:**
-- `BookingCreatedEvent` → sends confirmation email to attendee + notification to admin
-- `BookingCancelledEvent` → sends cancellation notification to attendee
-- `QuizCompletedEvent`, `QuizStartedEvent`, `PlayerJoinedQuizEvent` → logs quiz activity
-- `GameRecordedEvent`, `PlayerCreatedEvent` → logs foosball activity
-- `UserRegisteredEvent`, `UserLoginEvent`, `UserProfileUpdatedEvent` → logs user activity
-
 **Key classes:**
-- `NotificationEventListener` — handles booking-related events, sends emails
-- `EventLoggingListener` — logs domain events from trivia, foosball, user modules
-- `EmailNotificationService` — formats and sends booking confirmation/cancellation emails (works with event data directly)
+- `NotificationEventListener` — handles `BookingCreatedEvent` and `BookingCancelledEvent` with `@TransactionalEventListener`
+- `EventLoggingListener` — logs events from trivia, foosball, user modules with `@Async`
+- `EmailNotificationService` — formats booking confirmation/cancellation emails
 - `CalendarService` — generates `.ics` calendar attachments from event data
-
-**Best Practice Pattern:**
-
-```java
-// Event contains ALL data needed for notification
-@EventListener
-void onBookingCreated(BookingCreatedEvent event) {
-    emailService.sendConfirmation(event);  // No callback to booking module!
-}
-```
-
-This architecture ensures the notification module can be:
-- Tested independently
-- Scaled independently
-- Extended with new channels (SMS, push) without touching other modules
-- Replaced or disabled without breaking other modules
 
 #### Shared Module
 
-The `shared` module provides infrastructure configuration and cross-module contracts.
+The `shared` module provides **infrastructure configuration only** — no domain events, no business logic.
 
 **Contents:**
-- `shared/platform/configuration/` — Spring configuration classes (SecurityConfig, CacheConfig, AwsConfig, etc.)
-- `shared/events/` — **Domain events** used for cross-module communication (e.g., `BookingCreatedEvent`, `BookingCancelledEvent`)
-
-**Event-Driven Architecture Pattern:**
-Domain events in `shared.events` are immutable records containing complete data for subscribers:
-
-```java
-// Events are self-contained - no callbacks needed
-public record BookingCreatedEvent(
-    Long bookingId, String confirmationCode,
-    String attendeeEmail, String attendeeName, String attendeePhone,
-    String bookingTypeName, LocalDateTime startTime, LocalDateTime endTime,
-    String message
-) {}
-```
-
-**Key principle:** Events are owned by neither publisher nor subscriber - they're neutral contracts in shared space.
+- `shared/platform/configuration/` — SecurityConfig, CacheConfig, AwsConfig, WebSocketConfig, AsyncConfig, RetryConfig, JpaConfig, ShedlockConfig
 
 ### Future Enhancements
 
-The following features are planned for future development:
-
 #### Landscape Module Enhancements
 
-- **Canvas-based Plant Placement**: Implement Fabric.js for visual plant placement on images with drag-and-drop
 - **PDF Export**: Generate printable landscape plans with plant lists, care instructions, and layout diagrams
 - **Plant Compatibility Matrix**: Analyze companion planting and suggest compatible plant combinations
 - **Seasonal Bloom Timeline**: Show when plants bloom throughout the year with a visual calendar
 - **Cost Estimation**: Calculate estimated costs based on plant quantities and local nursery pricing
 - **Maintenance Calendar**: Generate a yearly maintenance schedule for the selected plants
-- **Community Sharing**: Allow users to share plans publicly and browse community-created designs
-- **3D Visualization**: Integrate with 3D rendering libraries to show landscape maturity over time
+- **Drag-and-Drop Repositioning**: Allow dragging placed plant markers to reposition them on the canvas
 
 #### General Features
 
