@@ -135,7 +135,8 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     schema.trickSequence().stream()
                             .map(e -> new TrickSequenceEntry(
                                     TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
-                            .toList());
+                            .toList(),
+                    poseDataText.isBlank() ? null : poseDataText);
 
         } catch (Exception e) {
             log.error("Error analyzing skateboard trick frames", e);
@@ -255,13 +256,19 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                 final var trickName = meta.get("trickName").asString();
                 final var confidence = meta.get("confidence").asNumber().intValue();
                 final var formScore = meta.get("formScore").asNumber().intValue();
+                final var feedback =
+                        meta.containsKey("feedback") ? meta.get("feedback").asString() : "";
                 sb.append("- ")
                         .append(trickName)
                         .append(" (verified confidence: ")
                         .append(confidence)
                         .append("%, form score: ")
                         .append(formScore)
-                        .append("%)\n");
+                        .append("%)");
+                if (!feedback.isBlank()) {
+                    sb.append(" feedback: ").append(feedback);
+                }
+                sb.append("\n");
             });
             return sb.toString();
         } catch (Exception e) {

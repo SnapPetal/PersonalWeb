@@ -1,11 +1,12 @@
 package biz.thonbecker.personal.landscape.platform.service;
 
+import static java.util.Objects.nonNull;
+
 import biz.thonbecker.personal.landscape.api.HardinessZone;
 import biz.thonbecker.personal.landscape.api.LightRequirement;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import java.util.Base64;
 import java.util.List;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.content.Media;
@@ -14,8 +15,6 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
-
-import static java.util.Objects.nonNull;
 
 /**
  * Service for AI-powered plant recommendations using AWS Bedrock (Claude).

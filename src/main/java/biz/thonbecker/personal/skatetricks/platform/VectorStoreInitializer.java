@@ -8,6 +8,7 @@ import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
 import software.amazon.awssdk.services.s3vectors.model.ConflictException;
 import software.amazon.awssdk.services.s3vectors.model.DataType;
 import software.amazon.awssdk.services.s3vectors.model.DistanceMetric;
+import software.amazon.awssdk.services.s3vectors.model.NotFoundException;
 
 /**
  * Ensures the S3 Vectors index exists at application startup.
@@ -28,12 +29,37 @@ class VectorStoreInitializer {
     @Value("${skatetricks.vectorstore.dimension}")
     private int dimension;
 
+    @Value("${skatetricks.vectorstore.recreate:false}")
+    private boolean recreateIndex;
+
     VectorStoreInitializer(final S3VectorsClient s3VectorsClient) {
         this.s3VectorsClient = s3VectorsClient;
     }
 
     @PostConstruct
     void ensureIndexExists() {
+        if (recreateIndex) {
+            deleteIndexIfExists();
+        }
+        createIndexIfNotExists();
+    }
+
+    private void deleteIndexIfExists() {
+        try {
+            s3VectorsClient.deleteIndex(r -> r.vectorBucketName(vectorBucket).indexName(vectorIndex));
+            log.info("Deleted S3 Vectors index '{}' from bucket '{}' for recreation", vectorIndex, vectorBucket);
+        } catch (NotFoundException e) {
+            log.info("S3 Vectors index '{}' does not exist, nothing to delete", vectorIndex);
+        } catch (Exception e) {
+            log.warn(
+                    "Could not delete S3 Vectors index '{}' in bucket '{}': {}",
+                    vectorIndex,
+                    vectorBucket,
+                    e.getMessage());
+        }
+    }
+
+    private void createIndexIfNotExists() {
         try {
             s3VectorsClient.createIndex(r -> r.vectorBucketName(vectorBucket)
                     .indexName(vectorIndex)

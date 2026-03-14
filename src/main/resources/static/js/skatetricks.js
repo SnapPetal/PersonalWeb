@@ -218,32 +218,40 @@
     }
 
     if (result.attemptId) {
-      var selectOptions = SUPPORTED_TRICKS.map(function (t) {
-        return (
-          '<option value="' +
-          t.value +
-          '"' +
-          (t.value === result.trick ? " selected" : "") +
-          ">" +
-          t.label +
-          "</option>"
-        );
-      }).join("");
+      var selectOptions = SUPPORTED_TRICKS.filter(function (t) {
+        return t.value !== result.trick;
+      })
+        .map(function (t) {
+          return '<option value="' + t.value + '">' + t.label + "</option>";
+        })
+        .join("");
 
       html +=
         '<div class="mt-3 pt-3 border-top" id="verifySection-' +
         result.attemptId +
         '">';
       html +=
-        '<p class="small text-muted mb-2"><i class="bi bi-patch-question me-1"></i>Was this the right trick?</p>';
-      html += '<div class="d-flex flex-wrap gap-2 align-items-center">';
+        '<p class="small text-muted mb-2"><i class="bi bi-patch-question me-1"></i>Is this correct?</p>';
+      html += '<div class="d-flex gap-2 mb-2">';
       html +=
-        '<button class="btn btn-sm btn-success" onclick="confirmTrick(' +
+        '<button class="btn btn-sm btn-success flex-fill" onclick="confirmTrick(' +
         result.attemptId +
         ', null)">';
-      html += '<i class="bi bi-check-circle me-1"></i>Confirm</button>';
       html +=
-        '<select class="form-select form-select-sm" style="max-width:180px;" id="correctionSelect-' +
+        '<i class="bi bi-check-circle me-1"></i>Yes, it\'s correct</button>';
+      html +=
+        '<button class="btn btn-sm btn-outline-warning flex-fill" onclick="showCorrectionPicker(' +
+        result.attemptId +
+        ')">';
+      html += '<i class="bi bi-pencil me-1"></i>No, wrong trick</button>';
+      html += "</div>";
+      html +=
+        '<div class="d-none" id="correctionPicker-' + result.attemptId + '">';
+      html +=
+        '<label class="form-label small text-muted mb-1">What trick was it?</label>';
+      html += '<div class="d-flex gap-2 align-items-center">';
+      html +=
+        '<select class="form-select form-select-sm" id="correctionSelect-' +
         result.attemptId +
         '">' +
         selectOptions +
@@ -252,8 +260,8 @@
         '<button class="btn btn-sm btn-warning" onclick="correctTrick(' +
         result.attemptId +
         ')">';
-      html += '<i class="bi bi-pencil me-1"></i>Correct</button>';
-      html += "</div></div>";
+      html += '<i class="bi bi-send me-1"></i>Submit</button>';
+      html += "</div></div></div>";
     }
 
     analysisResult.innerHTML = html;
@@ -288,12 +296,11 @@
           });
         }
         if (section) {
-          section.innerHTML =
-            '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Verified' +
-            (correctedTrickName
-              ? " — " + correctedTrickName.replace(/_/g, " ")
-              : "") +
-            "</span>";
+          section.innerHTML = correctedTrickName
+            ? '<span class="badge bg-warning text-dark"><i class="bi bi-pencil me-1"></i>Corrected to ' +
+              correctedTrickName.replace(/_/g, " ") +
+              "</span>"
+            : '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Confirmed</span>';
         }
         // Update the matching history item badge
         updateHistoryVerified(attemptId, correctedTrickName);
@@ -309,6 +316,13 @@
       });
   }
 
+  function showCorrectionPicker(attemptId) {
+    var picker = document.getElementById("correctionPicker-" + attemptId);
+    if (picker) {
+      picker.classList.remove("d-none");
+    }
+  }
+
   function correctTrick(attemptId) {
     var select = document.getElementById("correctionSelect-" + attemptId);
     if (!select) return;
@@ -318,6 +332,7 @@
   // Make functions globally accessible for inline onclick handlers
   window.confirmTrick = confirmTrick;
   window.correctTrick = correctTrick;
+  window.showCorrectionPicker = showCorrectionPicker;
 
   function updateHistoryVerified(attemptId, correctedTrickName) {
     var item = document.querySelector('[data-attempt-id="' + attemptId + '"]');

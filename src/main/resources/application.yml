@@ -46,10 +46,16 @@ spring:
             model: us.anthropic.claude-sonnet-4-6
             max-tokens: 4096
             temperature: 0.3
+      titan:
+        embedding:
+          model: amazon.titan-embed-text-v2:0
+          input-type: TEXT
       aws:
         region: ${AWS_REGION:us-east-1}
         access-key: ${AWS_ACCESS_KEY_ID}
         secret-key: ${AWS_SECRET_ACCESS_KEY}
+    model:
+      embedding: bedrock-titan
 
   # Task Execution (for WebSocket async operations)
   task:
@@ -94,6 +100,7 @@ skatetricks:
     bucket: thonbecker-vectors
     index: skatetricks-tricks
     dimension: 1024
+    recreate: false
 
 # Landscape Planning Configuration
 landscape:

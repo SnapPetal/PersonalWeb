@@ -39,6 +39,9 @@ class TrickAttemptEntity {
     @Column(name = "verified_trick_name", length = 100)
     private String verifiedTrickName;
 
+    @Column(name = "pose_data", columnDefinition = "TEXT")
+    private String poseData;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

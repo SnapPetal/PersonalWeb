@@ -28,4 +28,5 @@
     <include file="classpath:db/changelog/changes/022-add-verification-columns.xml"/>
     <include file="classpath:db/changelog/changes/023-landscape-schema.xml"/>
     <include file="classpath:db/changelog/changes/024-booking-schema.xml"/>
+    <include file="classpath:db/changelog/changes/025-add-pose-data-column.xml"/>
 </databaseChangeLog>

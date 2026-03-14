@@ -8,6 +8,7 @@ public record TrickAnalysisResult(
         int formScore,
         List<String> feedback,
         List<TrickSequenceEntry> trickSequence,
+        String poseData,
         Long attemptId) {
 
     public TrickAnalysisResult(
@@ -15,15 +16,25 @@ public record TrickAnalysisResult(
             int confidence,
             int formScore,
             List<String> feedback,
+            List<TrickSequenceEntry> trickSequence,
+            String poseData) {
+        this(trick, confidence, formScore, feedback, trickSequence, poseData, null);
+    }
+
+    public TrickAnalysisResult(
+            SupportedTrick trick,
+            int confidence,
+            int formScore,
+            List<String> feedback,
             List<TrickSequenceEntry> trickSequence) {
-        this(trick, confidence, formScore, feedback, trickSequence, null);
+        this(trick, confidence, formScore, feedback, trickSequence, null, null);
     }
 
     public TrickAnalysisResult(SupportedTrick trick, int confidence, int formScore, List<String> feedback) {
-        this(trick, confidence, formScore, feedback, List.of(), null);
+        this(trick, confidence, formScore, feedback, List.of(), null, null);
     }
 
     public TrickAnalysisResult withAttemptId(Long attemptId) {
-        return new TrickAnalysisResult(trick, confidence, formScore, feedback, trickSequence, attemptId);
+        return new TrickAnalysisResult(trick, confidence, formScore, feedback, trickSequence, poseData, attemptId);
     }
 }

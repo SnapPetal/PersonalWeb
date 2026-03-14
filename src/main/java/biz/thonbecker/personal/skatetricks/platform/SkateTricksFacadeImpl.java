@@ -122,6 +122,7 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
         entity.setFormScore(result.formScore());
         entity.setFeedback(String.join("|", result.feedback()));
         entity.setTrickSequence(encodeTrickSequence(result.trickSequence()));
+        entity.setPoseData(result.poseData());
 
         if (result.confidence() >= AUTO_VERIFY_CONFIDENCE_THRESHOLD) {
             entity.setVerified(true);
@@ -163,6 +164,11 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
 
     private void writeToVectorStore(final TrickAttemptEntity entity) {
         try {
+            if (Objects.isNull(entity.getPoseData()) || entity.getPoseData().isBlank()) {
+                log.info("Skipping vector store write for attempt {} — no pose data available", entity.getId());
+                return;
+            }
+
             final var acceptedTrick = Objects.nonNull(entity.getVerifiedTrickName())
                     ? entity.getVerifiedTrickName()
                     : entity.getTrickName();
@@ -174,18 +180,17 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
                     vectorBucket,
                     vectorIndex);
 
-            final var text = "trick:%s feedback:%s"
-                    .formatted(acceptedTrick, Objects.nonNull(entity.getFeedback()) ? entity.getFeedback() : "");
-
-            log.debug("Embedding text (length={}): {}", text.length(), text);
-            final var embedding = embeddingService.embed(text);
+            log.debug("Embedding pose data (length={})", entity.getPoseData().length());
+            final var embedding = embeddingService.embed(entity.getPoseData());
             log.debug("Generated embedding with {} dimensions", embedding.size());
 
             final var metadata = Document.fromMap(Map.of(
                     "trickName", Document.fromString(acceptedTrick),
                     "confidence", Document.fromNumber(entity.getConfidence()),
                     "formScore", Document.fromNumber(entity.getFormScore()),
-                    "attemptId", Document.fromNumber(entity.getId())));
+                    "attemptId", Document.fromNumber(entity.getId()),
+                    "feedback",
+                            Document.fromString(Objects.nonNull(entity.getFeedback()) ? entity.getFeedback() : "")));
 
             final var vectorKey = "attempt-" + entity.getId();
             log.info("Calling S3 Vectors putVectors with key={}", vectorKey);
@@ -327,6 +332,7 @@ class SkateTricksFacadeImpl implements SkateTricksFacade {
                         e.getFormScore(),
                         e.getFeedback() != null ? List.of(e.getFeedback().split("\\|")) : List.of(),
                         decodeTrickSequence(e.getTrickSequence()),
+                        e.getPoseData(),
                         e.getId()))
                 .toList();
     }

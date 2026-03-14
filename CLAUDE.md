@@ -135,7 +135,7 @@ Each module follows this internal package convention:
 - **Caching**: Caffeine (`CacheConfig`). Used for Bible verse, Dad joke responses, and plant data (24-hour TTL).
 - **Retry**: Spring Retry (`RetryConfig`) for fault-tolerant external API calls.
 - **Scheduled jobs**: ShedLock (`ShedlockConfig`) prevents duplicate execution in distributed environments.
-- **AI**: Spring AI with AWS Bedrock Converse API (inference profile `us.anthropic.claude-sonnet-4-6`) for trivia question generation and landscape recommendations. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
+- **AI**: Spring AI with AWS Bedrock — Converse API (inference profile `us.anthropic.claude-sonnet-4-6`) for chat/vision, Titan Text Embeddings V2 (`amazon.titan-embed-text-v2:0`) via Spring AI `EmbeddingModel` for vector embeddings. DJL (Deep Java Library) with PyTorch for local YOLO pose estimation in skatetricks.
 - **WebSockets**: STOMP over SockJS for trivia and tank game real-time communication. Skatetricks video conversion uses WebSocket for progress updates, but analysis uses HTTP polling to avoid timeout issues with long-running AI inference.
 - **Async processing**: Skatetricks uses async endpoints with status polling for video conversion and analysis. Long-running operations (30+ seconds) are processed in background threads via `ExecutorService`. Client polls status endpoints (GET `/skatetricks/convert/{id}/status`, `/skatetricks/analyze/{id}/status`) every 2 seconds. YOLO models pre-load at startup (`@PostConstruct`) to prevent first-request timeouts.
 - **Event-Driven Architecture**: Modules communicate via immutable event records in `shared.events` package. Events contain ALL data needed for processing (no callbacks). Example: `BookingCreatedEvent` contains all booking details; notification module sends emails directly from event data without calling back to booking module. This ensures zero coupling between modules while maintaining reactive communication.
@@ -194,11 +194,35 @@ spring:
     bedrock:
       converse:
         chat:
+          enabled: true
           options:
             model: us.anthropic.claude-sonnet-4-6  # Inference profile ID (NOT direct model ID)
             temperature: 0.3
-            max-tokens: 1500
+            max-tokens: 4096
+      titan:
+        embedding:
+          model: amazon.titan-embed-text-v2:0
+          input-type: TEXT  # CRITICAL: defaults to IMAGE if omitted
+      aws:
+        region: ${AWS_REGION:us-east-1}
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+    model:
+      embedding: bedrock-titan  # Activates Spring AI Titan embedding auto-config
 ```
+
+#### Spring AI Bedrock Embedding (Titan V2)
+
+Spring AI provides `EmbeddingModel` auto-configuration for Bedrock Titan via `spring-ai-starter-model-bedrock`. The `EmbeddingService` in `skatetricks` wraps this to produce `List<Float>` vectors for S3 Vectors storage.
+
+**Dependencies** (both required):
+- `spring-ai-starter-model-bedrock` — Titan embedding auto-config
+- `spring-ai-starter-model-bedrock-converse` — Claude chat via Converse API
+
+**Gotchas:**
+- `input-type` defaults to `IMAGE` in `BedrockTitanEmbeddingProperties`, NOT `TEXT`. Always set `spring.ai.bedrock.titan.embedding.input-type=TEXT` for text embeddings, or Titan will try to base64-decode your text as an image.
+- `model` and `input-type` are direct properties under `spring.ai.bedrock.titan.embedding`, NOT nested under `options:`.
+- Spring Boot 4 uses Jackson 3 (`tools.jackson`), but Spring AI 2.0.0-M2 requires a Jackson 2.x `com.fasterxml.jackson.databind.ObjectMapper` bean. `AwsConfig` provides this explicitly.
 
 #### Spring AI Multimodal Messages (Images + Text)
 
@@ -264,22 +288,25 @@ The `skatetricks` module uses **AWS S3 Vectors** as a vector store for Retrieval
 
 **Two-model architecture:**
 - **Claude Sonnet 4.6** (inference profile `us.anthropic.claude-sonnet-4-6`) — visual trick analysis via Spring AI / Bedrock Converse API
-- **Titan Text Embeddings V2** (`amazon.titan-embed-text-v2:0`) — 1024-dimension normalized float embeddings via `BedrockRuntimeClient.invokeModel()` directly (no Spring AI wrapper)
+- **Titan Text Embeddings V2** (`amazon.titan-embed-text-v2:0`) — 1024-dimension normalized float embeddings via Spring AI `EmbeddingModel` (auto-configured by `spring-ai-starter-model-bedrock`)
 
 **Store flow** (verified attempt → vector store):
-1. Trick analyzed by Claude; result saved to DB via `SkateTricksFacadeImpl.saveResult()`
+1. Trick analyzed by Claude; YOLO pose data saved to `pose_data` column in DB via `SkateTricksFacadeImpl.saveResult()`
 2. Auto-verified if `confidence >= 80`; otherwise surfaced to user for confirmation/correction
-3. On verification: `writeToVectorStore()` embeds `"trick:{name} feedback:{feedback}"` via `EmbeddingService`, stores with `PutInputVector` keyed `attempt-{id}` and `Document` metadata (`trickName`, `confidence`, `formScore`, `attemptId`)
+3. On verification: `writeToVectorStore()` embeds the **pose data text** (NOT trick name) via `EmbeddingService`, stores with `PutInputVector` keyed `attempt-{id}` and `Document` metadata (`trickName`, `confidence`, `formScore`, `attemptId`, `feedback`)
+4. Attempts without pose data (e.g., direct video analysis path) are skipped for vector store writes
+
+**IMPORTANT**: Both the stored vectors and query vectors must embed the **same type of data** (pose data). Previously, stored vectors used `"trick:{name} feedback:{feedback}"` while queries used pose data — this semantic mismatch made RAG retrieval meaningless. The fix embeds pose data for both storage and query.
 
 **RAG query flow** (frame analysis path only):
 1. `BedrockTrickAnalyzer.fetchSimilarExamples()` embeds the YOLO pose data text
 2. Queries `queryVectors` top-3 by cosine similarity
-3. Similar verified past attempts are injected as few-shot examples into Claude's system prompt
+3. Similar verified past attempts (with feedback from metadata) are injected as few-shot examples into Claude's system prompt
 
 **Key classes:**
-- `EmbeddingService` — wraps Titan Embed V2, returns `List<Float>` (1024 dims)
-- `VectorStoreInitializer` — `@PostConstruct` creates the index (`DataType.FLOAT32`, `DistanceMetric.COSINE`, dim=1024); silently skips `ConflictException`
-- `writeToVectorStore()` in `SkateTricksFacadeImpl` — upserts (same key replaces on correction)
+- `EmbeddingService` — wraps Spring AI `EmbeddingModel` (Titan Embed V2), returns `List<Float>` (1024 dims)
+- `VectorStoreInitializer` — `@PostConstruct` creates the index (`DataType.FLOAT32`, `DistanceMetric.COSINE`, dim=1024); supports `recreate` flag for index reset
+- `writeToVectorStore()` in `SkateTricksFacadeImpl` — embeds pose data, upserts (same key replaces on correction)
 - `fetchSimilarExamples()` in `BedrockTrickAnalyzer` — RAG retrieval for frame analysis
 
 **Configuration** (`application.yml`):
@@ -290,11 +317,12 @@ skatetricks:
     bucket: thonbecker-vectors
     index: skatetricks-tricks
     dimension: 1024
+    recreate: false  # Set to true to wipe and recreate the index on startup
 ```
 
 **AWS prerequisite:** `amazon.titan-embed-text-v2:0` must be enabled in the Bedrock Model Access console in `us-east-1`.
 
-**Known gap:** `analyzeVideo()` (direct video path) does not query the vector store — no pose data is available in that path to use as a query embedding.
+**Known gap:** `analyzeVideo()` (direct video path) does not query the vector store and does not write to it — no pose data is available in that path.
 
 **Verifying vector store data:**
 
@@ -329,6 +357,7 @@ aws-vault exec thonbecker -- aws s3-vectors get-vector \
 - `confidence` — Original AI confidence score (0-100)
 - `formScore` — Form quality score (0-100)
 - `attemptId` — Database FK to `skatetricks.trick_attempts.id`
+- `feedback` — AI feedback text for the attempt
 
 **Verification flow:**
 1. Upload video → AI analyzes → saves to DB with `verified=false`
