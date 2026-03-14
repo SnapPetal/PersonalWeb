@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="026-update-event-publication-schema" author="thonbecker">
+        <comment>
+            Update event_publication table to match Spring Modulith 2.0.3 schema.
+            Adds columns for retry tracking and event status.
+        </comment>
+
+        <addColumn tableName="event_publication">
+            <column name="completion_attempts" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_resubmission_date" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="status" type="varchar(50)" defaultValue="PUBLISHED">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="event_publication" columnName="completion_attempts"/>
+            <dropColumn tableName="event_publication" columnName="last_resubmission_date"/>
+            <dropColumn tableName="event_publication" columnName="status"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

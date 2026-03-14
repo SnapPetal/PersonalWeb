@@ -131,7 +131,7 @@ Each module follows this internal package convention:
 
 ### Key Technical Patterns
 
-- **Database schema**: Managed exclusively by Liquibase (`src/main/resources/db/changelog/`). Hibernate DDL is set to `none`. Add new changesets; never alter existing ones.
+- **Database schema**: Managed exclusively by Liquibase (`src/main/resources/db/changelog/`). Hibernate DDL is set to `none`. **CRITICAL**: Never modify or delete existing changesets once they have been merged — Liquibase tracks applied changesets by ID and checksum. Altering a merged changeset will cause checksum validation failures on startup. Always create a new changeset file for schema changes.
 - **Caching**: Caffeine (`CacheConfig`). Used for Bible verse, Dad joke responses, and plant data (24-hour TTL).
 - **Retry**: Spring Retry (`RetryConfig`) for fault-tolerant external API calls.
 - **Scheduled jobs**: ShedLock (`ShedlockConfig`) prevents duplicate execution in distributed environments.
