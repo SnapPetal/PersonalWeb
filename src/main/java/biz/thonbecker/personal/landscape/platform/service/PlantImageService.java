@@ -72,7 +72,13 @@ public class PlantImageService {
                     .build();
 
             final var response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
-            return response.statusCode() == 200;
+            if (response.statusCode() != 200) {
+                return false;
+            }
+            // USDA may return 200 with text/html for missing images (redirect to error page)
+            final var contentType =
+                    response.headers().firstValue("Content-Type").orElse("");
+            return contentType.startsWith("image/");
         } catch (final Exception e) {
             log.debug("Failed to check image at {}: {}", url, e.getMessage());
             return false;
