@@ -1,682 +1,581 @@
-(function () {
-  "use strict";
+"use strict";
 
-  const sessionId =
-    "session-" + Date.now() + "-" + Math.random().toString(36).substring(2, 9);
-  let stompClient = null;
-  let mediaStream = null;
-  let capturedFrames = [];
-  let frameCount = 0;
-  let captureInterval = null;
+var SUPPORTED_TRICKS = [
+  { value: "OLLIE", label: "Ollie" },
+  { value: "FRONTSIDE_180", label: "Frontside 180" },
+  { value: "BACKSIDE_180", label: "Backside 180" },
+  { value: "KICKFLIP", label: "Kickflip" },
+  { value: "HEELFLIP", label: "Heelflip" },
+  { value: "POP_SHUVIT", label: "Pop Shuvit" },
+  { value: "TREFLIP", label: "Tre Flip" },
+  { value: "BOARDSLIDE", label: "Boardslide" },
+  { value: "FIFTY_FIFTY", label: "50-50 Grind" },
+  { value: "FIVE_O", label: "5-0 Grind" },
+  { value: "NOSEGRIND", label: "Nosegrind" },
+  { value: "MANUAL", label: "Manual" },
+  { value: "CRUISING", label: "Cruising" },
+  { value: "DROP_IN", label: "Drop In" },
+  { value: "UNKNOWN", label: "Unknown" },
+];
 
-  const liveVideo = document.getElementById("liveVideo");
-  const frameCanvas = document.getElementById("frameCanvas");
-  const ctx = frameCanvas.getContext("2d");
+var MAX_FRAME_WIDTH = 640;
+var MAX_SEND_FRAMES = 10;
 
-  const startCameraBtn = document.getElementById("startCameraBtn");
-  const stopCameraBtn = document.getElementById("stopCameraBtn");
-  const captureBtn = document.getElementById("captureBtn");
-  const videoUpload = document.getElementById("videoUpload");
-  const analyzeUploadBtn = document.getElementById("analyzeUploadBtn");
-  const connectionStatus = document.getElementById("connectionStatus");
-  const frameCounter = document.getElementById("frameCounter");
-  const analysisResult = document.getElementById("analysisResult");
-  const trickHistory = document.getElementById("trickHistory");
+function skatetricksApp() {
+  return {
+    // ── Reactive UI state ──────────────────────────────────────────
+    connectionText: "Disconnected",
+    connectionClass: "bg-danger",
+    frameCounterText: "Frames: 0",
+    cameraStarted: false,
+    capturing: false,
+    captureBtnLabel: "Capture & Analyze",
+    analyzeUploadDisabled: true,
+    result: null,
+    resultError: null,
+    resultLoading: false,
+    resultLoadingText: "",
+    trickHistory: [],
+    supportedTricks: SUPPORTED_TRICKS,
 
-  const plyrContainer = document.getElementById("plyrContainer");
-  let uploadedVideo = document.getElementById("uploadedVideo");
-  let plyrPlayer = null;
+    // ── Internal imperative state (not rendered directly) ──────────
+    sessionId:
+      "session-" +
+      Date.now() +
+      "-" +
+      Math.random().toString(36).substring(2, 9),
+    stompClient: null,
+    mediaStream: null,
+    capturedFrames: [],
+    frameCount: 0,
+    captureInterval: null,
+    currentVideoId: null,
+    plyrPlayer: null,
 
-  // Current converted video ID (for analysis)
-  let currentVideoId = null;
+    // ── Lifecycle ──────────────────────────────────────────────────
+    init() {
+      this.connectWebSocket();
+    },
 
-  // Get CSRF token for POST requests
-  const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
-  const csrfHeader = document.querySelector(
-    'meta[name="_csrf_header"]'
-  )?.content;
+    // ── CSRF helpers ───────────────────────────────────────────────
+    getCsrfToken() {
+      return document.querySelector('meta[name="_csrf"]')?.content;
+    },
 
-  function getHeaders() {
-    const headers = {};
-    if (csrfHeader && csrfToken) {
-      headers[csrfHeader] = csrfToken;
-    }
-    return headers;
-  }
+    getCsrfHeader() {
+      return document.querySelector('meta[name="_csrf_header"]')?.content;
+    },
 
-  function connectWebSocket() {
-    const socket = new SockJS("/skatetricks-websocket");
-    stompClient = Stomp.over(socket);
-    stompClient.debug = null;
-
-    stompClient.connect(
-      {},
-      function () {
-        connectionStatus.textContent = "Connected";
-        connectionStatus.className = "badge bg-success";
-
-        stompClient.subscribe(
-          "/topic/skatetricks/result/" + sessionId,
-          function (message) {
-            const result = JSON.parse(message.body);
-            displayResult(result);
-            addToHistory(result);
-          }
-        );
-
-        stompClient.subscribe(
-          "/topic/skatetricks/error/" + sessionId,
-          function (message) {
-            analysisResult.innerHTML =
-              '<div class="alert alert-danger">' + message.body + "</div>";
-          }
-        );
-
-        stompClient.subscribe(
-          "/topic/skatetricks/conversion/" + sessionId,
-          function (message) {
-            const status = JSON.parse(message.body);
-            handleConversionStatus(status);
-          }
-        );
-      },
-      function () {
-        connectionStatus.textContent = "Disconnected";
-        connectionStatus.className = "badge bg-danger";
-        setTimeout(connectWebSocket, 3000);
+    getHeaders() {
+      var headers = {};
+      var header = this.getCsrfHeader();
+      var token = this.getCsrfToken();
+      if (header && token) {
+        headers[header] = token;
       }
-    );
-  }
+      return headers;
+    },
 
-  var MAX_FRAME_WIDTH = 640;
+    // ── WebSocket (imperative) ─────────────────────────────────────
+    connectWebSocket() {
+      var self = this;
+      var socket = new SockJS("/skatetricks-websocket");
+      self.stompClient = Stomp.over(socket);
+      self.stompClient.debug = null;
 
-  function captureFrame(video) {
-    var srcW = video.videoWidth || 640;
-    var srcH = video.videoHeight || 480;
-    var scale = Math.min(1, MAX_FRAME_WIDTH / srcW);
-    frameCanvas.width = Math.round(srcW * scale);
-    frameCanvas.height = Math.round(srcH * scale);
-    ctx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
-    return frameCanvas.toDataURL("image/jpeg", 0.75).split(",")[1];
-  }
+      self.stompClient.connect(
+        {},
+        function () {
+          self.connectionText = "Connected";
+          self.connectionClass = "bg-success";
 
-  function sendFramesForAnalysis(frames) {
-    if (!stompClient || !stompClient.connected) {
-      analysisResult.innerHTML =
-        '<div class="alert alert-warning">Not connected to server</div>';
-      return;
-    }
-    if (frames.length === 0) {
-      analysisResult.innerHTML =
-        '<div class="alert alert-warning">No frames captured</div>';
-      return;
-    }
+          self.stompClient.subscribe(
+            "/topic/skatetricks/result/" + self.sessionId,
+            function (message) {
+              var result = JSON.parse(message.body);
+              self.showResult(result);
+              self.addToHistory(result);
+            }
+          );
 
-    analysisResult.innerHTML =
-      '<div class="text-center"><div class="spinner-border text-primary"></div><p class="mt-2">Analyzing ' +
-      frames.length +
-      " frames...</p></div>";
+          self.stompClient.subscribe(
+            "/topic/skatetricks/error/" + self.sessionId,
+            function (message) {
+              self.result = null;
+              self.resultLoading = false;
+              self.resultError = message.body;
+            }
+          );
 
-    stompClient.send(
-      "/app/skatetricks/analyze",
-      {},
-      JSON.stringify({
-        sessionId: sessionId,
-        frames: frames,
-      })
-    );
-  }
+          self.stompClient.subscribe(
+            "/topic/skatetricks/conversion/" + self.sessionId,
+            function (message) {
+              var status = JSON.parse(message.body);
+              self.handleConversionStatus(status);
+            }
+          );
+        },
+        function () {
+          self.connectionText = "Disconnected";
+          self.connectionClass = "bg-danger";
+          setTimeout(function () {
+            self.connectWebSocket();
+          }, 3000);
+        }
+      );
+    },
 
-  var SUPPORTED_TRICKS = [
-    { value: "OLLIE", label: "Ollie" },
-    { value: "FRONTSIDE_180", label: "Frontside 180" },
-    { value: "BACKSIDE_180", label: "Backside 180" },
-    { value: "KICKFLIP", label: "Kickflip" },
-    { value: "HEELFLIP", label: "Heelflip" },
-    { value: "POP_SHUVIT", label: "Pop Shuvit" },
-    { value: "TREFLIP", label: "Tre Flip" },
-    { value: "BOARDSLIDE", label: "Boardslide" },
-    { value: "FIFTY_FIFTY", label: "50-50 Grind" },
-    { value: "FIVE_O", label: "5-0 Grind" },
-    { value: "NOSEGRIND", label: "Nosegrind" },
-    { value: "MANUAL", label: "Manual" },
-    { value: "CRUISING", label: "Cruising" },
-    { value: "DROP_IN", label: "Drop In" },
-    { value: "UNKNOWN", label: "Unknown" },
-  ];
+    // ── Canvas frame capture (imperative) ──────────────────────────
+    captureFrame(video) {
+      var canvas = document.getElementById("frameCanvas");
+      var ctx = canvas.getContext("2d");
+      var srcW = video.videoWidth || 640;
+      var srcH = video.videoHeight || 480;
+      var scale = Math.min(1, MAX_FRAME_WIDTH / srcW);
+      canvas.width = Math.round(srcW * scale);
+      canvas.height = Math.round(srcH * scale);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/jpeg", 0.75).split(",")[1];
+    },
 
-  function displayResult(result) {
-    var confidenceColor =
-      result.confidence >= 70
-        ? "success"
-        : result.confidence >= 40
-        ? "warning"
-        : "danger";
-    var formColor =
-      result.formScore >= 70
-        ? "success"
-        : result.formScore >= 40
-        ? "warning"
-        : "danger";
+    sampleFrames(allFrames, count) {
+      if (allFrames.length <= count) return allFrames;
+      var sampled = [];
+      for (var i = 0; i < count; i++) {
+        var idx = Math.round((i * (allFrames.length - 1)) / (count - 1));
+        sampled.push(allFrames[idx]);
+      }
+      return sampled;
+    },
 
-    var html =
-      '<h4 class="text-center mb-3">' +
-      (result.trick === "UNKNOWN"
-        ? "Unknown Trick"
-        : result.trick.replace(/_/g, " ")) +
-      "</h4>";
-    html +=
-      '<div class="mb-3"><label class="form-label small">Confidence</label>';
-    html +=
-      '<div class="progress"><div class="progress-bar bg-' +
-      confidenceColor +
-      '" style="width:' +
-      result.confidence +
-      '%">' +
-      result.confidence +
-      "%</div></div></div>";
-    html +=
-      '<div class="mb-3"><label class="form-label small">Form Score</label>';
-    html +=
-      '<div class="progress"><div class="progress-bar bg-' +
-      formColor +
-      '" style="width:' +
-      result.formScore +
-      '%">' +
-      result.formScore +
-      "%</div></div></div>";
+    sendFramesForAnalysis(frames) {
+      if (!this.stompClient || !this.stompClient.connected) {
+        this.result = null;
+        this.resultLoading = false;
+        this.resultError = "Not connected to server";
+        return;
+      }
+      if (frames.length === 0) {
+        this.result = null;
+        this.resultLoading = false;
+        this.resultError = "No frames captured";
+        return;
+      }
 
-    if (result.feedback && result.feedback.length > 0) {
-      html += '<h6>Feedback</h6><ul class="list-group list-group-flush">';
-      result.feedback.forEach(function (item) {
-        html +=
-          '<li class="list-group-item small"><i class="bi bi-chat-dots me-2"></i>' +
-          item +
-          "</li>";
-      });
-      html += "</ul>";
-    }
+      this.resultError = null;
+      this.result = null;
+      this.resultLoading = true;
+      this.resultLoadingText = "Analyzing " + frames.length + " frames...";
 
-    if (result.trickSequence && result.trickSequence.length > 1) {
-      html += '<h6 class="mt-3">Trick Sequence</h6>';
-      html += '<ol class="list-group list-group-numbered">';
-      result.trickSequence.forEach(function (entry) {
-        var name =
-          entry.trick === "UNKNOWN"
-            ? "Unknown"
-            : entry.trick.replace(/_/g, " ");
-        html +=
-          '<li class="list-group-item">' +
-          name +
-          " (" +
-          entry.timeframe +
-          ") &mdash; " +
-          entry.confidence +
-          "%</li>";
-      });
-      html += "</ol>";
-    }
-
-    if (result.attemptId) {
-      var selectOptions = SUPPORTED_TRICKS.filter(function (t) {
-        return t.value !== result.trick;
-      })
-        .map(function (t) {
-          return '<option value="' + t.value + '">' + t.label + "</option>";
+      this.stompClient.send(
+        "/app/skatetricks/analyze",
+        {},
+        JSON.stringify({
+          sessionId: this.sessionId,
+          frames: frames,
         })
-        .join("");
+      );
+    },
 
-      html +=
-        '<div class="mt-3 pt-3 border-top" id="verifySection-' +
-        result.attemptId +
-        '">';
-      html +=
-        '<p class="small text-muted mb-2"><i class="bi bi-patch-question me-1"></i>Is this correct?</p>';
-      html += '<div class="d-flex gap-2 mb-2">';
-      html +=
-        '<button class="btn btn-sm btn-success flex-fill" onclick="confirmTrick(' +
-        result.attemptId +
-        ', null)">';
-      html +=
-        '<i class="bi bi-check-circle me-1"></i>Yes, it\'s correct</button>';
-      html +=
-        '<button class="btn btn-sm btn-outline-warning flex-fill" onclick="showCorrectionPicker(' +
-        result.attemptId +
-        ')">';
-      html += '<i class="bi bi-pencil me-1"></i>No, wrong trick</button>';
-      html += "</div>";
-      html +=
-        '<div class="d-none" id="correctionPicker-' + result.attemptId + '">';
-      html +=
-        '<label class="form-label small text-muted mb-1">What trick was it?</label>';
-      html += '<div class="d-flex gap-2 align-items-center">';
-      html +=
-        '<select class="form-select form-select-sm" id="correctionSelect-' +
-        result.attemptId +
-        '">' +
-        selectOptions +
-        "</select>";
-      html +=
-        '<button class="btn btn-sm btn-warning" onclick="correctTrick(' +
-        result.attemptId +
-        ')">';
-      html += '<i class="bi bi-send me-1"></i>Submit</button>';
-      html += "</div></div></div>";
-    }
-
-    analysisResult.innerHTML = html;
-  }
-
-  function confirmTrick(attemptId, correctedTrickName) {
-    var section = document.getElementById("verifySection-" + attemptId);
-    var body = correctedTrickName
-      ? { correctedTrickName: correctedTrickName }
-      : {};
-
-    // Show loading feedback
-    if (section) {
-      section.innerHTML =
-        '<span class="badge bg-info"><i class="bi bi-hourglass-split me-1"></i>Verifying...</span>';
-    }
-
-    fetch("/skatetricks/attempts/" + attemptId + "/verify", {
-      method: "POST",
-      headers: Object.assign(
-        { "Content-Type": "application/json" },
-        getHeaders()
-      ),
-      body: JSON.stringify(body),
-    })
-      .then(function (response) {
-        if (!response.ok) {
-          return response.json().then(function (errorData) {
-            throw new Error(
-              errorData.error || "Verify failed: " + response.status
-            );
-          });
-        }
-        if (section) {
-          section.innerHTML = correctedTrickName
-            ? '<span class="badge bg-warning text-dark"><i class="bi bi-pencil me-1"></i>Corrected to ' +
-              correctedTrickName.replace(/_/g, " ") +
-              "</span>"
-            : '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Confirmed</span>';
-        }
-        // Update the matching history item badge
-        updateHistoryVerified(attemptId, correctedTrickName);
-      })
-      .catch(function (e) {
-        console.error("Verification error:", e);
-        if (section) {
-          section.innerHTML =
-            '<div class="text-danger small mt-1"><i class="bi bi-exclamation-triangle me-1"></i>' +
-            e.message +
-            "</div>";
-        }
-      });
-  }
-
-  function showCorrectionPicker(attemptId) {
-    var picker = document.getElementById("correctionPicker-" + attemptId);
-    if (picker) {
-      picker.classList.remove("d-none");
-    }
-  }
-
-  function correctTrick(attemptId) {
-    var select = document.getElementById("correctionSelect-" + attemptId);
-    if (!select) return;
-    confirmTrick(attemptId, select.value);
-  }
-
-  // Make functions globally accessible for inline onclick handlers
-  window.confirmTrick = confirmTrick;
-  window.correctTrick = correctTrick;
-  window.showCorrectionPicker = showCorrectionPicker;
-
-  function updateHistoryVerified(attemptId, correctedTrickName) {
-    var item = document.querySelector('[data-attempt-id="' + attemptId + '"]');
-    if (!item) return;
-    var badge = item.querySelector(".badge");
-    if (badge) {
-      badge.classList.replace("bg-primary", "bg-success");
-    }
-    if (correctedTrickName) {
-      var nameEl = item.querySelector(".trick-name");
-      if (nameEl) nameEl.textContent = correctedTrickName.replace(/_/g, " ");
-    }
-  }
-
-  function addToHistory(result) {
-    var placeholder = trickHistory.querySelector(".text-muted");
-    if (placeholder) placeholder.remove();
-
-    var item = document.createElement("div");
-    item.className =
-      "list-group-item d-flex justify-content-between align-items-center";
-    if (result.attemptId) {
-      item.setAttribute("data-attempt-id", result.attemptId);
-    }
-    var name =
-      result.trick === "UNKNOWN" ? "Unknown" : result.trick.replace(/_/g, " ");
-    item.innerHTML =
-      '<span class="trick-name">' +
-      name +
-      '</span><span class="badge bg-primary">' +
-      result.confidence +
-      "%</span>";
-    trickHistory.prepend(item);
-  }
-
-  // Live camera
-  startCameraBtn.addEventListener("click", async function () {
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      liveVideo.srcObject = mediaStream;
-      startCameraBtn.disabled = true;
-      stopCameraBtn.disabled = false;
-      captureBtn.disabled = false;
-    } catch (e) {
-      alert("Could not access camera: " + e.message);
-    }
-  });
-
-  stopCameraBtn.addEventListener("click", function () {
-    if (captureInterval) {
-      clearInterval(captureInterval);
-      captureInterval = null;
-    }
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(function (t) {
-        t.stop();
-      });
-      mediaStream = null;
-    }
-    liveVideo.srcObject = null;
-    startCameraBtn.disabled = false;
-    stopCameraBtn.disabled = true;
-    captureBtn.disabled = true;
-    captureBtn.innerHTML =
-      '<i class="bi bi-record-circle"></i> Capture & Analyze';
-  });
-
-  var MAX_SEND_FRAMES = 10;
-
-  function sampleFrames(allFrames, count) {
-    if (allFrames.length <= count) return allFrames;
-    var sampled = [];
-    for (var i = 0; i < count; i++) {
-      var idx = Math.round((i * (allFrames.length - 1)) / (count - 1));
-      sampled.push(allFrames[idx]);
-    }
-    return sampled;
-  }
-
-  captureBtn.addEventListener("click", function () {
-    if (captureInterval) {
-      clearInterval(captureInterval);
-      captureInterval = null;
-      captureBtn.innerHTML =
-        '<i class="bi bi-record-circle"></i> Capture & Analyze';
-      var toSend = sampleFrames(capturedFrames, MAX_SEND_FRAMES);
-      frameCounter.textContent =
-        "Captured: " + capturedFrames.length + ", sending: " + toSend.length;
-      sendFramesForAnalysis(toSend);
-      capturedFrames = [];
-      frameCount = 0;
-    } else {
-      capturedFrames = [];
-      frameCount = 0;
-      captureBtn.innerHTML = '<i class="bi bi-stop-fill"></i> Stop & Analyze';
-      captureInterval = setInterval(function () {
-        if (liveVideo.readyState >= 2) {
-          capturedFrames.push(captureFrame(liveVideo));
-          frameCount++;
-          frameCounter.textContent = "Recording: " + frameCount + " frames";
-        }
-      }, 200);
-    }
-  });
-
-  // Handle conversion status updates from WebSocket
-  function handleConversionStatus(status) {
-    console.log("Conversion status update:", status);
-
-    if (status.videoId !== currentVideoId) {
-      console.log("Ignoring status for different video");
-      return;
-    }
-
-    if (status.status === "converting") {
-      frameCounter.textContent = "Converting video... " + status.progress + "%";
-    } else if (status.status === "complete") {
-      frameCounter.textContent = "Conversion complete! Loading video...";
-      loadConvertedVideo(status.videoId, status.size);
-    } else if (status.status === "error") {
-      frameCounter.textContent = "Conversion failed";
-      analyzeUploadBtn.disabled = true;
-    }
-  }
-
-  function loadConvertedVideo(videoId, size) {
-    // Load converted video from server (with cache-busting)
-    const videoUrl = "/skatetricks/video/" + videoId + "?t=" + Date.now();
-    console.log("Loading video from:", videoUrl);
-    uploadedVideo.src = videoUrl;
-    uploadedVideo.load();
-
-    uploadedVideo.addEventListener(
-      "loadedmetadata",
-      function () {
-        console.log("Video loaded, duration:", uploadedVideo.duration);
-        plyrContainer.style.display = "block";
-        plyrPlayer = new Plyr(uploadedVideo, {
-          controls: [
-            "play",
-            "progress",
-            "current-time",
-            "mute",
-            "volume",
-            "fullscreen",
-          ],
+    // ── Camera controls ────────────────────────────────────────────
+    async startCamera() {
+      try {
+        this.mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
         });
-        analyzeUploadBtn.disabled = false;
-        frameCounter.textContent =
-          "Converted to MP4 (" +
-          Math.round(size / 1024) +
-          " KB) — preview and click Analyze";
-      },
-      { once: true }
-    );
+        var liveVideo = document.getElementById("liveVideo");
+        liveVideo.srcObject = this.mediaStream;
+        this.cameraStarted = true;
+      } catch (e) {
+        alert("Could not access camera: " + e.message);
+      }
+    },
 
-    uploadedVideo.addEventListener(
-      "error",
-      function () {
-        frameCounter.textContent = "Error loading converted video";
-        analyzeUploadBtn.disabled = true;
-      },
-      { once: true }
-    );
-  }
+    stopCamera() {
+      if (this.captureInterval) {
+        clearInterval(this.captureInterval);
+        this.captureInterval = null;
+      }
+      if (this.mediaStream) {
+        this.mediaStream.getTracks().forEach(function (t) {
+          t.stop();
+        });
+        this.mediaStream = null;
+      }
+      var liveVideo = document.getElementById("liveVideo");
+      liveVideo.srcObject = null;
+      this.cameraStarted = false;
+      this.capturing = false;
+      this.captureBtnLabel = "Capture & Analyze";
+    },
 
-  // Poll for conversion status (fallback if WebSocket misses it)
-  function pollConversionStatus(videoId) {
-    fetch("/skatetricks/convert/" + videoId + "/status")
-      .then(function (response) {
-        if (!response.ok) return null;
-        return response.json();
-      })
-      .then(function (status) {
-        if (!status || status.videoId !== currentVideoId) return;
+    toggleCapture() {
+      var self = this;
+      if (self.captureInterval) {
+        clearInterval(self.captureInterval);
+        self.captureInterval = null;
+        self.capturing = false;
+        self.captureBtnLabel = "Capture & Analyze";
+        var toSend = self.sampleFrames(self.capturedFrames, MAX_SEND_FRAMES);
+        self.frameCounterText =
+          "Captured: " +
+          self.capturedFrames.length +
+          ", sending: " +
+          toSend.length;
+        self.sendFramesForAnalysis(toSend);
+        self.capturedFrames = [];
+        self.frameCount = 0;
+      } else {
+        self.capturedFrames = [];
+        self.frameCount = 0;
+        self.capturing = true;
+        self.captureBtnLabel = "Stop & Analyze";
+        var liveVideo = document.getElementById("liveVideo");
+        self.captureInterval = setInterval(function () {
+          if (liveVideo.readyState >= 2) {
+            self.capturedFrames.push(self.captureFrame(liveVideo));
+            self.frameCount++;
+            self.frameCounterText = "Recording: " + self.frameCount + " frames";
+          }
+        }, 200);
+      }
+    },
 
-        if (status.status === "complete") {
-          loadConvertedVideo(status.videoId, status.size);
-        } else if (status.status === "error") {
-          frameCounter.textContent = "Conversion failed";
-        } else if (
-          status.status === "pending" ||
-          status.status === "converting"
-        ) {
-          // Keep polling
-          setTimeout(function () {
-            pollConversionStatus(videoId);
-          }, 2000);
-        }
-      })
-      .catch(function (e) {
-        console.error("Poll error:", e);
-      });
-  }
+    // ── Video upload and conversion ────────────────────────────────
+    async handleVideoUpload(event) {
+      var self = this;
+      var file = event.target.files[0];
+      if (!file) return;
 
-  // Upload - converts on server asynchronously
-  videoUpload.addEventListener("change", async function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
+      self.currentVideoId = null;
+      self.analyzeUploadDisabled = true;
 
-    console.log("New file selected:", file.name);
+      var plyrContainer = document.getElementById("plyrContainer");
+      plyrContainer.style.display = "none";
 
-    // Reset UI and state
-    currentVideoId = null;
-    plyrContainer.style.display = "none";
-    analyzeUploadBtn.disabled = true;
-
-    // Destroy existing Plyr instance and recreate video element
-    if (plyrPlayer) {
-      plyrPlayer.destroy();
-      plyrPlayer = null;
-    }
-
-    // Clear the entire container and recreate video element
-    plyrContainer.innerHTML = "";
-    uploadedVideo = document.createElement("video");
-    uploadedVideo.id = "uploadedVideo";
-    uploadedVideo.controls = true;
-    uploadedVideo.playsInline = true;
-    uploadedVideo.className = "w-100 rounded";
-    uploadedVideo.style.maxHeight = "400px";
-    plyrContainer.appendChild(uploadedVideo);
-
-    frameCounter.textContent = "Uploading video...";
-
-    // Upload video - server returns immediately with videoId
-    const formData = new FormData();
-    formData.append("video", file);
-    formData.append("sessionId", sessionId);
-
-    try {
-      const response = await fetch("/skatetricks/convert", {
-        method: "POST",
-        headers: getHeaders(),
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Upload failed: " + response.status);
+      if (self.plyrPlayer) {
+        self.plyrPlayer.destroy();
+        self.plyrPlayer = null;
       }
 
-      const result = await response.json();
-      currentVideoId = result.videoId;
-      console.log("Got videoId:", currentVideoId, "status:", result.status);
+      plyrContainer.innerHTML = "";
+      var uploadedVideo = document.createElement("video");
+      uploadedVideo.id = "uploadedVideo";
+      uploadedVideo.controls = true;
+      uploadedVideo.playsInline = true;
+      uploadedVideo.className = "w-100 rounded";
+      uploadedVideo.style.maxHeight = "400px";
+      plyrContainer.appendChild(uploadedVideo);
 
-      frameCounter.textContent = "Converting video...";
+      self.frameCounterText = "Uploading video...";
 
-      // Start polling as fallback (WebSocket should be faster)
-      setTimeout(function () {
-        pollConversionStatus(currentVideoId);
-      }, 3000);
-    } catch (e) {
-      console.error("Upload error:", e);
-      frameCounter.textContent = "Conversion failed: " + e.message;
-      analyzeUploadBtn.disabled = true;
-    }
-  });
+      var formData = new FormData();
+      formData.append("video", file);
+      formData.append("sessionId", self.sessionId);
 
-  analyzeUploadBtn.addEventListener("click", async function () {
-    if (!currentVideoId) return;
+      try {
+        var response = await fetch("/skatetricks/convert", {
+          method: "POST",
+          headers: self.getHeaders(),
+          body: formData,
+        });
 
-    console.log("Analyzing videoId:", currentVideoId);
-
-    analyzeUploadBtn.disabled = true;
-    frameCounter.textContent = "Analyzing video...";
-    analysisResult.innerHTML =
-      '<div class="text-center"><div class="spinner-border text-primary"></div><p class="mt-2">Analyzing video with AI...</p></div>';
-
-    try {
-      const analyzeUrl =
-        "/skatetricks/analyze/" +
-        currentVideoId +
-        "?sessionId=" +
-        encodeURIComponent(sessionId);
-      console.log("Calling:", analyzeUrl);
-
-      const response = await fetch(analyzeUrl, {
-        method: "POST",
-        headers: getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error("Analysis failed: " + response.status);
-      }
-
-      const result = await response.json();
-      console.log("Got analysisId:", result.analysisId);
-
-      // Start polling for analysis status
-      pollAnalysisStatus(result.analysisId);
-    } catch (e) {
-      console.error("Analysis error:", e);
-      analysisResult.innerHTML =
-        '<div class="alert alert-danger">Failed to start analysis: ' +
-        e.message +
-        "</div>";
-      frameCounter.textContent = "Analysis failed";
-      analyzeUploadBtn.disabled = false;
-    }
-  });
-
-  // Poll for analysis status
-  function pollAnalysisStatus(analysisId) {
-    fetch("/skatetricks/analyze/" + analysisId + "/status")
-      .then(function (response) {
         if (!response.ok) {
-          throw new Error("Failed to get analysis status: " + response.status);
+          throw new Error("Upload failed: " + response.status);
         }
-        return response.json();
-      })
-      .then(function (status) {
-        console.log("Analysis status:", status.status);
 
-        if (status.status === "complete" && status.result) {
-          frameCounter.textContent = "Analysis complete";
-          displayResult(status.result);
-          addToHistory(status.result);
-          analyzeUploadBtn.disabled = false;
-        } else if (status.status === "error") {
-          analysisResult.innerHTML =
-            '<div class="alert alert-danger">Analysis failed: ' +
-            (status.error || "Unknown error") +
-            "</div>";
-          frameCounter.textContent = "Analysis failed";
-          analyzeUploadBtn.disabled = false;
-        } else {
-          // Still processing, poll again in 2 seconds
-          setTimeout(function () {
-            pollAnalysisStatus(analysisId);
-          }, 2000);
+        var result = await response.json();
+        self.currentVideoId = result.videoId;
+
+        self.frameCounterText = "Converting video...";
+
+        setTimeout(function () {
+          self.pollConversionStatus(self.currentVideoId);
+        }, 3000);
+      } catch (e) {
+        self.frameCounterText = "Conversion failed: " + e.message;
+        self.analyzeUploadDisabled = true;
+      }
+    },
+
+    handleConversionStatus(status) {
+      if (status.videoId !== this.currentVideoId) return;
+
+      if (status.status === "converting") {
+        this.frameCounterText = "Converting video... " + status.progress + "%";
+      } else if (status.status === "complete") {
+        this.frameCounterText = "Conversion complete! Loading video...";
+        this.loadConvertedVideo(status.videoId, status.size);
+      } else if (status.status === "error") {
+        this.frameCounterText = "Conversion failed";
+        this.analyzeUploadDisabled = true;
+      }
+    },
+
+    loadConvertedVideo(videoId, size) {
+      var self = this;
+      var videoUrl = "/skatetricks/video/" + videoId + "?t=" + Date.now();
+      var uploadedVideo = document.getElementById("uploadedVideo");
+      var plyrContainer = document.getElementById("plyrContainer");
+      uploadedVideo.src = videoUrl;
+      uploadedVideo.load();
+
+      uploadedVideo.addEventListener(
+        "loadedmetadata",
+        function () {
+          plyrContainer.style.display = "block";
+          self.plyrPlayer = new Plyr(uploadedVideo, {
+            controls: [
+              "play",
+              "progress",
+              "current-time",
+              "mute",
+              "volume",
+              "fullscreen",
+            ],
+          });
+          self.analyzeUploadDisabled = false;
+          self.frameCounterText =
+            "Converted to MP4 (" +
+            Math.round(size / 1024) +
+            " KB) — preview and click Analyze";
+        },
+        { once: true }
+      );
+
+      uploadedVideo.addEventListener(
+        "error",
+        function () {
+          self.frameCounterText = "Error loading converted video";
+          self.analyzeUploadDisabled = true;
+        },
+        { once: true }
+      );
+    },
+
+    pollConversionStatus(videoId) {
+      var self = this;
+      fetch("/skatetricks/convert/" + videoId + "/status")
+        .then(function (response) {
+          if (!response.ok) return null;
+          return response.json();
+        })
+        .then(function (status) {
+          if (!status || status.videoId !== self.currentVideoId) return;
+
+          if (status.status === "complete") {
+            self.loadConvertedVideo(status.videoId, status.size);
+          } else if (status.status === "error") {
+            self.frameCounterText = "Conversion failed";
+          } else if (
+            status.status === "pending" ||
+            status.status === "converting"
+          ) {
+            setTimeout(function () {
+              self.pollConversionStatus(videoId);
+            }, 2000);
+          }
+        })
+        .catch(function (e) {
+          console.error("Poll error:", e);
+        });
+    },
+
+    // ── Video analysis ─────────────────────────────────────────────
+    async analyzeUpload() {
+      if (!this.currentVideoId) return;
+
+      this.analyzeUploadDisabled = true;
+      this.frameCounterText = "Analyzing video...";
+      this.result = null;
+      this.resultError = null;
+      this.resultLoading = true;
+      this.resultLoadingText = "Analyzing video with AI...";
+
+      try {
+        var analyzeUrl =
+          "/skatetricks/analyze/" +
+          this.currentVideoId +
+          "?sessionId=" +
+          encodeURIComponent(this.sessionId);
+
+        var response = await fetch(analyzeUrl, {
+          method: "POST",
+          headers: this.getHeaders(),
+        });
+
+        if (!response.ok) {
+          throw new Error("Analysis failed: " + response.status);
         }
+
+        var result = await response.json();
+        this.pollAnalysisStatus(result.analysisId);
+      } catch (e) {
+        this.resultLoading = false;
+        this.resultError = "Failed to start analysis: " + e.message;
+        this.frameCounterText = "Analysis failed";
+        this.analyzeUploadDisabled = false;
+      }
+    },
+
+    pollAnalysisStatus(analysisId) {
+      var self = this;
+      fetch("/skatetricks/analyze/" + analysisId + "/status")
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error(
+              "Failed to get analysis status: " + response.status
+            );
+          }
+          return response.json();
+        })
+        .then(function (status) {
+          if (status.status === "complete" && status.result) {
+            self.frameCounterText = "Analysis complete";
+            self.showResult(status.result);
+            self.addToHistory(status.result);
+            self.analyzeUploadDisabled = false;
+          } else if (status.status === "error") {
+            self.resultLoading = false;
+            self.resultError =
+              "Analysis failed: " + (status.error || "Unknown error");
+            self.frameCounterText = "Analysis failed";
+            self.analyzeUploadDisabled = false;
+          } else {
+            setTimeout(function () {
+              self.pollAnalysisStatus(analysisId);
+            }, 2000);
+          }
+        })
+        .catch(function (error) {
+          self.resultLoading = false;
+          self.resultError = "Analysis failed: " + error.message;
+          self.frameCounterText = "Analysis failed";
+          self.analyzeUploadDisabled = false;
+        });
+    },
+
+    // ── Result display (reactive) ──────────────────────────────────
+    showResult(data) {
+      this.resultLoading = false;
+      this.resultError = null;
+      this.result = {
+        trick: data.trick,
+        trickLabel:
+          data.trick === "UNKNOWN"
+            ? "Unknown Trick"
+            : data.trick.replace(/_/g, " "),
+        confidence: data.confidence,
+        confidenceColor: this.progressColor(data.confidence),
+        formScore: data.formScore,
+        formColor: this.progressColor(data.formScore),
+        feedback: data.feedback || [],
+        trickSequence: (data.trickSequence || []).map(function (entry) {
+          return {
+            name:
+              entry.trick === "UNKNOWN"
+                ? "Unknown"
+                : entry.trick.replace(/_/g, " "),
+            timeframe: entry.timeframe,
+            confidence: entry.confidence,
+          };
+        }),
+        attemptId: data.attemptId || null,
+        verifyStatus: null,
+        showCorrectionPicker: false,
+        correctionValue: null,
+        correctionOptions: SUPPORTED_TRICKS.filter(function (t) {
+          return t.value !== data.trick;
+        }),
+      };
+    },
+
+    progressColor(value) {
+      if (value >= 70) return "success";
+      if (value >= 40) return "warning";
+      return "danger";
+    },
+
+    formatTrickName(trick) {
+      if (trick === "UNKNOWN") return "Unknown";
+      return trick.replace(/_/g, " ");
+    },
+
+    // ── Verification ───────────────────────────────────────────────
+    confirmTrick(correctedTrickName) {
+      var self = this;
+      if (!self.result || !self.result.attemptId) return;
+
+      var attemptId = self.result.attemptId;
+      var body = correctedTrickName
+        ? { correctedTrickName: correctedTrickName }
+        : {};
+
+      self.result.verifyStatus = "verifying";
+
+      fetch("/skatetricks/attempts/" + attemptId + "/verify", {
+        method: "POST",
+        headers: Object.assign(
+          { "Content-Type": "application/json" },
+          self.getHeaders()
+        ),
+        body: JSON.stringify(body),
       })
-      .catch(function (error) {
-        console.error("Polling error:", error);
-        analysisResult.innerHTML =
-          '<div class="alert alert-danger">Analysis failed: ' +
-          error.message +
-          "</div>";
-        frameCounter.textContent = "Analysis failed";
-        analyzeUploadBtn.disabled = false;
+        .then(function (response) {
+          if (!response.ok) {
+            return response.json().then(function (errorData) {
+              throw new Error(
+                errorData.error || "Verify failed: " + response.status
+              );
+            });
+          }
+          if (correctedTrickName) {
+            self.result.verifyStatus = "corrected";
+            self.result.correctedLabel = correctedTrickName.replace(/_/g, " ");
+          } else {
+            self.result.verifyStatus = "confirmed";
+          }
+          self.updateHistoryVerified(attemptId, correctedTrickName);
+        })
+        .catch(function (e) {
+          console.error("Verification error:", e);
+          self.result.verifyStatus = "error";
+          self.result.verifyError = e.message;
+        });
+    },
+
+    showCorrection() {
+      if (this.result) {
+        this.result.showCorrectionPicker = true;
+      }
+    },
+
+    submitCorrection() {
+      if (!this.result || !this.result.correctionValue) return;
+      this.confirmTrick(this.result.correctionValue);
+    },
+
+    // ── History ────────────────────────────────────────────────────
+    addToHistory(data) {
+      this.trickHistory.unshift({
+        attemptId: data.attemptId || null,
+        name:
+          data.trick === "UNKNOWN" ? "Unknown" : data.trick.replace(/_/g, " "),
+        confidence: data.confidence,
+        verified: false,
       });
-  }
+    },
 
-  connectWebSocket();
-})();
+    updateHistoryVerified(attemptId, correctedTrickName) {
+      for (var i = 0; i < this.trickHistory.length; i++) {
+        if (this.trickHistory[i].attemptId === attemptId) {
+          this.trickHistory[i].verified = true;
+          if (correctedTrickName) {
+            this.trickHistory[i].name = correctedTrickName.replace(/_/g, " ");
+          }
+          break;
+        }
+      }
+    },
+  };
+}

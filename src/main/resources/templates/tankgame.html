@@ -105,7 +105,7 @@
             color: white;
         }
 
-        #lobbySection {
+        .lobby-section {
             text-align: center;
         }
 
@@ -118,7 +118,7 @@
             border: 2px solid #333;
         }
 
-        #playAgainBtn {
+        .play-again-btn {
             margin-top: 15px;
             animation: pulse 1.5s infinite;
         }
@@ -196,23 +196,6 @@
             padding: 20px;
             margin-bottom: 15px;
             border: 3px solid #ffd700;
-            display: none;
-        }
-
-        .match-results.show {
-            display: block;
-            animation: slideIn 0.5s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateY(-20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
         }
 
         .reward-badge {
@@ -234,10 +217,14 @@
             font-weight: bold;
             font-size: 0.9rem;
         }
+
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-<div class="game-container">
+<div class="game-container" x-data="tankGameApp()">
     <div class="text-center mb-4">
         <h1 class="text-white">
             <i class="bi bi-controller"></i>
@@ -249,89 +236,117 @@
     </div>
 
     <!-- Lobby Section -->
-    <div id="lobbySection" class="game-info">
+    <div x-show="inLobby" class="game-info lobby-section">
         <h3>Join Battle</h3>
         <div class="mb-3">
-            <input type="text" id="playerNameInput" class="form-control" placeholder="Enter your name" maxlength="20">
+            <input type="text" x-model="playerName" @keypress.enter="joinGame()" class="form-control" placeholder="Enter your name" maxlength="20">
         </div>
-        <button id="joinGameBtn" class="btn btn-primary btn-lg">
+        <button @click="joinGame()" class="btn btn-primary btn-lg">
             <i class="bi bi-play-circle"></i> Join Game
         </button>
-        <div id="lobbyStatus" class="mt-3 text-muted"></div>
+        <div class="mt-3" :class="lobbyStatusClass">
+            <template x-if="lobbyStatusIcon">
+                <i :class="'bi ' + lobbyStatusIcon"></i>
+            </template>
+            <span x-text="lobbyStatusText"></span>
+        </div>
     </div>
 
     <!-- Game Section -->
-    <div id="gameSection" style="display: none;">
+    <div x-show="!inLobby" x-cloak>
         <!-- Player Progression -->
-        <div class="progression-panel" id="progressionPanel">
+        <div class="progression-panel">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <span class="level-badge">
-                        <i class="bi bi-star-fill"></i> Level <span id="playerLevel">1</span>
+                        <i class="bi bi-star-fill"></i> Level <span x-text="level"></span>
                     </span>
                 </div>
                 <div>
-                    <i class="bi bi-coin"></i> <strong id="playerCoins">0</strong> Coins
+                    <i class="bi bi-coin"></i> <strong x-text="coins"></strong> Coins
                 </div>
             </div>
 
             <div class="xp-bar-container">
-                <div class="xp-bar-fill" id="xpBarFill" style="width: 0%"></div>
-                <div class="xp-bar-text" id="xpBarText">0 / 100 XP</div>
+                <div class="xp-bar-fill" :style="'width: ' + xpProgress + '%'"></div>
+                <div class="xp-bar-text" x-text="xpText"></div>
             </div>
 
             <div class="stats-grid">
                 <div class="stat-item">
-                    <div class="stat-value" id="statKills">0</div>
+                    <div class="stat-value" x-text="statKills"></div>
                     <div class="stat-label">Kills</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="statDeaths">0</div>
+                    <div class="stat-value" x-text="statDeaths"></div>
                     <div class="stat-label">Deaths</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="statWins">0</div>
+                    <div class="stat-value" x-text="statWins"></div>
                     <div class="stat-label">Wins</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="statKD">0.00</div>
+                    <div class="stat-value" x-text="statKD"></div>
                     <div class="stat-label">K/D</div>
                 </div>
             </div>
         </div>
 
         <!-- Match Results -->
-        <div class="match-results" id="matchResults">
+        <div x-show="showMatchResults" x-transition:enter="transition ease-out duration-500"
+             x-transition:enter-start="opacity-0 -translate-y-5"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="match-results">
             <h4 class="text-center mb-3">
                 <i class="bi bi-trophy-fill"></i> Match Complete!
             </h4>
             <div class="text-center mb-3">
-                <h5 id="matchPlacement">1st Place!</h5>
+                <h5 x-text="matchPlacement"></h5>
             </div>
             <div class="text-center">
                 <span class="reward-badge">
-                    <i class="bi bi-star-fill"></i> +<span id="matchXP">0</span> XP
+                    <i class="bi bi-star-fill"></i> +<span x-text="matchXP"></span> XP
                 </span>
                 <span class="reward-badge">
-                    <i class="bi bi-coin"></i> +<span id="matchCoins">0</span> Coins
+                    <i class="bi bi-coin"></i> +<span x-text="matchCoins"></span> Coins
                 </span>
             </div>
-            <div id="levelUpNotification" class="text-center mt-3" style="display: none;">
+            <div x-show="leveledUp" class="text-center mt-3">
                 <h4 class="text-success">
                     <i class="bi bi-arrow-up-circle-fill"></i> Level Up!
                 </h4>
-                <p>You are now level <strong id="newLevel">2</strong>!</p>
+                <p>You are now level <strong x-text="newLevel"></strong>!</p>
             </div>
         </div>
 
         <div class="game-info">
-            <div id="gameStatus" class="game-status status-waiting">Waiting for players...</div>
+            <div class="game-status" :class="gameStatusClass">
+                <i class="bi" :class="gameStatusIcon"></i>
+                <span x-text="gameStatusText"></span>
+            </div>
 
-            <button id="playAgainBtn" class="btn btn-success btn-lg" style="display: none;">
+            <button x-show="showPlayAgain" @click="playAgain()" class="btn btn-success btn-lg play-again-btn">
                 <i class="bi bi-arrow-clockwise"></i> Play Again
             </button>
 
-            <div class="player-list" id="playerList"></div>
+            <div class="player-list">
+                <template x-for="tank in tanks" :key="tank.id">
+                    <div class="player-card" :class="tank.alive ? 'alive' : 'dead'">
+                        <div>
+                            <span class="color-indicator" :style="'background-color: ' + tank.color"></span>
+                            <strong x-text="tank.playerName + (tank.isMe ? ' (You)' : '')"></strong>
+                        </div>
+                        <small class="text-muted" x-text="'Kills: ' + tank.kills"></small>
+                        <div class="health-bar">
+                            <div class="health-fill" :style="'width: ' + tank.health + '%'"></div>
+                        </div>
+                        <small x-text="tank.health + '% HP'"></small>
+                    </div>
+                </template>
+            </div>
         </div>
 
         <canvas id="gameCanvas" class="game-canvas" width="800" height="600"></canvas>
@@ -355,5 +370,6 @@
 <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
 <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
 <script th:src="@{/js/tankgame.js}"></script>
+<script defer th:src="@{/webjars/alpinejs/dist/cdn.min.js}"></script>
 </body>
 </html>

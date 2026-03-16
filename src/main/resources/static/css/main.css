@@ -23,6 +23,11 @@
     --disabled-opacity: 0.6;
 }
 
+/* Alpine.js cloak - hide elements until Alpine initializes */
+[x-cloak] {
+    display: none !important;
+}
+
 /* -----------------------------
    Base Styles
 ----------------------------- */

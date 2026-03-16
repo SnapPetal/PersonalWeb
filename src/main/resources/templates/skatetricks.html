@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/css/skatetricks.css">
 </head>
 <body class="skatetricks-page">
-    <div class="container py-4">
+    <div class="container py-4" x-data="skatetricksApp()">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>🛹 Skateboard Trick Analyzer</h2>
             <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back</a>
@@ -43,27 +43,36 @@
                             <div class="tab-pane fade show active" id="liveTab">
                                 <video id="liveVideo" autoplay muted playsinline class="w-100 rounded mb-3" style="max-height: 400px; background: #000;"></video>
                                 <div class="d-flex gap-2">
-                                    <button id="startCameraBtn" class="btn btn-primary">
+                                    <button class="btn btn-primary"
+                                            :disabled="cameraStarted"
+                                            @click="startCamera()">
                                         <i class="bi bi-camera-video"></i> Start Camera
                                     </button>
-                                    <button id="stopCameraBtn" class="btn btn-danger" disabled>
+                                    <button class="btn btn-danger"
+                                            :disabled="!cameraStarted"
+                                            @click="stopCamera()">
                                         <i class="bi bi-stop-circle"></i> Stop
                                     </button>
-                                    <button id="captureBtn" class="btn btn-success" disabled>
-                                        <i class="bi bi-record-circle"></i> Capture & Analyze
+                                    <button class="btn btn-success"
+                                            :disabled="!cameraStarted"
+                                            @click="toggleCapture()">
+                                        <i :class="capturing ? 'bi bi-stop-fill' : 'bi bi-record-circle'"></i>
+                                        <span x-text="captureBtnLabel"></span>
                                     </button>
                                 </div>
                             </div>
                             <!-- Upload Tab -->
                             <div class="tab-pane fade" id="uploadTab">
                                 <div class="mb-3">
-                                    <input type="file" id="videoUpload" class="form-control" accept="video/*">
+                                    <input type="file" class="form-control" accept="video/*" @change="handleVideoUpload($event)">
                                 </div>
                                 <div id="plyrContainer" class="mb-3" style="display: none;">
                                     <video id="uploadedVideo" controls playsinline class="w-100 rounded" style="max-height: 400px;"></video>
                                 </div>
                                 <p class="text-muted small mb-2 mt-2">Upload any video format (MOV, MP4, etc). Max 100MB. Server will convert and analyze.</p>
-                                <button id="analyzeUploadBtn" class="btn btn-success" disabled>
+                                <button class="btn btn-success"
+                                        :disabled="analyzeUploadDisabled"
+                                        @click="analyzeUpload()">
                                     <i class="bi bi-lightning"></i> Analyze Video
                                 </button>
                             </div>
@@ -78,8 +87,8 @@
                     <div class="card-body py-2">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-wifi me-2"></i>
-                            <span class="badge" id="connectionStatus">Disconnected</span>
-                            <span class="ms-auto small text-muted" id="frameCounter">Frames: 0</span>
+                            <span class="badge" :class="connectionClass" x-text="connectionText"></span>
+                            <span class="ms-auto small text-muted" x-text="frameCounterText"></span>
                         </div>
                     </div>
                 </div>
@@ -90,8 +99,137 @@
                 <!-- Current Analysis -->
                 <div class="card mb-3">
                     <div class="card-header"><h5 class="mb-0">Analysis Result</h5></div>
-                    <div class="card-body" id="analysisResult">
-                        <p class="text-muted text-center">Capture or upload a video to analyze tricks</p>
+                    <div class="card-body">
+                        <!-- Default state -->
+                        <template x-if="!result && !resultError && !resultLoading">
+                            <p class="text-muted text-center">Capture or upload a video to analyze tricks</p>
+                        </template>
+
+                        <!-- Loading state -->
+                        <template x-if="resultLoading">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary"></div>
+                                <p class="mt-2" x-text="resultLoadingText"></p>
+                            </div>
+                        </template>
+
+                        <!-- Error state -->
+                        <template x-if="resultError">
+                            <div class="alert alert-danger" x-text="resultError"></div>
+                        </template>
+
+                        <!-- Result state -->
+                        <template x-if="result">
+                            <div>
+                                <h4 class="text-center mb-3" x-text="result.trickLabel"></h4>
+
+                                <!-- Confidence bar -->
+                                <div class="mb-3">
+                                    <label class="form-label small">Confidence</label>
+                                    <div class="progress">
+                                        <div class="progress-bar"
+                                             :class="'bg-' + result.confidenceColor"
+                                             :style="'width:' + result.confidence + '%'"
+                                             x-text="result.confidence + '%'">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Form Score bar -->
+                                <div class="mb-3">
+                                    <label class="form-label small">Form Score</label>
+                                    <div class="progress">
+                                        <div class="progress-bar"
+                                             :class="'bg-' + result.formColor"
+                                             :style="'width:' + result.formScore + '%'"
+                                             x-text="result.formScore + '%'">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Feedback -->
+                                <template x-if="result.feedback.length > 0">
+                                    <div>
+                                        <h6>Feedback</h6>
+                                        <ul class="list-group list-group-flush">
+                                            <template x-for="item in result.feedback" :key="item">
+                                                <li class="list-group-item small">
+                                                    <i class="bi bi-chat-dots me-2"></i><span x-text="item"></span>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                </template>
+
+                                <!-- Trick Sequence -->
+                                <template x-if="result.trickSequence.length > 1">
+                                    <div>
+                                        <h6 class="mt-3">Trick Sequence</h6>
+                                        <ol class="list-group list-group-numbered">
+                                            <template x-for="entry in result.trickSequence" :key="entry.timeframe">
+                                                <li class="list-group-item">
+                                                    <span x-text="entry.name"></span>
+                                                    (<span x-text="entry.timeframe"></span>)
+                                                    &mdash; <span x-text="entry.confidence + '%'"></span>
+                                                </li>
+                                            </template>
+                                        </ol>
+                                    </div>
+                                </template>
+
+                                <!-- Verification Section -->
+                                <template x-if="result.attemptId && !result.verifyStatus">
+                                    <div class="mt-3 pt-3 border-top">
+                                        <p class="small text-muted mb-2"><i class="bi bi-patch-question me-1"></i>Is this correct?</p>
+                                        <div class="d-flex gap-2 mb-2">
+                                            <button class="btn btn-sm btn-success flex-fill" @click="confirmTrick(null)">
+                                                <i class="bi bi-check-circle me-1"></i>Yes, it's correct
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning flex-fill" @click="showCorrection()">
+                                                <i class="bi bi-pencil me-1"></i>No, wrong trick
+                                            </button>
+                                        </div>
+                                        <template x-if="result.showCorrectionPicker">
+                                            <div>
+                                                <label class="form-label small text-muted mb-1">What trick was it?</label>
+                                                <div class="d-flex gap-2 align-items-center">
+                                                    <select class="form-select form-select-sm" x-model="result.correctionValue">
+                                                        <template x-for="opt in result.correctionOptions" :key="opt.value">
+                                                            <option :value="opt.value" x-text="opt.label"></option>
+                                                        </template>
+                                                    </select>
+                                                    <button class="btn btn-sm btn-warning" @click="submitCorrection()">
+                                                        <i class="bi bi-send me-1"></i>Submit
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- Verification status badges -->
+                                <template x-if="result.verifyStatus === 'verifying'">
+                                    <div class="mt-3 pt-3 border-top">
+                                        <span class="badge bg-info"><i class="bi bi-hourglass-split me-1"></i>Verifying...</span>
+                                    </div>
+                                </template>
+                                <template x-if="result.verifyStatus === 'confirmed'">
+                                    <div class="mt-3 pt-3 border-top">
+                                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Confirmed</span>
+                                    </div>
+                                </template>
+                                <template x-if="result.verifyStatus === 'corrected'">
+                                    <div class="mt-3 pt-3 border-top">
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-pencil me-1"></i>Corrected to <span x-text="result.correctedLabel"></span></span>
+                                    </div>
+                                </template>
+                                <template x-if="result.verifyStatus === 'error'">
+                                    <div class="mt-3 pt-3 border-top text-danger small">
+                                        <i class="bi bi-exclamation-triangle me-1"></i><span x-text="result.verifyError"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
@@ -99,8 +237,18 @@
                 <div class="card">
                     <div class="card-header"><h5 class="mb-0">Session History</h5></div>
                     <div class="card-body p-0">
-                        <div id="trickHistory" class="list-group list-group-flush">
-                            <div class="list-group-item text-center text-muted py-3">No tricks analyzed yet</div>
+                        <div class="list-group list-group-flush">
+                            <template x-if="trickHistory.length === 0">
+                                <div class="list-group-item text-center text-muted py-3">No tricks analyzed yet</div>
+                            </template>
+                            <template x-for="item in trickHistory" :key="item.attemptId || $id('history')">
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span x-text="item.name"></span>
+                                    <span class="badge"
+                                          :class="item.verified ? 'bg-success' : 'bg-primary'"
+                                          x-text="item.confidence + '%'"></span>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -113,5 +261,6 @@
     <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
     <script th:src="@{/webjars/plyr/dist/plyr.min.js}"></script>
     <script src="/js/skatetricks.js"></script>
+    <script defer th:src="@{/webjars/alpinejs/dist/cdn.min.js}"></script>
 </body>
 </html>

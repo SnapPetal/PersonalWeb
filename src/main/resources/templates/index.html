@@ -31,6 +31,7 @@
     <script src="/js/experience-counter.js"></script>
     <script src="/js/theme-toggle.js"></script>
     <script src="/js/joke-player.js"></script>
+    <script defer th:src="@{/webjars/alpinejs/dist/cdn.min.js}"></script>
 
     <!-- CSS Dependencies -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
@@ -80,23 +81,29 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/booking">Book a Meeting</a>
                 </li>
-                <li class="spinning nav-item">
-                    <audio class="d-none" id="navJokeAudio">
+                <li class="spinning nav-item" x-data="jokePlayer()">
+                    <audio class="d-none" x-ref="jokeAudio">
                         <source src="" type="audio/mp3">
                     </audio>
                     <button class="btn btn-link nav-link border-0"
+                            x-ref="jokeBtn"
                             hx-get="/api/joke"
-                            hx-indicator=".bi-emoji-laughing"
-                            hx-on:click="this.classList.add('rotate'); setTimeout(() => this.classList.remove('rotate'), 500)"
                             hx-swap="none"
-                            id="navJokeButton">
-                        <i aria-hidden="true" class="bi bi-emoji-laughing"></i>
+                            :disabled="playing"
+                            @click="spinning = true; setTimeout(() => { if (!playing) spinning = false; }, 500)">
+                        <i aria-hidden="true" class="bi"
+                           :class="playing ? 'bi-volume-up' : 'bi-emoji-laughing'"
+                           :style="spinning ? 'animation: rotate-animation 0.5s ease-in-out' : ''"></i>
                         <span class="visually-hidden">Play random dad joke</span>
                     </button>
                 </li>
-                <li class="nav-item">
-                    <button class="btn btn-link nav-link border-0 theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-                        <i class="bi bi-sun-fill" id="themeIcon"></i>
+                <li class="nav-item" x-data="themeToggle()">
+                    <button class="btn btn-link nav-link border-0 theme-toggle"
+                            aria-label="Toggle dark mode"
+                            @click="toggle()"
+                            @keydown.enter.prevent="toggle()"
+                            @keydown.space.prevent="toggle()">
+                        <i :class="iconClass"></i>
                     </button>
                 </li>
             </ul>
@@ -112,20 +119,27 @@
             <h1 class="display-4 fw-bold">Software Engineer</h1>
             <p class="lead text-muted">Building elegant solutions to complex problems</p>
             <!-- Bible Verse Section -->
-            <div class="mt-4">
+            <div class="mt-4" x-data="bibleVerse()">
                 <div class="card mx-auto shadow-sm" style="max-width: 600px;">
                     <div class="card-body">
                         <h5 class="card-title text-center mb-3 fw-bold">Daily Bible Verse</h5>
-                        <div class="text-center px-3"
-                             hx-get="/api/bible/verse-of-day"
-                             hx-swap="innerHTML"
-                             hx-trigger="load"
-                             id="bible-verse">
-                            <div class="d-flex justify-content-center py-4">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
+                        <div class="text-center px-3">
+                            <template x-if="loading">
+                                <div class="d-flex justify-content-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
                                 </div>
-                            </div>
+                            </template>
+                            <template x-if="error">
+                                <p class="text-danger">Error loading verse</p>
+                            </template>
+                            <template x-if="!loading && !error">
+                                <div class="verse-content">
+                                    <p class="verse-text mb-2" x-text="verseText"></p>
+                                    <p class="verse-translation mb-2" x-text="verseTranslation"></p>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>

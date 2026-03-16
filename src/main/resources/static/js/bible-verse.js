@@ -1,24 +1,26 @@
-// bible-verse.js
-document.addEventListener("DOMContentLoaded", function () {
-  const bibleVerseElement = document.getElementById("bible-verse");
+// bible-verse.js — Alpine.js component
+function bibleVerse() {
+  return {
+    verseText: "",
+    verseTranslation: "",
+    loading: true,
+    error: false,
 
-  if (bibleVerseElement) {
-    htmx.on("#bible-verse", "htmx:afterRequest", function (evt) {
-      if (evt.detail.successful) {
-        try {
-          const response = JSON.parse(evt.detail.xhr.responseText);
-          evt.detail.target.innerHTML = `
-                        <div class="verse-content">
-                            <p class="verse-text mb-2">${response.text}</p>
-                            <p class="verse-translation mb-2">${response.translation}</p>
-                        </div>
-                    `;
-        } catch (e) {
-          console.error("Error parsing JSON:", e);
-          evt.detail.target.innerHTML =
-            '<p class="text-danger">Error loading verse</p>';
-        }
-      }
-    });
-  }
-});
+    init() {
+      fetch("/api/bible/verse-of-day")
+        .then((response) => {
+          if (!response.ok) throw new Error("Failed to load verse");
+          return response.json();
+        })
+        .then((data) => {
+          this.verseText = data.text;
+          this.verseTranslation = data.translation;
+          this.loading = false;
+        })
+        .catch(() => {
+          this.error = true;
+          this.loading = false;
+        });
+    },
+  };
+}
