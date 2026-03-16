@@ -12,15 +12,18 @@ import org.springframework.stereotype.Service;
 /**
  * Service for fetching plant images from the USDA Plants Database.
  *
- * <p>Uses the USDA gallery URL pattern with the plant's USDA symbol.
+ * <p>Uses the new USDA ImageLibrary thumbnail URL pattern. The old gallery URLs
+ * ({@code plants.sc.egov.usda.gov/gallery/}) no longer serve images.
  * Results are cached for 24 hours.
  */
 @Service
 @Slf4j
 public class PlantImageService {
 
-    private static final String USDA_IMAGE_URL = "https://plants.sc.egov.usda.gov/gallery/standard/%s_001_shp.jpg";
-    private static final String USDA_IMAGE_ALT = "https://plants.sc.egov.usda.gov/gallery/pubs/%s_001_php.jpg";
+    private static final String USDA_THUMBNAIL_URL =
+            "https://plants.sc.egov.usda.gov/ImageLibrary/thumbnail/%s_001_shp.jpg";
+    private static final String USDA_THUMBNAIL_ALT =
+            "https://plants.sc.egov.usda.gov/ImageLibrary/thumbnail/%s_001_php.jpg";
 
     private final HttpClient httpClient;
 
@@ -43,23 +46,23 @@ public class PlantImageService {
             return null;
         }
 
-        final var symbol = usdaSymbol.toUpperCase().trim();
+        final var symbol = usdaSymbol.toLowerCase().trim();
 
-        // Try the standard gallery image first
-        final var standardUrl = String.format(USDA_IMAGE_URL, symbol);
-        if (imageExists(standardUrl)) {
-            log.info("Found USDA image for '{}': {}", symbol, standardUrl);
-            return standardUrl;
+        // Try the standard thumbnail first
+        final var thumbnailUrl = String.format(USDA_THUMBNAIL_URL, symbol);
+        if (imageExists(thumbnailUrl)) {
+            log.info("Found USDA thumbnail for '{}': {}", usdaSymbol, thumbnailUrl);
+            return thumbnailUrl;
         }
 
-        // Try the publication gallery as fallback
-        final var altUrl = String.format(USDA_IMAGE_ALT, symbol);
+        // Try the publication thumbnail as fallback
+        final var altUrl = String.format(USDA_THUMBNAIL_ALT, symbol);
         if (imageExists(altUrl)) {
-            log.info("Found USDA alt image for '{}': {}", symbol, altUrl);
+            log.info("Found USDA alt thumbnail for '{}': {}", usdaSymbol, altUrl);
             return altUrl;
         }
 
-        log.info("No USDA image found for '{}'", symbol);
+        log.info("No USDA image found for '{}'", usdaSymbol);
         return null;
     }
 
@@ -75,7 +78,7 @@ public class PlantImageService {
             if (response.statusCode() != 200) {
                 return false;
             }
-            // USDA may return 200 with text/html for missing images (redirect to error page)
+            // USDA may return 200 with text/html for missing images
             final var contentType =
                     response.headers().firstValue("Content-Type").orElse("");
             return contentType.startsWith("image/");
