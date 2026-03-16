@@ -50,6 +50,18 @@ jobs:
           sudo curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
           sudo chmod +x /usr/local/bin/lightsailctl
 
+      - name: Clean up old Lightsail container images
+        run: |
+          OLD_IMAGES=$(aws lightsail get-container-images \
+            --service-name personal-service --region us-east-1 \
+            --query 'containerImages[5:].image' --output text 2>/dev/null || true)
+          for IMAGE in $OLD_IMAGES; do
+            echo "Deleting old image: $IMAGE"
+            aws lightsail delete-container-image \
+              --service-name personal-service --region us-east-1 \
+              --image "$IMAGE" || true
+          done
+
       - name: Build and push Docker image
         run: |
           aws lightsail push-container-image \
