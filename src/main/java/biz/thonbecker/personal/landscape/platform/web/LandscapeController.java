@@ -227,7 +227,7 @@ public class LandscapeController {
      * Fetches a plant image URL from USDA Plants Database.
      *
      * @param symbol USDA plant symbol (e.g., "ACRU")
-     * @return JSON with imageUrl field
+     * @return JSON with imageUrl field pointing to the proxy endpoint
      */
     @GetMapping("/plants/image")
     @ResponseBody
@@ -235,11 +235,54 @@ public class LandscapeController {
         try {
             final var imageUrl = landscapeService.getPlantImageUrl(symbol);
             if (imageUrl != null) {
-                return ResponseEntity.ok(java.util.Map.of("imageUrl", imageUrl));
+                return ResponseEntity.ok(java.util.Map.of(
+                        "imageUrl",
+                        "/landscape/plants/image/proxy?symbol=" + java.net.URLEncoder.encode(symbol, "UTF-8")));
             }
             return ResponseEntity.notFound().build();
         } catch (final Exception e) {
             log.error("Failed to fetch plant image for symbol '{}': {}", symbol, e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Proxies a plant image from USDA to avoid CORS issues when loading images onto Fabric.js canvas.
+     *
+     * @param symbol USDA plant symbol
+     * @return Proxied image bytes with appropriate content type
+     */
+    @GetMapping("/plants/image/proxy")
+    public ResponseEntity<byte[]> proxyPlantImage(@RequestParam("symbol") final String symbol) {
+        try {
+            final var imageUrl = landscapeService.getPlantImageUrl(symbol);
+            if (imageUrl == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            final var uri = java.net.URI.create(imageUrl);
+            final var request = java.net.http.HttpRequest.newBuilder()
+                    .uri(uri)
+                    .timeout(java.time.Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+
+            final var response = java.net.http.HttpClient.newHttpClient()
+                    .send(request, java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+
+            if (response.statusCode() != 200) {
+                return ResponseEntity.notFound().build();
+            }
+
+            final var contentType =
+                    response.headers().firstValue("Content-Type").orElse("image/jpeg");
+
+            return ResponseEntity.ok()
+                    .header("Content-Type", contentType)
+                    .header("Cache-Control", "public, max-age=86400")
+                    .body(response.body());
+        } catch (final Exception e) {
+            log.error("Failed to proxy plant image for symbol '{}': {}", symbol, e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
