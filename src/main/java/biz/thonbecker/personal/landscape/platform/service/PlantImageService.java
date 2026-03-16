@@ -33,24 +33,60 @@ public class PlantImageService {
             return null;
         }
 
-        try {
-            final var response = perenualClient.searchPlants(plantName, 1);
+        // Try the full name first, then simplified versions
+        for (final var query : new String[] {plantName, simplifyPlantName(plantName)}) {
+            if (query.isBlank()) {
+                continue;
+            }
+            try {
+                final var response = perenualClient.searchPlants(query, 1);
 
-            if (Objects.nonNull(response.data())) {
-                for (final var plant : response.data()) {
-                    final var imageUrl = extractThumbnailUrl(plant);
-                    if (Objects.nonNull(imageUrl)) {
-                        log.info("Found Perenual image for '{}': {}", plantName, imageUrl);
-                        return imageUrl;
+                if (Objects.nonNull(response.data())) {
+                    for (final var plant : response.data()) {
+                        final var imageUrl = extractThumbnailUrl(plant);
+                        if (Objects.nonNull(imageUrl)) {
+                            log.info("Found Perenual image for '{}' (searched '{}'): {}", plantName, query, imageUrl);
+                            return imageUrl;
+                        }
                     }
                 }
+            } catch (final Exception e) {
+                log.debug("Failed to look up plant image for '{}': {}", query, e.getMessage());
             }
-        } catch (final Exception e) {
-            log.debug("Failed to look up plant image for '{}': {}", plantName, e.getMessage());
         }
 
         log.info("No image found for '{}'", plantName);
         return null;
+    }
+
+    /**
+     * Simplifies a plant name for better Perenual search results.
+     * Strips cultivar names (after dash/quotes), prefixes like "Dwarf"/"Ornamental Grass -", etc.
+     */
+    private String simplifyPlantName(final String name) {
+        var simplified = name;
+
+        // Remove everything after a dash (cultivar names like "Karl Foerster")
+        if (simplified.contains(" - ")) {
+            simplified = simplified.substring(0, simplified.indexOf(" - "));
+        }
+
+        // Remove common prefixes that narrow results too much
+        for (final var prefix : new String[] {
+            "Dwarf ", "Ornamental ", "Japanese ", "Chinese ", "Korean ", "Knock Out ", "Drift ", "Encore "
+        }) {
+            if (simplified.startsWith(prefix)) {
+                simplified = simplified.substring(prefix.length());
+            }
+        }
+
+        // Remove anything in quotes or parentheses
+        simplified = simplified
+                .replaceAll("['\"].*?['\"]", "")
+                .replaceAll("\\(.*?\\)", "")
+                .trim();
+
+        return simplified.equals(name) ? "" : simplified;
     }
 
     /**
