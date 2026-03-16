@@ -40,7 +40,10 @@ public class PlantApiService {
      * @return Detailed plant information
      */
     @Cacheable(value = "plantData", key = "#usdaSymbol")
-    @Retryable(backoff = @Backoff(delay = 1000))
+    @Retryable(
+            noRetryFor =
+                    org.springframework.web.reactive.function.client.WebClientResponseException.TooManyRequests.class,
+            backoff = @Backoff(delay = 1000))
     public PlantInfo getPlantDetails(final String usdaSymbol) {
         try {
             log.debug("Fetching plant details from Perenual API: {}", usdaSymbol);
@@ -83,7 +86,10 @@ public class PlantApiService {
      * @return List of matching plants
      */
     @Cacheable(value = "plantSearch", key = "#query + '-' + #zone + '-' + #lightRequirement + '-' + #waterRequirement")
-    @Retryable(backoff = @Backoff(delay = 1000))
+    @Retryable(
+            noRetryFor =
+                    org.springframework.web.reactive.function.client.WebClientResponseException.TooManyRequests.class,
+            backoff = @Backoff(delay = 1000))
     public List<PlantInfo> searchPlants(
             final String query,
             final HardinessZone zone,
@@ -126,7 +132,10 @@ public class PlantApiService {
      * @return List of plants suitable for the zone
      */
     @Cacheable(value = "plantsByZone", key = "#zone")
-    @Retryable(backoff = @Backoff(delay = 1000))
+    @Retryable(
+            noRetryFor =
+                    org.springframework.web.reactive.function.client.WebClientResponseException.TooManyRequests.class,
+            backoff = @Backoff(delay = 1000))
     public List<PlantInfo> getPlantsByZone(final HardinessZone zone) {
         try {
             log.debug("Fetching plants for zone {}", zone);
@@ -181,7 +190,36 @@ public class PlantApiService {
                 null,
                 null,
                 null,
-                null);
+                null,
+                extractImageUrl(data));
+    }
+
+    private String extractImageUrl(final PerenualPlant plant) {
+        return extractDefaultImageUrl(plant.defaultImage());
+    }
+
+    private String extractDetailImageUrl(final PerenualPlantDetail detail) {
+        return extractDefaultImageUrl(detail.defaultImage());
+    }
+
+    /**
+     * Extracts the best available image URL from a Perenual DefaultImage,
+     * filtering out the "upgrade_access" placeholder.
+     */
+    private String extractDefaultImageUrl(final PerenualPlant.DefaultImage image) {
+        if (Objects.isNull(image)) {
+            return null;
+        }
+
+        for (final var url : new String[] {
+            image.thumbnail(), image.smallUrl(), image.mediumUrl(), image.regularUrl(), image.originalUrl()
+        }) {
+            if (Objects.nonNull(url) && !url.isBlank() && !url.contains("upgrade_access")) {
+                return url;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -208,7 +246,8 @@ public class PlantApiService {
                 detail.type(),
                 null,
                 null,
-                null);
+                null,
+                extractDetailImageUrl(detail));
     }
 
     /**

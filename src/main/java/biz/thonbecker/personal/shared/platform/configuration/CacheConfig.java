@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration;
 public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
-        final var cacheManager =
-                new CaffeineCacheManager("bibleVerses", "jokeAudio", "plantData", "plantSearch", "plantImages");
+        final var cacheManager = new CaffeineCacheManager(
+                "bibleVerses", "jokeAudio", "plantData", "plantSearch", "plantImages", "plantsByZone");
         cacheManager.setCaffeine(
                 Caffeine.newBuilder().expireAfterWrite(24, TimeUnit.HOURS).maximumSize(100));
         return cacheManager;

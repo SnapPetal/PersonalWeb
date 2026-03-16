@@ -892,7 +892,6 @@
         const html = await response.text();
         container.innerHTML = html;
         initializeAddToPlantButtons();
-        loadRecommendationImages();
       } else {
         throw new Error("Failed to load recommendations");
       }
@@ -970,43 +969,31 @@
   }
 
   /**
-   * Fetches plant images from Wikipedia for each recommendation card
+   * Shows a plant image on demand when the user clicks the "Show Image" button.
+   * The image URL is stored in the parent placeholder's data-image-url attribute.
    */
-  function loadRecommendationImages() {
-    document.querySelectorAll(".recommendation-card").forEach(function (card) {
-      const symbol = card.dataset.usdaSymbol;
-      const name = card.dataset.commonName;
-      const wrapper = card.querySelector(".plant-image-wrapper");
-      if (!wrapper || !symbol) return;
+  window.showPlantImage = function (button) {
+    const placeholder = button.closest(".plant-image-placeholder");
+    const imageUrl = placeholder.dataset.imageUrl;
+    if (!imageUrl) return;
 
-      fetchPlantImage(symbol, name, wrapper);
-    });
-  }
+    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    button.disabled = true;
 
-  function fetchPlantImage(symbol, name, wrapper) {
-    const params = new URLSearchParams({ symbol });
-    if (name) params.append("name", name);
-    fetch(`/landscape/plants/image?${params}`)
-      .then(function (response) {
-        if (!response.ok) return null;
-        return response.json();
-      })
-      .then(function (data) {
-        if (!data || !data.imageUrl) return;
-
-        const img = document.createElement("img");
-        img.src = data.imageUrl;
-        img.alt = symbol;
-        img.loading = "lazy";
-        img.onload = function () {
-          wrapper.innerHTML = "";
-          wrapper.appendChild(img);
-        };
-      })
-      .catch(function () {
-        // Keep placeholder on error
-      });
-  }
+    const img = document.createElement("img");
+    img.src = imageUrl;
+    img.alt = "Plant image";
+    img.loading = "lazy";
+    img.onload = function () {
+      const wrapper = placeholder.closest(".plant-image-wrapper");
+      wrapper.innerHTML = "";
+      wrapper.appendChild(img);
+    };
+    img.onerror = function () {
+      button.innerHTML = '<i class="bi bi-image"></i> Unavailable';
+      button.disabled = true;
+    };
+  };
 
   function initializeLoadPlanLinks() {
     document.querySelectorAll(".load-plan-link").forEach(function (link) {

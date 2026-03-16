@@ -16,6 +16,7 @@ import java.util.List;
  * @param nativeStatus Native, introduced, or invasive status
  * @param matureHeight Expected height at maturity (inches), nullable
  * @param matureWidth Expected width at maturity (inches), nullable
+ * @param imageUrl Thumbnail image URL from the plant data provider, nullable
  */
 public record PlantInfo(
         String usdaSymbol,
@@ -28,4 +29,5 @@ public record PlantInfo(
         String category,
         String nativeStatus,
         Integer matureHeight,
-        Integer matureWidth) {}
+        Integer matureWidth,
+        String imageUrl) {}
