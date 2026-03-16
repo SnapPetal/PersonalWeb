@@ -1,40 +1,41 @@
 package biz.thonbecker.personal.landscape.platform.client;
 
-import biz.thonbecker.personal.landscape.platform.client.model.UsdaPlantDetail;
 import biz.thonbecker.personal.landscape.platform.client.model.UsdaPlantSearchResponse;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.service.annotation.GetExchange;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Declarative HTTP client for USDA Plants Database API.
+ * HTTP client for USDA Plants Services API.
  *
- * <p>Uses Spring's HTTP Interface abstraction for type-safe API calls.
+ * <p>The new USDA API at plantsservices.sc.egov.usda.gov uses POST endpoints
+ * with PascalCase JSON request/response bodies.
  */
-public interface UsdaPlantHttpClient {
+@RequiredArgsConstructor
+@Slf4j
+public class UsdaPlantHttpClient {
+
+    private final WebClient webClient;
 
     /**
-     * Searches for plants by name and optional filters.
+     * Searches for plants by name using the new USDA Plants Services API.
      *
-     * @param name Plant name (scientific or common)
-     * @param duration Optional duration filter (Annual, Perennial, Biennial)
-     * @param growthHabit Optional growth habit filter (Tree, Shrub, Forb/herb, etc.)
-     * @param limit Maximum number of results
+     * @param query Plant name (scientific or common)
+     * @param field Search field: "CommonName", "ScientificName", or "Symbol"
+     * @param pageNumber Page number (1-based)
      * @return Search response with matching plants
      */
-    @GetExchange("/search")
-    UsdaPlantSearchResponse searchPlants(
-            @RequestParam(value = "Sci_Name", required = false) String name,
-            @RequestParam(value = "Duration", required = false) String duration,
-            @RequestParam(value = "Growth_Habit", required = false) String growthHabit,
-            @RequestParam(value = "limit", defaultValue = "50") int limit);
+    public UsdaPlantSearchResponse searchPlants(final String query, final String field, final int pageNumber) {
+        final var body =
+                Map.of("SearchCriteria", Map.of("Text", query, "Field", field), "PageNumber", pageNumber, "AllData", 0);
 
-    /**
-     * Retrieves detailed information for a specific plant by its USDA symbol.
-     *
-     * @param usdaSymbol Official USDA plant symbol (e.g., "ACRU")
-     * @return Detailed plant information
-     */
-    @GetExchange("/plant/{symbol}")
-    UsdaPlantDetail getPlantDetail(@PathVariable("symbol") String usdaSymbol);
+        return webClient
+                .post()
+                .uri("/plants-search-results")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(UsdaPlantSearchResponse.class)
+                .block();
+    }
 }

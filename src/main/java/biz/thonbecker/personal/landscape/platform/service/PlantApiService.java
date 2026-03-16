@@ -7,8 +7,6 @@ import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import biz.thonbecker.personal.landscape.domain.exceptions.PlantApiException;
 import biz.thonbecker.personal.landscape.platform.client.UsdaPlantHttpClient;
 import biz.thonbecker.personal.landscape.platform.client.model.UsdaPlantData;
-import biz.thonbecker.personal.landscape.platform.client.model.UsdaPlantDetail;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +17,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for fetching plant data from USDA Plants Database.
+ * Service for fetching plant data from USDA Plants Services API.
  *
  * <p>Provides caching and retry logic for resilient API access.
  */
@@ -31,9 +29,10 @@ public class PlantApiService {
     private final UsdaPlantHttpClient httpClient;
 
     /**
-     * Retrieves detailed information for a specific plant.
+     * Retrieves detailed information for a specific plant by USDA symbol.
      *
-     * <p>Results are cached for 24 hours by USDA symbol.
+     * <p>Uses the search API with Symbol field since the old detail endpoint no longer exists.
+     * Results are cached for 24 hours by USDA symbol.
      *
      * @param usdaSymbol USDA plant symbol
      * @return Detailed plant information
@@ -43,8 +42,16 @@ public class PlantApiService {
     public PlantInfo getPlantDetails(final String usdaSymbol) {
         try {
             log.debug("Fetching plant details from USDA API: {}", usdaSymbol);
-            final var detail = httpClient.getPlantDetail(usdaSymbol);
-            return convertDetailToPlantInfo(detail);
+            final var response = httpClient.searchPlants(usdaSymbol, "Symbol", 1);
+
+            if (Objects.isNull(response.plantResults())
+                    || response.plantResults().isEmpty()) {
+                throw new PlantApiException("No plant found for symbol: " + usdaSymbol);
+            }
+
+            return convertDataToPlantInfo(response.plantResults().getFirst(), null);
+        } catch (final PlantApiException e) {
+            throw e;
         } catch (final Exception e) {
             log.error("Failed to fetch plant details for symbol {}: {}", usdaSymbol, e.getMessage(), e);
             throw new PlantApiException("Failed to fetch plant details for " + usdaSymbol, e);
@@ -78,18 +85,15 @@ public class PlantApiService {
                     lightRequirement,
                     waterRequirement);
 
-            // Map requirements to USDA API filters
-            final var growthHabit = mapGrowthHabit(lightRequirement);
+            final var response = httpClient.searchPlants(query, "CommonName", 1);
 
-            final var response = httpClient.searchPlants(query, null, growthHabit, 50);
-
-            final var plants = new ArrayList<PlantInfo>();
-            for (final var data : response.data()) {
-                final var plantInfo = convertDataToPlantInfo(data, zone);
-                if (Objects.nonNull(plantInfo)) {
-                    plants.add(plantInfo);
-                }
-            }
+            final var plants = Objects.nonNull(response.plantResults())
+                    ? response.plantResults().stream()
+                            .map(data -> convertDataToPlantInfo(data, zone))
+                            .filter(Objects::nonNull)
+                            .limit(50)
+                            .toList()
+                    : List.<PlantInfo>of();
 
             log.info("Found {} plants matching criteria", plants.size());
             return plants;
@@ -101,85 +105,20 @@ public class PlantApiService {
     }
 
     /**
-     * Converts USDA API detail response to domain PlantInfo.
-     *
-     * @param detail USDA plant detail
-     * @return Domain plant info
-     */
-    private PlantInfo convertDetailToPlantInfo(final UsdaPlantDetail detail) {
-        return new PlantInfo(
-                detail.symbol(),
-                detail.scientificName(),
-                detail.commonName(),
-                detail.familyCommonName(),
-                List.of(), // Hardiness zones not in USDA API, would need additional data source
-                mapLightRequirement(detail.shapeAndOrientation()),
-                mapWaterRequirement(detail.activeGrowthPeriod()),
-                detail.category(),
-                detail.nativeStatus(),
-                detail.matureHeight(),
-                detail.matureWidth());
-    }
-
-    /**
      * Converts USDA API search result to domain PlantInfo.
-     *
-     * @param data USDA plant data
-     * @param zone Requested hardiness zone
-     * @return Domain plant info, or null if not suitable for zone
      */
     private PlantInfo convertDataToPlantInfo(final UsdaPlantData data, final HardinessZone zone) {
-        // Simple conversion - in production, would filter by actual hardiness data
         return new PlantInfo(
                 data.symbol(),
                 data.scientificName(),
                 data.commonName(),
                 data.familyCommonName(),
-                List.of(zone), // Simplified - assume all results work for requested zone
-                mapLightRequirement(null),
-                mapWaterRequirement(null),
-                data.category(),
-                data.nativeStatus(),
+                Objects.nonNull(zone) ? List.of(zone) : List.of(),
+                LightRequirement.FULL_SUN,
+                WaterRequirement.MEDIUM,
+                null,
+                null,
                 null,
                 null);
-    }
-
-    /**
-     * Maps light requirement to USDA growth habit filter.
-     *
-     * @param lightRequirement Light requirement
-     * @return USDA growth habit parameter, or null
-     */
-    private String mapGrowthHabit(final LightRequirement lightRequirement) {
-        if (Objects.isNull(lightRequirement)) {
-            return null;
-        }
-        return switch (lightRequirement) {
-            case FULL_SUN -> "Tree";
-            case PARTIAL_SHADE -> "Shrub";
-            case FULL_SHADE -> "Forb/herb";
-        };
-    }
-
-    /**
-     * Maps USDA shape/orientation to light requirement.
-     *
-     * @param shapeAndOrientation USDA field
-     * @return Light requirement enum
-     */
-    private LightRequirement mapLightRequirement(final String shapeAndOrientation) {
-        // Simplified mapping - production would use more sophisticated logic
-        return LightRequirement.FULL_SUN;
-    }
-
-    /**
-     * Maps USDA active growth period to water requirement.
-     *
-     * @param activeGrowthPeriod USDA field
-     * @return Water requirement enum
-     */
-    private WaterRequirement mapWaterRequirement(final String activeGrowthPeriod) {
-        // Simplified mapping - production would use more sophisticated logic
-        return WaterRequirement.MEDIUM;
     }
 }

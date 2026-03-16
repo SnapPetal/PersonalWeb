@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * Response from USDA Plants API search endpoint.
+ * Response from USDA Plants Services API search endpoint.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record UsdaPlantSearchResponse(@JsonProperty("data") List<UsdaPlantData> data) {}
+public record UsdaPlantSearchResponse(
+        @JsonProperty("PlantResults") List<UsdaPlantData> plantResults) {}
