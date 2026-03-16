@@ -5,8 +5,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * Response from USDA Plants Services API search endpoint.
+ * Response from Perenual API species-list endpoint.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record UsdaPlantSearchResponse(
-        @JsonProperty("PlantResults") List<UsdaPlantData> plantResults) {}
+public record PerenualPlantSearchResponse(
+        List<PerenualPlant> data,
+        int total,
+        @JsonProperty("per_page") int perPage,
+        @JsonProperty("current_page") int currentPage) {}

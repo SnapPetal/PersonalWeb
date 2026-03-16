@@ -104,8 +104,9 @@ skatetricks:
 
 # Landscape Planning Configuration
 landscape:
-  usda-api:
-    base-url: https://plantsservices.sc.egov.usda.gov/api
+  plant-api:
+    base-url: https://perenual.com/api/v2
+    key: ${PERENUAL_API_KEY}
     timeout: 10000
   storage:
     bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq

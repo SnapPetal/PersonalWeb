@@ -5,8 +5,10 @@ import biz.thonbecker.personal.landscape.api.LightRequirement;
 import biz.thonbecker.personal.landscape.api.PlantInfo;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import biz.thonbecker.personal.landscape.domain.exceptions.PlantApiException;
-import biz.thonbecker.personal.landscape.platform.client.UsdaPlantHttpClient;
-import biz.thonbecker.personal.landscape.platform.client.model.UsdaPlantData;
+import biz.thonbecker.personal.landscape.platform.client.PerenualPlantHttpClient;
+import biz.thonbecker.personal.landscape.platform.client.model.PerenualPlant;
+import biz.thonbecker.personal.landscape.platform.client.model.PerenualPlantDetail;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +19,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for fetching plant data from USDA Plants Services API.
+ * Service for fetching plant data from the Perenual Plant API.
  *
  * <p>Provides caching and retry logic for resilient API access.
  */
@@ -26,34 +28,45 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class PlantApiService {
 
-    private final UsdaPlantHttpClient httpClient;
+    private final PerenualPlantHttpClient httpClient;
 
     /**
-     * Retrieves detailed information for a specific plant by USDA symbol.
+     * Retrieves detailed information for a specific plant by name/symbol.
      *
-     * <p>Uses the search API with Symbol field since the old detail endpoint no longer exists.
-     * Results are cached for 24 hours by USDA symbol.
+     * <p>Searches the Perenual API by the given identifier and returns the first match.
+     * Results are cached for 24 hours.
      *
-     * @param usdaSymbol USDA plant symbol
+     * @param usdaSymbol Plant name or identifier to search for
      * @return Detailed plant information
      */
     @Cacheable(value = "plantData", key = "#usdaSymbol")
     @Retryable(backoff = @Backoff(delay = 1000))
     public PlantInfo getPlantDetails(final String usdaSymbol) {
         try {
-            log.debug("Fetching plant details from USDA API: {}", usdaSymbol);
-            final var response = httpClient.searchPlants(usdaSymbol, "Symbol", 1);
+            log.debug("Fetching plant details from Perenual API: {}", usdaSymbol);
+            final var response = httpClient.searchPlants(usdaSymbol, 1);
 
-            if (Objects.isNull(response.plantResults())
-                    || response.plantResults().isEmpty()) {
-                throw new PlantApiException("No plant found for symbol: " + usdaSymbol);
+            if (Objects.isNull(response.data()) || response.data().isEmpty()) {
+                throw new PlantApiException("No plant found for: " + usdaSymbol);
             }
 
-            return convertDataToPlantInfo(response.plantResults().getFirst(), null);
+            final var firstResult = response.data().getFirst();
+
+            // Fetch full details for richer data (sunlight, watering, hardiness)
+            try {
+                final var detail = httpClient.getPlantDetails(firstResult.id());
+                return convertDetailToPlantInfo(detail);
+            } catch (final Exception e) {
+                log.warn(
+                        "Failed to fetch detail for plant id {}, using search data: {}",
+                        firstResult.id(),
+                        e.getMessage());
+                return convertSearchResultToPlantInfo(firstResult, null);
+            }
         } catch (final PlantApiException e) {
             throw e;
         } catch (final Exception e) {
-            log.error("Failed to fetch plant details for symbol {}: {}", usdaSymbol, e.getMessage(), e);
+            log.error("Failed to fetch plant details for {}: {}", usdaSymbol, e.getMessage(), e);
             throw new PlantApiException("Failed to fetch plant details for " + usdaSymbol, e);
         }
     }
@@ -85,11 +98,11 @@ public class PlantApiService {
                     lightRequirement,
                     waterRequirement);
 
-            final var response = httpClient.searchPlants(query, "CommonName", 1);
+            final var response = httpClient.searchPlants(query, 1);
 
-            final var plants = Objects.nonNull(response.plantResults())
-                    ? response.plantResults().stream()
-                            .map(data -> convertDataToPlantInfo(data, zone))
+            final var plants = Objects.nonNull(response.data())
+                    ? response.data().stream()
+                            .map(data -> convertSearchResultToPlantInfo(data, zone))
                             .filter(Objects::nonNull)
                             .limit(50)
                             .toList()
@@ -105,14 +118,19 @@ public class PlantApiService {
     }
 
     /**
-     * Converts USDA API search result to domain PlantInfo.
+     * Converts a Perenual search result to domain PlantInfo.
      */
-    private PlantInfo convertDataToPlantInfo(final UsdaPlantData data, final HardinessZone zone) {
+    private PlantInfo convertSearchResultToPlantInfo(final PerenualPlant data, final HardinessZone zone) {
+        final var scientificName =
+                Objects.nonNull(data.scientificName()) && !data.scientificName().isEmpty()
+                        ? data.scientificName().getFirst()
+                        : null;
+
         return new PlantInfo(
-                data.symbol(),
-                data.scientificName(),
+                String.valueOf(data.id()),
+                scientificName,
                 data.commonName(),
-                data.familyCommonName(),
+                data.family(),
                 Objects.nonNull(zone) ? List.of(zone) : List.of(),
                 LightRequirement.FULL_SUN,
                 WaterRequirement.MEDIUM,
@@ -120,5 +138,99 @@ public class PlantApiService {
                 null,
                 null,
                 null);
+    }
+
+    /**
+     * Converts a Perenual detail response to domain PlantInfo with richer data.
+     */
+    private PlantInfo convertDetailToPlantInfo(final PerenualPlantDetail detail) {
+        final var scientificName = Objects.nonNull(detail.scientificName())
+                        && !detail.scientificName().isEmpty()
+                ? detail.scientificName().getFirst()
+                : null;
+
+        final var light = mapSunlightToLightRequirement(detail.sunlight());
+        final var water = mapWateringToWaterRequirement(detail.watering());
+        final var zones = mapHardinessToZones(detail.hardiness());
+
+        return new PlantInfo(
+                String.valueOf(detail.id()),
+                scientificName,
+                detail.commonName(),
+                detail.family(),
+                zones,
+                light,
+                water,
+                detail.type(),
+                null,
+                null,
+                null);
+    }
+
+    /**
+     * Maps Perenual sunlight values to LightRequirement.
+     */
+    private LightRequirement mapSunlightToLightRequirement(final List<String> sunlight) {
+        if (Objects.isNull(sunlight) || sunlight.isEmpty()) {
+            return LightRequirement.FULL_SUN;
+        }
+
+        final var primary = sunlight.getFirst().toLowerCase();
+        if (primary.contains("full shade") || primary.contains("deep shade")) {
+            return LightRequirement.FULL_SHADE;
+        } else if (primary.contains("part shade") || primary.contains("partial") || primary.contains("filtered")) {
+            return LightRequirement.PARTIAL_SHADE;
+        }
+        return LightRequirement.FULL_SUN;
+    }
+
+    /**
+     * Maps Perenual watering value to WaterRequirement.
+     */
+    private WaterRequirement mapWateringToWaterRequirement(final String watering) {
+        if (Objects.isNull(watering)) {
+            return WaterRequirement.MEDIUM;
+        }
+
+        return switch (watering.toLowerCase()) {
+            case "minimum", "none" -> WaterRequirement.LOW;
+            case "frequent", "abundant" -> WaterRequirement.HIGH;
+            default -> WaterRequirement.MEDIUM;
+        };
+    }
+
+    /**
+     * Maps Perenual hardiness min/max to a list of HardinessZone values.
+     */
+    private List<HardinessZone> mapHardinessToZones(final PerenualPlantDetail.Hardiness hardiness) {
+        if (Objects.isNull(hardiness) || Objects.isNull(hardiness.min()) || Objects.isNull(hardiness.max())) {
+            return List.of();
+        }
+
+        try {
+            final var min = parseZoneNumber(hardiness.min());
+            final var max = parseZoneNumber(hardiness.max());
+
+            if (min < 1 || max < 1 || min > 13 || max > 13) {
+                return List.of();
+            }
+
+            final var zones = new ArrayList<HardinessZone>();
+            for (var i = min; i <= max; i++) {
+                zones.add(HardinessZone.values()[i - 1]);
+            }
+            return List.copyOf(zones);
+        } catch (final NumberFormatException e) {
+            log.debug("Failed to parse hardiness zones: min={}, max={}", hardiness.min(), hardiness.max());
+            return List.of();
+        }
+    }
+
+    /**
+     * Parses a zone number from a string like "5", "5a", or "5b".
+     */
+    private int parseZoneNumber(final String zone) {
+        final var trimmed = zone.trim().replaceAll("[^0-9]", "");
+        return Integer.parseInt(trimmed);
     }
 }

@@ -1,107 +1,83 @@
 package biz.thonbecker.personal.landscape.platform.service;
 
-import biz.thonbecker.personal.landscape.platform.client.UsdaPlantHttpClient;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
+import biz.thonbecker.personal.landscape.platform.client.PerenualPlantHttpClient;
+import biz.thonbecker.personal.landscape.platform.client.model.PerenualPlant;
+import java.util.Objects;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for fetching plant images from the USDA Plants Database.
+ * Service for fetching plant images from the Perenual Plant API.
  *
- * <p>Looks up the ProfileImageFilename from the USDA search API, then constructs
- * the ImageLibrary thumbnail URL. Falls back to symbol-based URL guessing.
- * Results are cached for 24 hours.
+ * <p>Searches Perenual by plant name and returns the thumbnail URL from the
+ * search response. Results are cached for 24 hours.
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class PlantImageService {
 
-    private static final String USDA_THUMBNAIL_BASE = "https://plants.sc.egov.usda.gov/ImageLibrary/thumbnail/";
-
-    private final HttpClient httpClient;
-    private final UsdaPlantHttpClient usdaClient;
-
-    public PlantImageService(UsdaPlantHttpClient usdaClient) {
-        this.usdaClient = usdaClient;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5))
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
-    }
+    private final PerenualPlantHttpClient perenualClient;
 
     /**
-     * Gets the USDA plant image URL by USDA symbol.
+     * Gets a plant image URL by searching the Perenual API with the given plant name or symbol.
      *
-     * <p>First queries the USDA API for the ProfileImageFilename, then validates
-     * the thumbnail URL exists and returns an actual image.
-     *
-     * @param usdaSymbol USDA plant symbol (e.g., "ACRU", "ECPU")
-     * @return Image URL if the image exists, or null
+     * @param plantName Plant name or identifier to search for
+     * @return Thumbnail image URL if available, or null
      */
-    @Cacheable(value = "plantImages", key = "#usdaSymbol")
-    public String getPlantImageUrl(final String usdaSymbol) {
-        if (usdaSymbol == null || usdaSymbol.isBlank()) {
+    @Cacheable(value = "plantImages", key = "#plantName")
+    public String getPlantImageUrl(final String plantName) {
+        if (Objects.isNull(plantName) || plantName.isBlank()) {
             return null;
         }
 
-        // Try to get the actual filename from the USDA API
         try {
-            final var response = usdaClient.searchPlants(usdaSymbol, "Symbol", 1);
-            if (response.plantResults() != null) {
-                for (final var plant : response.plantResults()) {
-                    if (usdaSymbol.equalsIgnoreCase(plant.symbol())
-                            && plant.profileImageFilename() != null
-                            && !plant.profileImageFilename().isBlank()) {
-                        final var url = USDA_THUMBNAIL_BASE + plant.profileImageFilename();
-                        if (imageExists(url)) {
-                            log.info("Found USDA image for '{}': {}", usdaSymbol, url);
-                            return url;
-                        }
+            final var response = perenualClient.searchPlants(plantName, 1);
+
+            if (Objects.nonNull(response.data())) {
+                for (final var plant : response.data()) {
+                    final var imageUrl = extractThumbnailUrl(plant);
+                    if (Objects.nonNull(imageUrl)) {
+                        log.info("Found Perenual image for '{}': {}", plantName, imageUrl);
+                        return imageUrl;
                     }
                 }
             }
         } catch (final Exception e) {
-            log.debug("Failed to look up profile image for '{}': {}", usdaSymbol, e.getMessage());
+            log.debug("Failed to look up plant image for '{}': {}", plantName, e.getMessage());
         }
 
-        // Fall back to guessed symbol-based filenames
-        final var symbol = usdaSymbol.toLowerCase().trim();
-        for (final var suffix : new String[] {"_001_shp.jpg", "_001_php.jpg", "_001_tvp.jpg"}) {
-            final var url = USDA_THUMBNAIL_BASE + symbol + suffix;
-            if (imageExists(url)) {
-                log.info("Found USDA image for '{}' via fallback: {}", usdaSymbol, url);
-                return url;
-            }
-        }
-
-        log.info("No USDA image found for '{}'", usdaSymbol);
+        log.info("No image found for '{}'", plantName);
         return null;
     }
 
-    private boolean imageExists(final String url) {
-        try {
-            final var request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .method("HEAD", HttpRequest.BodyPublishers.noBody())
-                    .timeout(Duration.ofSeconds(3))
-                    .build();
-
-            final var response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
-            if (response.statusCode() != 200) {
-                return false;
-            }
-            // USDA may return 200 with text/html for missing images
-            final var contentType =
-                    response.headers().firstValue("Content-Type").orElse("");
-            return contentType.startsWith("image/");
-        } catch (final Exception e) {
-            log.debug("Failed to check image at {}: {}", url, e.getMessage());
-            return false;
+    /**
+     * Extracts the best available thumbnail URL from a Perenual plant record.
+     */
+    private String extractThumbnailUrl(final PerenualPlant plant) {
+        final var image = plant.defaultImage();
+        if (Objects.isNull(image)) {
+            return null;
         }
+
+        if (Objects.nonNull(image.thumbnail()) && !image.thumbnail().isBlank()) {
+            return image.thumbnail();
+        }
+        if (Objects.nonNull(image.smallUrl()) && !image.smallUrl().isBlank()) {
+            return image.smallUrl();
+        }
+        if (Objects.nonNull(image.mediumUrl()) && !image.mediumUrl().isBlank()) {
+            return image.mediumUrl();
+        }
+        if (Objects.nonNull(image.regularUrl()) && !image.regularUrl().isBlank()) {
+            return image.regularUrl();
+        }
+        if (Objects.nonNull(image.originalUrl()) && !image.originalUrl().isBlank()) {
+            return image.originalUrl();
+        }
+
+        return null;
     }
 }
