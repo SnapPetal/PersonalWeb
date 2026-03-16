@@ -1,54 +1,55 @@
 /**
  * CSRF Protection Utilities
- * Centralized CSRF token handling for the application
+ * Centralized CSRF token handling for the application.
+ * Supports both meta tag and cookie-based CSRF token delivery.
  */
 
-// Configure HTMX default headers including CSRF token
-document.addEventListener("DOMContentLoaded", () => {
-  const csrfToken = document
+function getCsrfToken() {
+  // Try meta tag first
+  const metaToken = document
     .querySelector('meta[name="_csrf"]')
     ?.getAttribute("content");
-  const csrfHeader = document
+  if (metaToken) return metaToken;
+
+  // Fall back to XSRF-TOKEN cookie
+  const cookies = document.cookie.split(";");
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split("=");
+    if (name === "XSRF-TOKEN") {
+      return decodeURIComponent(value);
+    }
+  }
+  return "";
+}
+
+function getCsrfHeader() {
+  const metaHeader = document
     .querySelector('meta[name="_csrf_header"]')
     ?.getAttribute("content");
-
-  if (csrfToken && csrfHeader) {
-    htmx.config.defaultHeaders = {
-      [csrfHeader]: csrfToken,
-    };
-  }
-});
+  return metaHeader || "X-XSRF-TOKEN";
+}
 
 // Configure HTMX to include CSRF token in requests
 document.addEventListener("htmx:configRequest", (evt) => {
-  const csrfToken = document
-    .querySelector('meta[name="_csrf"]')
-    ?.getAttribute("content");
-  const csrfHeader = document
-    .querySelector('meta[name="_csrf_header"]')
-    ?.getAttribute("content");
-
-  if (csrfToken && csrfHeader) {
-    evt.detail.headers[csrfHeader] = csrfToken;
+  const token = getCsrfToken();
+  const header = getCsrfHeader();
+  if (token) {
+    evt.detail.headers[header] = token;
   }
 });
 
 // Utility function for CSRF-protected POST requests
 async function postWithCsrf(url, data, options = {}) {
-  const csrfToken = document
-    .querySelector('meta[name="_csrf"]')
-    ?.getAttribute("content");
-  const csrfHeader = document
-    .querySelector('meta[name="_csrf_header"]')
-    ?.getAttribute("content");
+  const token = getCsrfToken();
+  const header = getCsrfHeader();
 
-  if (!csrfToken || !csrfHeader) {
-    throw new Error("CSRF token or header not available");
+  if (!token) {
+    throw new Error("CSRF token not available");
   }
 
   const defaultHeaders = {
     "Content-Type": "application/x-www-form-urlencoded",
-    [csrfHeader]: csrfToken,
+    [header]: token,
   };
 
   const body = new URLSearchParams(data).toString();
