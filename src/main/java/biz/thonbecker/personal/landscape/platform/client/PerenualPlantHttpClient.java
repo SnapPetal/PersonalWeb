@@ -42,6 +42,29 @@ public class PerenualPlantHttpClient {
     }
 
     /**
+     * Searches for plants by hardiness zone.
+     *
+     * @param hardinessZone USDA hardiness zone number (e.g., 7)
+     * @param page Page number (1-based)
+     * @return Search response with plants suitable for the zone
+     */
+    public PerenualPlantSearchResponse searchByHardinessZone(final int hardinessZone, final int page) {
+        log.debug("Searching Perenual API by hardiness zone: zone={}, page={}", hardinessZone, page);
+
+        return webClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/species-list")
+                        .queryParam("key", apiKey)
+                        .queryParam("hardiness", hardinessZone)
+                        .queryParam("page", page)
+                        .build())
+                .retrieve()
+                .bodyToMono(PerenualPlantSearchResponse.class)
+                .block();
+    }
+
+    /**
      * Retrieves detailed information for a specific plant by Perenual ID.
      *
      * @param id Perenual plant species ID

@@ -51,10 +51,7 @@ public class LandscapeService {
         // Step 1: Upload image to S3
         final var uploadResult = imageStorageService.store(imageData, "image/jpeg", userId);
 
-        // Step 2: Generate AI recommendations
-        final var aiRecommendations = aiService.analyzeImageAndRecommendPlants(imageData, zone, description);
-
-        // Step 3: Save plan entity
+        // Step 2: Save plan entity
         final var planEntity = new LandscapePlanEntity();
         planEntity.setUserId(userId);
         planEntity.setName(name);
@@ -66,26 +63,7 @@ public class LandscapeService {
 
         final var savedPlan = planRepository.save(planEntity);
 
-        // Step 4: Save AI recommendations
-        for (final var rec : aiRecommendations) {
-            final var recEntity = new RecommendedPlantEntity();
-            recEntity.setPlan(savedPlan);
-            recEntity.setUsdaSymbol(rec.usdaSymbol());
-            recEntity.setPlantName(rec.scientificName());
-            recEntity.setCommonName(rec.commonName());
-            recEntity.setRecommendationReason(rec.recommendationReason());
-            recEntity.setConfidenceScore(rec.confidenceScore());
-            recEntity.setLightRequirement(rec.lightRequirement().name());
-            recEntity.setWaterRequirement(rec.waterRequirement().name());
-            savedPlan.getRecommendations().add(recEntity);
-        }
-
-        planRepository.save(savedPlan);
-
-        log.info(
-                "Successfully created landscape plan {} with {} recommendations",
-                savedPlan.getId(),
-                aiRecommendations.size());
+        log.info("Successfully created landscape plan {}", savedPlan.getId());
 
         return convertToDomain(savedPlan);
     }
@@ -103,13 +81,12 @@ public class LandscapeService {
 
     @Transactional(readOnly = true)
     public List<PlantInfo> getRecommendations(final Long planId) {
-        log.debug("Fetching recommendations for plan {}", planId);
+        log.debug("Fetching plant recommendations for plan {}", planId);
 
         final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
+        final var zone = HardinessZone.valueOf(plan.getHardinessZone());
 
-        return plan.getRecommendations().stream()
-                .map(LandscapeService::convertRecommendation)
-                .toList();
+        return plantApiService.getPlantsByZone(zone);
     }
 
     @Transactional

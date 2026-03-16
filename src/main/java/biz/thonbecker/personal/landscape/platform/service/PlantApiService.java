@@ -118,6 +118,50 @@ public class PlantApiService {
     }
 
     /**
+     * Fetches plants suitable for the given hardiness zone from Perenual.
+     *
+     * <p>Results are cached for 24 hours by zone. Filters out plants without real images.
+     *
+     * @param zone Hardiness zone to search for
+     * @return List of plants suitable for the zone
+     */
+    @Cacheable(value = "plantsByZone", key = "#zone")
+    @Retryable(backoff = @Backoff(delay = 1000))
+    public List<PlantInfo> getPlantsByZone(final HardinessZone zone) {
+        try {
+            log.debug("Fetching plants for zone {}", zone);
+
+            final var response = httpClient.searchByHardinessZone(zone.getZoneNumber(), 1);
+
+            final var plants = Objects.nonNull(response.data())
+                    ? response.data().stream()
+                            .filter(p -> hasRealImage(p))
+                            .map(data -> convertSearchResultToPlantInfo(data, zone))
+                            .filter(Objects::nonNull)
+                            .toList()
+                    : List.<PlantInfo>of();
+
+            log.info("Found {} plants for zone {}", plants.size(), zone);
+            return plants;
+
+        } catch (final Exception e) {
+            log.error("Failed to fetch plants for zone {}: {}", zone, e.getMessage(), e);
+            throw new PlantApiException("Failed to fetch plants for zone " + zone, e);
+        }
+    }
+
+    /**
+     * Checks if a Perenual plant has a real image (not the upgrade_access placeholder).
+     */
+    private boolean hasRealImage(final PerenualPlant plant) {
+        if (Objects.isNull(plant.defaultImage())) {
+            return false;
+        }
+        final var thumbnail = plant.defaultImage().thumbnail();
+        return Objects.nonNull(thumbnail) && !thumbnail.isBlank() && !thumbnail.contains("upgrade_access");
+    }
+
+    /**
      * Converts a Perenual search result to domain PlantInfo.
      */
     private PlantInfo convertSearchResultToPlantInfo(final PerenualPlant data, final HardinessZone zone) {

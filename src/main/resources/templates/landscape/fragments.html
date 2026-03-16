@@ -40,7 +40,7 @@
 
     <div th:if="${recommendations != null and !recommendations.isEmpty()}">
         <p class="text-muted mb-3">
-            <small>Claude analyzed your landscape and suggests these plants:</small>
+            <small>Plants suitable for your hardiness zone:</small>
         </p>
         <div class="row row-cols-1 g-3">
             <div class="col" th:each="rec : ${recommendations}">
