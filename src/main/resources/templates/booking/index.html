@@ -67,7 +67,7 @@
                                 <div class="d-flex justify-content-between align-items-center mt-3">
                                     <span class="badge bg-secondary" th:text="${type.durationMinutes} + ' minutes'">Duration</span>
                                     <button class="btn btn-primary btn-sm"
-                                            @click="selectBookingType($el)"
+                                            @click="selectBookingType($event.currentTarget)"
                                             th:attr="data-type-id=${type.id},data-type-name=${type.name}">
                                         Select <i class="bi bi-arrow-right"></i>
                                     </button>
