@@ -73,56 +73,38 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             final var similarExamples = fetchSimilarExamples(poseDataText);
 
             String systemPrompt = """
-                    You are an expert skateboarding coach and trick judge. You will receive sequential frames \
-                    extracted at even intervals from a skateboarding video clip.
+                    You are an expert skateboarding trick judge. Your output MUST be ONLY a valid JSON object. \
+                    Do NOT include any text, reasoning, frame-by-frame analysis, markdown, or explanation — \
+                    only the JSON object itself.
 
-                    CRITICAL DETECTION RULES:
-                    1. If the board LEAVES THE GROUND completely at any point, it is NOT Manual or Cruising
-                    2. OLLIE: Look for tail pop (tail hits ground), board rises, ALL WHEELS off ground, lands back down
-                    3. 180 variants: Same as ollie but rider/board rotates 180° during the air time
-                    4. GRINDS: Board makes contact with rail/ledge edge - look for sparks or sliding on metal/concrete edge
-                    5. MANUAL: Rider stays on ground but front wheels are lifted high. Must see sustained nose-up balance.
-                    6. DROP_IN: If early frames show rider at top of ramp/bowl/halfpipe with board on coping edge, then transitioning down the ramp - this is DROP_IN
-                    7. CRUISING: ONLY choose this if rider is on flat ground the ENTIRE clip with no ramp/transition/trick visible
+                    Internally analyze the sequential frames using these rules, but output ONLY JSON:
 
-                    MULTIPLE TRICKS: If the clip contains more than one trick performed in
-                    sequence, identify ALL of them in order. The primary trick is the most
-                    significant one (not just the first). Return them in trickSequence.
+                    DETECTION RULES:
+                    - Board LEAVES GROUND completely → NOT Manual or Cruising (use OLLIE or flip/spin variant)
+                    - Board contacts rail/ledge and slides → GRIND variant
+                    - OLLIE: tail pop, board rises, ALL wheels off ground, lands back down
+                    - 180 variants: ollie + 180° body/board rotation
+                    - KICKFLIP: ollie + board flips along length axis (grip tape flashes)
+                    - HEELFLIP: opposite flip direction from kickflip
+                    - POP_SHUVIT: board spins 180° flat, no flip
+                    - TREFLIP: kickflip + 360 shuvit simultaneously
+                    - BOARDSLIDE: board perpendicular across rail/obstacle
+                    - FIFTY_FIFTY: both trucks grinding on edge
+                    - FIVE_O: back truck only on edge, nose lifted
+                    - NOSEGRIND: front truck only on edge, tail lifted
+                    - MANUAL: back wheels only, nose lifted, wheels NEVER leave ground
+                    - CRUISING: all 4 wheels on flat ground entire clip, no trick
+                    - DROP_IN: rider at top of ramp/bowl, transitions down the ramp
 
-                    If you see the board airborne (all wheels off ground), choose OLLIE or a flip/spin variation.
-                    If the board contacts a rail/ledge and slides, choose a GRIND variation.
-                    NEVER choose MANUAL if the board leaves the ground completely.
+                    Look for: setup stance → pop/initiation → airborne phase → catch/landing.
 
-                    ANALYSIS APPROACH - examine the frames in order and look for:
-                    1. SETUP: Rider stance, foot positioning on the board, approach speed, body posture
-                    2. POP/INITIATION: Tail pop, foot slide, weight shift that starts the trick
-                    3. AIRBORNE PHASE: Board rotation (flip axis, spin axis), board height, rider's feet relative to board
-                    4. CATCH/LANDING: Feet back on board, knees bent to absorb, rolling away clean
+                    MULTIPLE TRICKS: List ALL tricks in trickSequence chronologically. \
+                    The "trick" field is the most significant one.
 
-                    KEY VISUAL CUES:
-                    - Ollie: tail snaps down, front foot slides up, board levels in air, no rotation
-                    - Frontside 180: ollie with 180° rotation, rider's chest faces forward during spin
-                    - Backside 180: ollie with 180° rotation, rider's back faces forward during spin
-                    - Kickflip: same as ollie but board flips along length axis (grip tape flashes), front foot flicks off heel-side edge
-                    - Heelflip: board flips opposite direction from kickflip, front foot flicks off toe-side edge
-                    - Pop Shuvit: board spins 180° flat (no flip), rider's feet stay relatively still
-                    - Tre Flip (360 flip): board does kickflip + 360 shuvit simultaneously
-                    - Boardslide: board slides perpendicular across an obstacle/rail
-                    - 50-50 Grind: both trucks on an edge/rail, moving along it
-                    - 5-0 Grind: back truck only on edge, nose lifted while grinding
-                    - Nosegrind: front truck only on edge, tail lifted while grinding
-                    - Manual: riding on back wheels only, nose lifted, balancing - WHEELS NEVER LEAVE GROUND
-                    - Cruising: normal flat-ground riding with all 4 wheels on ground, NO ramp or transition visible
-                    - Drop In: rider starts at TOP of ramp/halfpipe/bowl with board on coping edge, then leans forward and rides DOWN the transition. Look for: curved ramp surface, rider going from horizontal to angled downward, coping/edge at top of ramp
+                    Known trick enum values: %s
 
-                    Known trick enum values and descriptions:
-                    %s
-
-                    The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
-                    If only one trick is visible, trickSequence should contain just that one entry.
-                    Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if you truly cannot identify the trick.
-
-                    CRITICAL: Respond with ONLY a valid JSON object. No text, analysis, explanation, or markdown before or after the JSON. Your entire response must be parseable JSON.
+                    Use ENUM_NAME exactly (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, \
+                    BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
                     """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseDataText;
 
             String userPrompt =
@@ -163,55 +145,38 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     .build();
 
             String systemPrompt = """
-                    You are an expert skateboarding coach and trick judge. You will receive a video clip \
-                    of a skateboarding trick attempt.
+                    You are an expert skateboarding trick judge. Your output MUST be ONLY a valid JSON object. \
+                    Do NOT include any text, reasoning, frame-by-frame analysis, markdown, or explanation — \
+                    only the JSON object itself.
 
-                    CRITICAL DETECTION RULES:
-                    1. If the board LEAVES THE GROUND completely at any point, it is NOT Manual or Cruising
-                    2. OLLIE: Look for tail pop (tail hits ground), board rises, ALL WHEELS off ground, lands back down
-                    3. 180 variants: Same as ollie but rider/board rotates 180° during the air time
-                    4. GRINDS: Board makes contact with rail/ledge edge - look for sparks or sliding on metal/concrete edge
-                    5. MANUAL: Rider stays on ground but front wheels are lifted high. Must see sustained nose-up balance.
-                    6. CRUISING: All 4 wheels stay on ground, rider is simply rolling
+                    Internally analyze the video using these rules, but output ONLY JSON:
 
-                    MULTIPLE TRICKS: If the clip contains more than one trick performed in
-                    sequence, identify ALL of them in order. The primary trick is the most
-                    significant one (not just the first). Return them in trickSequence.
+                    DETECTION RULES:
+                    - Board LEAVES GROUND completely → NOT Manual or Cruising (use OLLIE or flip/spin variant)
+                    - Board contacts rail/ledge and slides → GRIND variant
+                    - OLLIE: tail pop, board rises, ALL wheels off ground, lands back down
+                    - 180 variants: ollie + 180° body/board rotation
+                    - KICKFLIP: ollie + board flips along length axis (grip tape flashes)
+                    - HEELFLIP: opposite flip direction from kickflip
+                    - POP_SHUVIT: board spins 180° flat, no flip
+                    - TREFLIP: kickflip + 360 shuvit simultaneously
+                    - BOARDSLIDE: board perpendicular across rail/obstacle
+                    - FIFTY_FIFTY: both trucks grinding on edge
+                    - FIVE_O: back truck only on edge, nose lifted
+                    - NOSEGRIND: front truck only on edge, tail lifted
+                    - MANUAL: back wheels only, nose lifted, wheels NEVER leave ground
+                    - CRUISING: all 4 wheels on flat ground entire clip, no trick
+                    - DROP_IN: rider at top of ramp/bowl, transitions down the ramp
 
-                    If you see the board airborne (all wheels off ground), choose OLLIE or a flip/spin variation.
-                    If the board contacts a rail/ledge and slides, choose a GRIND variation.
-                    NEVER choose MANUAL if the board leaves the ground completely.
+                    Look for: setup stance → pop/initiation → airborne phase → catch/landing.
 
-                    ANALYSIS APPROACH - watch the video and look for:
-                    1. SETUP: Rider stance, foot positioning on the board, approach speed, body posture
-                    2. POP/INITIATION: Tail pop, foot slide, weight shift that starts the trick
-                    3. AIRBORNE PHASE: Board rotation (flip axis, spin axis), board height, rider's feet relative to board
-                    4. CATCH/LANDING: Feet back on board, knees bent to absorb, rolling away clean
+                    MULTIPLE TRICKS: List ALL tricks in trickSequence chronologically. \
+                    The "trick" field is the most significant one.
 
-                    KEY VISUAL CUES:
-                    - Ollie: tail snaps down, front foot slides up, board levels in air, no rotation
-                    - Frontside 180: ollie with 180° rotation, rider's chest faces forward during spin
-                    - Backside 180: ollie with 180° rotation, rider's back faces forward during spin
-                    - Kickflip: same as ollie but board flips along length axis (grip tape flashes), front foot flicks off heel-side edge
-                    - Heelflip: board flips opposite direction from kickflip, front foot flicks off toe-side edge
-                    - Pop Shuvit: board spins 180° flat (no flip), rider's feet stay relatively still
-                    - Tre Flip (360 flip): board does kickflip + 360 shuvit simultaneously
-                    - Boardslide: board slides perpendicular across an obstacle/rail
-                    - 50-50 Grind: both trucks on an edge/rail, moving along it
-                    - 5-0 Grind: back truck only on edge, nose lifted while grinding
-                    - Nosegrind: front truck only on edge, tail lifted while grinding
-                    - Manual: riding on back wheels only, nose lifted, balancing - WHEELS NEVER LEAVE GROUND
-                    - Cruising: normal riding with all 4 wheels on ground
-                    - Drop In: transitioning from standing on coping into riding down a ramp/bowl
+                    Known trick enum values: %s
 
-                    Known trick enum values and descriptions:
-                    %s
-
-                    The "trick" field is the primary/most significant trick. The "trickSequence" lists ALL tricks in chronological order.
-                    If only one trick is visible, trickSequence should contain just that one entry.
-                    Use the ENUM_NAME exactly as listed above (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if you truly cannot identify the trick.
-
-                    CRITICAL: Respond with ONLY a valid JSON object. No text, analysis, explanation, or markdown before or after the JSON. Your entire response must be parseable JSON.
+                    Use ENUM_NAME exactly (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, \
+                    BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
                     """.formatted(TrickCatalog.buildTrickDescriptions());
 
             String userPrompt = "Watch this skateboarding video and identify the trick being performed. "

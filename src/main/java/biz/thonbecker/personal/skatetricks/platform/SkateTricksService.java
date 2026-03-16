@@ -117,7 +117,7 @@ public class SkateTricksService {
         entity.setTrickName(result.trick().name());
         entity.setConfidence(result.confidence());
         entity.setFormScore(result.formScore());
-        entity.setFeedback(String.join("|", result.feedback()));
+        entity.setFeedback(Objects.nonNull(result.feedback()) ? String.join("|", result.feedback()) : "");
         entity.setTrickSequence(encodeTrickSequence(result.trickSequence()));
         entity.setPoseData(result.poseData());
 
