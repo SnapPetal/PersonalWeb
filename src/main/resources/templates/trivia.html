@@ -21,7 +21,7 @@
         </div>
     </div>
 
-<div class="container mt-4">
+<div class="container mt-4" x-data="triviaGame()">
     <!-- Connection Status Card -->
     <div class="row mb-4">
         <div class="col-12">
@@ -32,14 +32,15 @@
                             <div class="d-flex align-items-center mb-3">
                                 <i class="bi bi-wifi me-2"></i>
                                 <span class="me-3 fw-bold">Connection Status:</span>
-                                <span id="connection-status" class="badge bg-secondary fs-6">Disconnected</span>
+                                <span x-text="connectionLabel" :class="connectionClass" class="fs-6"></span>
                             </div>
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-6 d-none">
                                     <label for="server-url" class="form-label fw-bold">
                                         <i class="bi bi-server me-1"></i>Server URL
                                     </label>
                                     <input type="text" id="server-url" class="form-control form-control-lg"
+                                           x-model="serverUrl" :disabled="isConnected"
                                            placeholder="wss://your-server.com/quiz-websocket" required>
                                     <small class="form-text text-muted">
                                         <i class="bi bi-info-circle me-1"></i>WebSocket server endpoint
@@ -49,7 +50,8 @@
                                     <label for="player-name" class="form-label fw-bold">
                                         <i class="bi bi-person me-1"></i>Player Name
                                     </label>
-                                    <input type="text" id="player-name" class="form-control form-control-lg" 
+                                    <input type="text" id="player-name" class="form-control form-control-lg"
+                                           x-model="playerName" :disabled="isConnected"
                                            placeholder="Enter your name" required>
                                     <small class="form-text text-muted">
                                         <i class="bi bi-info-circle me-1"></i>This will be displayed to other players
@@ -59,13 +61,16 @@
                         </div>
                         <div class="col-md-4 text-center">
                             <div class="d-grid gap-2">
-                                <button type="button" class="btn btn-success btn-lg" id="connect-btn">
+                                <button type="button" class="btn btn-success btn-lg"
+                                        x-show="!isConnected" @click="connect()">
                                     <i class="bi bi-plug me-2"></i>Connect
                                 </button>
-                                <button type="button" class="btn btn-danger btn-lg d-none" id="disconnect-btn">
+                                <button type="button" class="btn btn-danger btn-lg"
+                                        x-show="isConnected" @click="disconnect()">
                                     <i class="bi bi-plug-x me-2"></i>Disconnect
                                 </button>
-                                <button type="button" class="btn btn-outline-info btn-sm" id="test-connection-btn">
+                                <button type="button" class="btn btn-outline-info btn-sm"
+                                        @click="testConnection()">
                                     <i class="bi bi-lightning me-2"></i>Test Connection
                                 </button>
                             </div>
@@ -91,6 +96,7 @@
                             <i class="bi bi-pencil-square me-1"></i>Quiz Title
                         </label>
                         <input type="text" id="quiz-title" class="form-control"
+                               x-model="quizTitle"
                                placeholder="Enter an exciting quiz title!" required>
                     </div>
                     <div class="row g-3">
@@ -99,6 +105,7 @@
                                 <i class="bi bi-list-ol me-1"></i>Questions
                             </label>
                             <input type="number" id="question-count" class="form-control"
+                                   x-model="questionCount"
                                    min="5" max="20" value="10">
                             <small class="form-text text-muted">5-20 questions</small>
                         </div>
@@ -106,7 +113,7 @@
                             <label for="difficulty" class="form-label fw-bold">
                                 <i class="bi bi-speedometer2 me-1"></i>Difficulty
                             </label>
-                            <select id="difficulty" class="form-select">
+                            <select id="difficulty" class="form-select" x-model="difficulty">
                                 <option value="EASY">🟢 Easy</option>
                                 <option value="MEDIUM" selected>🟡 Medium</option>
                                 <option value="HARD">🔴 Hard</option>
@@ -114,17 +121,28 @@
                         </div>
                     </div>
                     <div class="mt-4">
-                        <button id="create-quiz-btn" class="btn btn-success btn-lg w-100" disabled>
-                            <i class="bi bi-plus-circle me-2"></i>Create Quiz
+                        <button class="btn btn-success btn-lg w-100"
+                                :disabled="!isConnected || creatingQuiz" @click="createQuiz()">
+                            <template x-if="creatingQuiz">
+                                <span>
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    Generating Questions...
+                                </span>
+                            </template>
+                            <template x-if="!creatingQuiz">
+                                <span><i class="bi bi-plus-circle me-2"></i>Create Quiz</span>
+                            </template>
                         </button>
                     </div>
                     <div class="mt-3">
                         <hr>
                         <p class="text-center mb-2"><strong>Or Join Existing Quiz</strong></p>
                         <div class="input-group">
-                            <input type="number" id="join-quiz-id" class="form-control"
+                            <input type="number" class="form-control"
+                                   x-model="joinQuizId"
                                    placeholder="Enter Quiz ID" min="1">
-                            <button id="join-quiz-btn" class="btn btn-outline-primary" disabled>
+                            <button class="btn btn-outline-primary"
+                                    :disabled="!isConnected" @click="joinQuizById()">
                                 <i class="bi bi-box-arrow-in-right me-2"></i>Join
                             </button>
                         </div>
@@ -144,16 +162,25 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div id="players-list" class="trivia-players-container list-group">
-                        <div class="text-center text-muted py-4">
+                    <div class="trivia-players-container list-group">
+                        <!-- Empty state -->
+                        <div x-show="players.length === 0" class="text-center text-muted py-4">
                             <i class="bi bi-people display-6 text-muted"></i>
                             <p class="mt-2">No players connected yet</p>
                             <small>Players will appear here when they join</small>
                         </div>
+                        <!-- Player list -->
+                        <template x-for="player in players" :key="player.id">
+                            <li class="list-group-item"
+                                :class="{ 'bg-info': player.id === playerId }"
+                                x-text="player.name"></li>
+                        </template>
                     </div>
                     <div class="mt-4">
-                        <button id="start-quiz-btn" class="btn btn-primary btn-lg w-100" disabled>
-                            <i class="bi bi-play-circle me-2"></i>Start Quiz
+                        <button class="btn btn-primary btn-lg w-100"
+                                :disabled="!currentQuizId || !isQuizCreator || isWaiting"
+                                @click="startQuiz()"
+                                x-html="startButtonLabel">
                         </button>
                     </div>
                 </div>
@@ -162,7 +189,7 @@
     </div>
 
     <!-- Waiting Room -->
-    <div id="waiting-room" class="row mb-4 d-none">
+    <div class="row mb-4" x-show="isWaiting" x-cloak>
         <div class="col-12">
             <div class="card trivia-waiting-card text-center">
                 <div class="card-body py-5">
@@ -179,8 +206,8 @@
         </div>
     </div>
 
-    <!-- Quiz Area (hidden initially) -->
-    <div id="quiz-area" class="row mb-4 d-none">
+    <!-- Quiz Area -->
+    <div class="row mb-4" x-show="isInProgress" x-cloak>
         <div class="col-md-8">
             <div class="card trivia-question-card">
                 <div class="card-header bg-gradient-primary text-white">
@@ -189,12 +216,23 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <h4 id="current-question" class="card-title mb-4">Question goes here?</h4>
-                    <div id="answers-container" class="d-grid gap-3">
-                        <!-- Answer buttons will be inserted here -->
+                    <h4 class="card-title mb-4" x-text="currentQuestion ? currentQuestion.questionText : 'Waiting for question...'"></h4>
+                    <div class="d-grid gap-3">
+                        <template x-if="currentQuestion">
+                            <template x-for="(option, index) in currentQuestion.options" :key="index">
+                                <button class="btn m-2"
+                                        :class="answerSubmitted && selectedAnswer === index ? 'btn-primary' : 'btn-outline-primary'"
+                                        :disabled="answerSubmitted"
+                                        @click="submitAnswer(index)"
+                                        x-text="option">
+                                </button>
+                            </template>
+                        </template>
                     </div>
                     <div class="mt-4">
-                        <button id="next-question-btn" class="btn btn-success btn-lg w-100 d-none">
+                        <button class="btn btn-success btn-lg w-100"
+                                x-show="answerSubmitted"
+                                @click="nextQuestion()">
                             <i class="bi bi-arrow-right-circle me-2"></i>Next Question
                         </button>
                     </div>
@@ -210,16 +248,22 @@
                     </h5>
                 </div>
                 <div class="card-body p-0">
-                    <div id="scoreboard" class="trivia-scoreboard-list list-group">
-                        <!-- Player scores will be inserted here -->
+                    <div class="trivia-scoreboard-list list-group">
+                        <template x-for="player in scoreboard" :key="player.id">
+                            <li class="list-group-item d-flex justify-content-between align-items-center"
+                                :class="{ 'bg-info': player.id === playerId }">
+                                <span x-text="player.name"></span>
+                                <span class="badge bg-primary rounded-pill" x-text="player.score"></span>
+                            </li>
+                        </template>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Results Area (hidden initially) -->
-    <div id="results-area" class="row mb-4 d-none">
+    <!-- Results Area -->
+    <div class="row mb-4" x-show="isCompleted" x-cloak>
         <div class="col-12">
             <div class="card trivia-results-card">
                 <div class="card-header bg-gradient-success text-white">
@@ -227,10 +271,31 @@
                         <i class="bi bi-award me-2"></i>Quiz Results
                     </h5>
                 </div>
-                <div class="card-body">
-                    <div id="final-results" class="text-center">
-                        <!-- Final results will be inserted here -->
+                <div class="card-body text-center">
+                    <!-- Winner -->
+                    <div x-show="winner" class="mb-4">
+                        <h3>🏆 Winner: <span x-text="winner ? winner.name : ''"></span> 🏆</h3>
+                        <p>Score: <span x-text="winner ? winner.score : ''"></span></p>
                     </div>
+                    <!-- Results table -->
+                    <table class="table table-striped" x-show="finalResults.length > 0">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(player, index) in finalResults" :key="player.id">
+                                <tr :class="{ 'table-info': player.id === playerId }">
+                                    <td x-text="index + 1"></td>
+                                    <td x-text="player.name"></td>
+                                    <td x-text="player.score"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -246,8 +311,10 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div id="log" class="trivia-log-container">
-                        <!-- Log messages will be inserted here -->
+                    <div x-ref="logContainer" class="trivia-log-container">
+                        <template x-for="(msg, index) in logMessages" :key="index">
+                            <div :class="'text-' + msg.type" x-text="msg.text"></div>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -259,6 +326,7 @@
 <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
 <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
 <script th:src="@{/webjars/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script defer th:src="@{/webjars/alpinejs/dist/cdn.min.js}"></script>
 <script src="/js/trivia-game.js"></script>
 </body>
 </html>

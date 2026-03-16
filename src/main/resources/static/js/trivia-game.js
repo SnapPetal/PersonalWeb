@@ -1,633 +1,374 @@
-// trivia-game.js
-document.addEventListener("DOMContentLoaded", function () {
-  // DOM elements - add these ids to your HTML elements
-  const connectBtn = document.getElementById("connect-btn");
-  const disconnectBtn = document.getElementById("disconnect-btn");
-  const createQuizBtn = document.getElementById("create-quiz-btn");
-  const startQuizBtn = document.getElementById("start-quiz-btn");
-  const playersList = document.getElementById("players-list");
-  const connectionStatus = document.getElementById("connection-status");
-  const questionElement = document.getElementById("current-question");
-  const answersContainer = document.getElementById("answers-container");
-  const scoreboardElement = document.getElementById("scoreboard");
-  const logElement = document.getElementById("log");
-  const nextQuestionBtn = document.getElementById("next-question-btn");
-  const joinQuizBtn = document.getElementById("join-quiz-btn");
-  const joinQuizIdInput = document.getElementById("join-quiz-id");
+// trivia-game.js — Alpine.js component for trivia game
+function triviaGame() {
+  return {
+    // Connection state
+    isConnected: false,
+    connectionLabel: "Disconnected",
+    connectionClass: "badge bg-secondary",
+    serverUrl: "",
+    playerName: "",
+    playerId: null,
 
-  // Form elements
-  const serverUrlInput = document.getElementById("server-url");
-  const quizTitleInput = document.getElementById("quiz-title");
-  const questionCountInput = document.getElementById("question-count");
-  const difficultySelect = document.getElementById("difficulty");
-  const playerNameInput = document.getElementById("player-name");
+    // Quiz state
+    currentQuizId: null,
+    currentQuestion: null,
+    quizStatus: null,
+    isQuizCreator: false,
+    selectedAnswer: null,
+    answerSubmitted: false,
 
-  // WebSocket and game state variables
-  let stompClient = null;
-  let isConnected = false;
-  let currentQuizId = null;
-  let currentQuestion = null;
-  let playerId = null;
-  let playerName = null;
-  let isQuizCreator = false; // Track if current player is the quiz creator
+    // Form state
+    quizTitle: "",
+    questionCount: 10,
+    difficulty: "MEDIUM",
+    joinQuizId: "",
+    creatingQuiz: false,
 
-  // Restore saved values from localStorage
-  function restoreSavedValues() {
-    // Use local WebSocket endpoint
-    const defaultServerUrl = window.location.origin + "/quiz-websocket";
+    // Lists
+    players: [],
+    scoreboard: [],
+    finalResults: [],
+    winner: null,
+    logMessages: [],
 
-    // Set the server URL input and disable it
-    serverUrlInput.value = defaultServerUrl;
-    serverUrlInput.parentElement.classList.add("d-none"); // Hide the form group
+    // Internal
+    _stompClient: null,
 
-    // Restore player name
-    const savedPlayerName = localStorage.getItem("trivia-player-name");
-    if (savedPlayerName) {
-      playerNameInput.value = savedPlayerName;
-    }
-  }
-
-  // Log function for debugging
-  function log(message, type = "info") {
-    const timestamp = new Date().toLocaleTimeString();
-    const logLine = document.createElement("div");
-    logLine.className = `text-${type}`;
-    logLine.textContent = `[${timestamp}] ${message}`;
-    logElement.appendChild(logLine);
-    logElement.scrollTop = logElement.scrollHeight;
-  }
-
-  // Update UI based on connection state
-  function updateConnectionUI(isConnected) {
-    console.log("updateConnectionUI called with:", isConnected);
-
-    if (isConnected) {
-      connectionStatus.textContent = "Connected";
-      connectionStatus.className = "badge bg-success";
-      connectBtn.classList.add("d-none");
-      disconnectBtn.classList.remove("d-none");
-      createQuizBtn.disabled = false;
-      joinQuizBtn.disabled = false;
-      serverUrlInput.disabled = true;
-      playerNameInput.disabled = true;
-
-      console.log("UI updated to Connected state");
-    } else {
-      connectionStatus.textContent = "Disconnected";
-      connectionStatus.className = "badge bg-secondary";
-      connectBtn.classList.remove("d-none");
-      disconnectBtn.classList.add("d-none");
-      createQuizBtn.disabled = true;
-      joinQuizBtn.disabled = true;
-      startQuizBtn.disabled = true;
-      serverUrlInput.disabled = false;
-      playerNameInput.disabled = false;
-
-      console.log("UI updated to Disconnected state");
-    }
-
-    // Log the final state
-    console.log("Final connection status:", connectionStatus.textContent);
-    console.log("Final connection class:", connectionStatus.className);
-  }
-
-  // Connect to WebSocket
-  function connect() {
-    playerName = playerNameInput.value.trim();
-    if (!playerName) {
-      alert("Please enter your name");
-      return;
-    }
-
-    const serverUrl = serverUrlInput.value.trim();
-    if (!serverUrl) {
-      alert("Please enter the server URL");
-      return;
-    }
-
-    // Save values in local storage
-    localStorage.setItem("trivia-player-name", playerName);
-    localStorage.setItem("trivia-server-url", serverUrl);
-
-    // Generate a unique player ID if not already existing
-    playerId = localStorage.getItem("trivia-player-id");
-    if (!playerId) {
-      playerId =
-        "player_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem("trivia-player-id", playerId);
-    }
-
-    // Update UI
-    connectionStatus.textContent = "Connecting...";
-    connectionStatus.className = "badge bg-warning";
-
-    try {
-      // Create WebSocket connection
-      let socket;
-
-      // Use native WebSocket for ws:// or wss://, otherwise fall back to SockJS for http:// or https://
-      if (serverUrl.startsWith("ws://") || serverUrl.startsWith("wss://")) {
-        socket = new WebSocket(serverUrl);
-      } else {
-        socket = new SockJS(serverUrl);
+    init() {
+      this.serverUrl = window.location.origin + "/quiz-websocket";
+      const savedName = localStorage.getItem("trivia-player-name");
+      if (savedName) {
+        this.playerName = savedName;
       }
-
-      stompClient = Stomp.over(socket);
-
-      // Disable debug logs
-      stompClient.debug = null;
-
-      // Debug connection events
-      socket.onopen = function () {
-        log("WebSocket connected successfully", "success");
-        // Update UI to show connecting state
-        connectionStatus.textContent = "Establishing STOMP connection...";
-        connectionStatus.className = "badge bg-warning";
-      };
-
-      socket.onclose = function (event) {
-        log(`WebSocket closed: ${event.code} - ${event.reason}`, "warning");
-        updateConnectionUI(false);
-      };
-
-      socket.onerror = function (error) {
-        log(`WebSocket error: ${error.type}`, "danger");
-        console.error("WebSocket error:", error);
-        updateConnectionUI(false);
-      };
-
-      log(`Connecting to ${serverUrl}...`, "info");
-
-      // Connect STOMP over WebSocket
-      stompClient.connect({}, onConnected, onError);
-    } catch (error) {
-      log(`Connection error: ${error.message}`, "danger");
-      console.error("Connection error:", error);
-      updateConnectionUI(false);
-    }
-  }
-
-  // Callback when connected to the WebSocket
-  function onConnected() {
-    isConnected = true;
-    log("STOMP connection established successfully", "success");
-    log("Connection status updated to: Connected", "info");
-
-    // Update the UI
-    updateConnectionUI(true);
-
-    // Log the current connection state
-    console.log("Connection state updated:", {
-      isConnected: isConnected,
-      connectionStatus: connectionStatus.textContent,
-      connectionClass: connectionStatus.className,
-    });
-
-    // Subscribe to quiz creation events
-    stompClient.subscribe("/topic/quiz/created", onQuizCreated);
-
-    // Subscribe to player updates
-    stompClient.subscribe("/topic/quiz/players", onPlayersUpdated);
-
-    // We'll subscribe to quiz state dynamically when joining a specific quiz
-  }
-
-  // Handle connection error
-  function onError(error) {
-    log(
-      "Could not connect to WebSocket server. Please refresh this page to try again!",
-      "danger"
-    );
-    console.error("Connection error:", error);
-    updateConnectionUI(false);
-  }
-
-  // Disconnect from WebSocket
-  function disconnect() {
-    if (stompClient !== null) {
-      stompClient.disconnect();
-    }
-    isConnected = false;
-    log("Disconnected from WebSocket server", "warning");
-    updateConnectionUI(false);
-  }
-
-  // Create a new trivia quiz
-  function createTriviaQuiz() {
-    if (!isConnected) {
-      log("Not connected to server", "warning");
-      return;
-    }
-
-    const title = quizTitleInput.value.trim();
-    if (!title) {
-      alert("Please enter a quiz title");
-      return;
-    }
-
-    const questionCount = parseInt(questionCountInput.value, 10);
-    const difficulty = difficultySelect.value;
-
-    const triviaRequest = {
-      title: title,
-      questionCount: questionCount,
-      difficulty: difficulty,
-      creatorId: playerId, // Include the creator's player ID
-    };
-
-    stompClient.send(
-      "/app/quiz/create/trivia",
-      {},
-      JSON.stringify(triviaRequest)
-    );
-    log(
-      `Creating trivia quiz: "${title}" with ${questionCount} questions`,
-      "info"
-    );
-
-    // Mark this player as the creator
-    isQuizCreator = true;
-  }
-
-  // Handle quiz creation event
-  function onQuizCreated(payload) {
-    const quiz = JSON.parse(payload.body);
-    console.log("Quiz created payload:", quiz);
-    log(`Quiz created: ${quiz.title} with ID ${quiz.id}`, "success");
-
-    // Store the quiz ID for later use
-    currentQuizId = quiz.id;
-
-    // Subscribe to this specific quiz's state updates
-    const subscription = stompClient.subscribe(
-      "/topic/quiz/state/" + quiz.id,
-      onQuizStateUpdated
-    );
-    console.log("Subscribed to /topic/quiz/state/" + quiz.id, subscription);
-    log("Subscribed to quiz state updates", "info");
-
-    // Join the quiz with our player info
-    joinQuiz(quiz.id);
-
-    // Show the start button for the quiz creator with quiz title
-    startQuizBtn.innerHTML = `<i class="bi bi-play-circle me-2"></i>Start "${quiz.title}"`;
-    startQuizBtn.disabled = false;
-  }
-
-  // Join a quiz
-  function joinQuiz(quizId) {
-    if (!isConnected) {
-      log("Not connected to server", "warning");
-      return;
-    }
-
-    const player = {
-      id: playerId,
-      name: playerName,
-    };
-
-    const joinRequest = {
-      player: player,
-      quizId: quizId,
-    };
-
-    stompClient.send("/app/quiz/join", {}, JSON.stringify(joinRequest));
-    log(`Joining quiz ${quizId} as ${playerName}`, "info");
-
-    // Store the quiz ID and subscribe to state updates
-    currentQuizId = quizId;
-    stompClient.subscribe("/topic/quiz/state/" + quizId, onQuizStateUpdated);
-    log("Subscribed to quiz state updates", "info");
-  }
-
-  // Join quiz by ID button handler
-  function joinQuizById() {
-    const quizId = parseInt(joinQuizIdInput.value, 10);
-    if (!quizId || quizId < 1) {
-      alert("Please enter a valid Quiz ID");
-      return;
-    }
-
-    joinQuiz(quizId);
-    log(`Attempting to join quiz with ID: ${quizId}`, "info");
-  }
-
-  // Handle player updates
-  function onPlayersUpdated(payload) {
-    const players = JSON.parse(payload.body);
-    log(`Player list updated: ${players.length} players in the quiz`, "info");
-
-    // Update the UI with the player list
-    playersList.innerHTML = "";
-    players.forEach((player) => {
-      const playerItem = document.createElement("li");
-      playerItem.className = "list-group-item";
-      playerItem.textContent = player.name;
-      if (player.id === playerId) {
-        playerItem.className += " bg-info";
+      this.playerId = localStorage.getItem("trivia-player-id");
+      if (!this.playerId) {
+        this.playerId =
+          "player_" +
+          Date.now() +
+          "_" +
+          Math.random().toString(36).substr(2, 9);
+        localStorage.setItem("trivia-player-id", this.playerId);
       }
-      playersList.appendChild(playerItem);
-    });
-  }
+    },
 
-  // Start the quiz
-  function startQuiz() {
-    if (!currentQuizId) {
-      log("No quiz selected", "warning");
-      return;
-    }
-
-    // Only allow the creator to start the quiz
-    if (!isQuizCreator) {
-      log("Only the quiz creator can start the game", "warning");
-      alert("Only the quiz creator can start the game");
-      return;
-    }
-
-    // Prevent multiple start requests
-    if (startQuizBtn.disabled) {
-      console.log("Start button already disabled, ignoring click");
-      return;
-    }
-
-    const startRequest = {
-      quizId: currentQuizId,
-      playerId: playerId, // Include player ID for server validation
-    };
-
-    console.log("Sending start request:", startRequest);
-    stompClient.send("/app/quiz/start", {}, JSON.stringify(startRequest));
-    log(`Starting quiz ${currentQuizId}`, "info");
-
-    // Disable the button immediately after sending
-    startQuizBtn.disabled = true;
-    startQuizBtn.innerHTML = `<i class="bi bi-hourglass-split me-2"></i>Starting...`;
-  }
-
-  // Handle quiz state updates
-  function onQuizStateUpdated(payload) {
-    const state = JSON.parse(payload.body);
-
-    // Log the full state for debugging
-    console.log("Quiz state received:", state);
-    log(
-      `Quiz state updated: ${state.status || state.state || "UNKNOWN"}`,
-      "info"
-    );
-
-    // Update UI based on quiz state
-    updateQuizUI(state);
-  }
-
-  // Update the UI based on quiz state
-  function updateQuizUI(state) {
-    console.log("Updating UI with quiz state:", state);
-
-    // Hide/show elements based on quiz state
-    // Handle both WAITING and CREATED as waiting states
-    if (state.status === "WAITING" || state.status === "CREATED") {
-      document.getElementById("waiting-room").classList.remove("d-none");
-      document.getElementById("quiz-area").classList.add("d-none");
-      document.getElementById("results-area").classList.add("d-none");
-    } else if (state.status === "IN_PROGRESS" || state.status === "STARTED") {
-      document.getElementById("waiting-room").classList.add("d-none");
-      document.getElementById("quiz-area").classList.remove("d-none");
-      document.getElementById("results-area").classList.add("d-none");
-
-      // Display current question
-      currentQuestion = state.currentQuestion;
-      if (currentQuestion) {
-        displayQuestion(currentQuestion);
-      } else {
-        log("No current question in state", "warning");
-      }
-
-      // Update scoreboard if players exist
-      if (state.players && state.players.length > 0) {
-        updateScoreboard(state.players);
-      }
-    } else if (state.status === "COMPLETED" || state.status === "FINISHED") {
-      document.getElementById("waiting-room").classList.add("d-none");
-      document.getElementById("quiz-area").classList.add("d-none");
-      document.getElementById("results-area").classList.remove("d-none");
-
-      // Show final results
-      if (state.players && state.players.length > 0) {
-        displayResults(state.players);
-      }
-    } else {
-      log(`Unknown quiz status: ${state.status}`, "warning");
-    }
-  }
-
-  // Display current question
-  function displayQuestion(question) {
-    if (!question) return;
-
-    questionElement.textContent = question.questionText;
-
-    // Clear previous answers
-    answersContainer.innerHTML = "";
-
-    // Add answer options
-    question.options.forEach((answer, index) => {
-      const answerBtn = document.createElement("button");
-      answerBtn.className = "btn btn-outline-primary m-2";
-      answerBtn.textContent = answer;
-      answerBtn.dataset.index = index;
-      answerBtn.addEventListener("click", () => submitAnswer(index));
-      answersContainer.appendChild(answerBtn);
-    });
-  }
-
-  // Submit an answer
-  function submitAnswer(answerIndex) {
-    if (!currentQuizId || !currentQuestion) {
-      log("Cannot submit answer: No active question", "warning");
-      return;
-    }
-
-    const submission = {
-      quizId: currentQuizId,
-      playerId: playerId,
-      questionId: currentQuestion.id,
-      selectedOption: answerIndex,
-      timestamp: new Date().toISOString(),
-    };
-
-    stompClient.send("/app/quiz/submit", {}, JSON.stringify(submission));
-    log(
-      `Submitted answer ${answerIndex} for question ${currentQuestion.id}`,
-      "info"
-    );
-
-    // Disable all answer buttons
-    const answerButtons = answersContainer.querySelectorAll("button");
-    answerButtons.forEach((btn) => {
-      btn.disabled = true;
-      if (parseInt(btn.dataset.index, 10) === answerIndex) {
-        btn.classList.add("btn-primary");
-        btn.classList.remove("btn-outline-primary");
-      }
-    });
-
-    // Show the Next Question button
-    nextQuestionBtn.classList.remove("d-none");
-  }
-
-  // Move to next question
-  function nextQuestion() {
-    if (!currentQuizId) {
-      log("No quiz selected", "warning");
-      return;
-    }
-
-    const nextRequest = {
-      quizId: currentQuizId,
-    };
-
-    stompClient.send("/app/quiz/next", {}, JSON.stringify(nextRequest));
-    log("Moving to next question", "info");
-
-    // Hide the Next Question button
-    nextQuestionBtn.classList.add("d-none");
-  }
-
-  // Update scoreboard
-  function updateScoreboard(players) {
-    scoreboardElement.innerHTML = "";
-
-    // Sort players by score
-    players.sort((a, b) => b.score - a.score);
-
-    players.forEach((player) => {
-      const playerItem = document.createElement("li");
-      playerItem.className =
-        "list-group-item d-flex justify-content-between align-items-center";
-      playerItem.textContent = player.name;
-
-      const scoreSpan = document.createElement("span");
-      scoreSpan.className = "badge bg-primary rounded-pill";
-      scoreSpan.textContent = player.score;
-
-      playerItem.appendChild(scoreSpan);
-
-      if (player.id === playerId) {
-        playerItem.classList.add("bg-info");
-      }
-
-      scoreboardElement.appendChild(playerItem);
-    });
-  }
-
-  // Display final results
-  function displayResults(players) {
-    const resultsElement = document.getElementById("final-results");
-    resultsElement.innerHTML = "";
-
-    // Sort players by score
-    players.sort((a, b) => b.score - a.score);
-
-    // Create a podium-style display
-    const winner = players.length > 0 ? players[0] : null;
-
-    if (winner) {
-      const winnerElement = document.createElement("div");
-      winnerElement.className = "text-center mb-4";
-      winnerElement.innerHTML = `
-                <h3>🏆 Winner: ${winner.name} 🏆</h3>
-                <p>Score: ${winner.score}</p>
-            `;
-      resultsElement.appendChild(winnerElement);
-    }
-
-    // Create a table for all players
-    const table = document.createElement("table");
-    table.className = "table table-striped";
-
-    const thead = document.createElement("thead");
-    thead.innerHTML = `
-            <tr>
-                <th>Rank</th>
-                <th>Player</th>
-                <th>Score</th>
-            </tr>
-        `;
-
-    const tbody = document.createElement("tbody");
-
-    players.forEach((player, index) => {
-      const row = document.createElement("tr");
-      if (player.id === playerId) {
-        row.className = "table-info";
-      }
-
-      row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${player.name}</td>
-                <td>${player.score}</td>
-            `;
-
-      tbody.appendChild(row);
-    });
-
-    table.appendChild(thead);
-    table.appendChild(tbody);
-    resultsElement.appendChild(table);
-  }
-
-  // Initialize the page
-  restoreSavedValues();
-
-  // Set up event listeners
-  connectBtn.addEventListener("click", connect);
-  disconnectBtn.addEventListener("click", disconnect);
-  createQuizBtn.addEventListener("click", createTriviaQuiz);
-  startQuizBtn.addEventListener("click", startQuiz);
-  nextQuestionBtn.addEventListener("click", nextQuestion);
-  joinQuizBtn.addEventListener("click", joinQuizById);
-
-  // Add connection test functionality
-  const testConnectionBtn = document.getElementById("test-connection-btn");
-  if (testConnectionBtn) {
-    testConnectionBtn.addEventListener("click", testConnection);
-  }
-
-  // Test connection function
-  function testConnection() {
-    const serverUrl = serverUrlInput.value.trim();
-    if (!serverUrl) {
-      alert("Please enter a server URL to test");
-      return;
-    }
-
-    log(`Testing connection to ${serverUrl}...`, "info");
-
-    // For SockJS, we test the info endpoint
-    const infoUrl = serverUrl + "/info";
-
-    fetch(infoUrl)
-      .then((response) => {
-        if (response.ok) {
-          log(
-            "Connection test successful! SockJS info endpoint is reachable.",
-            "success"
-          );
-          return response.json();
-        } else {
-          log(
-            `Connection test failed: Unable to reach SockJS info endpoint. Status: ${response.status}`,
-            "danger"
-          );
+    log(message, type = "info") {
+      const timestamp = new Date().toLocaleTimeString();
+      this.logMessages.push({ text: `[${timestamp}] ${message}`, type });
+      this.$nextTick(() => {
+        const logEl = this.$refs.logContainer;
+        if (logEl) {
+          logEl.scrollTop = logEl.scrollHeight;
         }
-      })
-      .then((info) => {
-        if (info) {
-          log(`Server info: WebSocket enabled: ${info.websocket}`, "info");
-        }
-      })
-      .catch((error) => {
-        log(`Connection test error: ${error.message}`, "danger");
       });
-  }
-});
+    },
+
+    connect() {
+      if (!this.playerName.trim()) {
+        alert("Please enter your name");
+        return;
+      }
+
+      localStorage.setItem("trivia-player-name", this.playerName.trim());
+
+      this.connectionLabel = "Connecting...";
+      this.connectionClass = "badge bg-warning";
+
+      try {
+        const url = this.serverUrl.trim();
+        let socket;
+        if (url.startsWith("ws://") || url.startsWith("wss://")) {
+          socket = new WebSocket(url);
+        } else {
+          socket = new SockJS(url);
+        }
+
+        this._stompClient = Stomp.over(socket);
+        this._stompClient.debug = null;
+
+        socket.onclose = () => {
+          this.log("WebSocket closed", "warning");
+          this._setDisconnected();
+        };
+
+        socket.onerror = (error) => {
+          this.log(`WebSocket error: ${error.type}`, "danger");
+          this._setDisconnected();
+        };
+
+        this.log(`Connecting to ${url}...`, "info");
+        this._stompClient.connect(
+          {},
+          () => this._onConnected(),
+          (error) => this._onError(error)
+        );
+      } catch (error) {
+        this.log(`Connection error: ${error.message}`, "danger");
+        this._setDisconnected();
+      }
+    },
+
+    _onConnected() {
+      this.isConnected = true;
+      this.connectionLabel = "Connected";
+      this.connectionClass = "badge bg-success";
+      this.log("STOMP connection established successfully", "success");
+
+      this._stompClient.subscribe("/topic/quiz/created", (payload) =>
+        this._onQuizCreated(JSON.parse(payload.body))
+      );
+      this._stompClient.subscribe("/topic/quiz/players", (payload) =>
+        this._onPlayersUpdated(JSON.parse(payload.body))
+      );
+    },
+
+    _onError(error) {
+      this.log(
+        "Could not connect to WebSocket server. Please refresh this page to try again!",
+        "danger"
+      );
+      console.error("Connection error:", error);
+      this._setDisconnected();
+    },
+
+    _setDisconnected() {
+      this.isConnected = false;
+      this.connectionLabel = "Disconnected";
+      this.connectionClass = "badge bg-secondary";
+    },
+
+    disconnect() {
+      if (this._stompClient) {
+        this._stompClient.disconnect();
+      }
+      this._setDisconnected();
+      this.log("Disconnected from WebSocket server", "warning");
+    },
+
+    createQuiz() {
+      if (!this.isConnected) {
+        this.log("Not connected to server", "warning");
+        return;
+      }
+      if (!this.quizTitle.trim()) {
+        alert("Please enter a quiz title");
+        return;
+      }
+
+      this.creatingQuiz = true;
+
+      this._stompClient.send(
+        "/app/quiz/create/trivia",
+        {},
+        JSON.stringify({
+          title: this.quizTitle.trim(),
+          questionCount: parseInt(this.questionCount, 10),
+          difficulty: this.difficulty,
+          creatorId: this.playerId,
+        })
+      );
+      this.log(
+        `Creating trivia quiz: "${this.quizTitle}" with ${this.questionCount} questions`,
+        "info"
+      );
+      this.isQuizCreator = true;
+    },
+
+    _onQuizCreated(quiz) {
+      this.creatingQuiz = false;
+      this.log(`Quiz created: ${quiz.title} with ID ${quiz.id}`, "success");
+      this.currentQuizId = quiz.id;
+
+      this._stompClient.subscribe("/topic/quiz/state/" + quiz.id, (payload) =>
+        this._onQuizStateUpdated(JSON.parse(payload.body))
+      );
+      this.log("Subscribed to quiz state updates", "info");
+
+      this._joinQuiz(quiz.id);
+    },
+
+    _joinQuiz(quizId) {
+      if (!this.isConnected) {
+        this.log("Not connected to server", "warning");
+        return;
+      }
+
+      this._stompClient.send(
+        "/app/quiz/join",
+        {},
+        JSON.stringify({
+          player: { id: this.playerId, name: this.playerName.trim() },
+          quizId: quizId,
+        })
+      );
+      this.log(`Joining quiz ${quizId} as ${this.playerName.trim()}`, "info");
+
+      this.currentQuizId = quizId;
+      this._stompClient.subscribe("/topic/quiz/state/" + quizId, (payload) =>
+        this._onQuizStateUpdated(JSON.parse(payload.body))
+      );
+      this.log("Subscribed to quiz state updates", "info");
+    },
+
+    joinQuizById() {
+      const quizId = parseInt(this.joinQuizId, 10);
+      if (!quizId || quizId < 1) {
+        alert("Please enter a valid Quiz ID");
+        return;
+      }
+      this._joinQuiz(quizId);
+      this.log(`Attempting to join quiz with ID: ${quizId}`, "info");
+    },
+
+    _onPlayersUpdated(players) {
+      this.players = players;
+      this.log(
+        `Player list updated: ${players.length} players in the quiz`,
+        "info"
+      );
+    },
+
+    startQuiz() {
+      if (!this.currentQuizId) {
+        this.log("No quiz selected", "warning");
+        return;
+      }
+      if (!this.isQuizCreator) {
+        this.log("Only the quiz creator can start the game", "warning");
+        alert("Only the quiz creator can start the game");
+        return;
+      }
+
+      this._stompClient.send(
+        "/app/quiz/start",
+        {},
+        JSON.stringify({
+          quizId: this.currentQuizId,
+          playerId: this.playerId,
+        })
+      );
+      this.log(`Starting quiz ${this.currentQuizId}`, "info");
+    },
+
+    _onQuizStateUpdated(state) {
+      this.quizStatus = state.status;
+      this.log(`Quiz state updated: ${state.status || "UNKNOWN"}`, "info");
+
+      if (state.status === "IN_PROGRESS" || state.status === "STARTED") {
+        if (state.currentQuestion) {
+          this.currentQuestion = state.currentQuestion;
+          this.selectedAnswer = null;
+          this.answerSubmitted = false;
+        }
+        if (state.players && state.players.length > 0) {
+          this.scoreboard = [...state.players].sort(
+            (a, b) => b.score - a.score
+          );
+        }
+      } else if (state.status === "COMPLETED" || state.status === "FINISHED") {
+        if (state.players && state.players.length > 0) {
+          this.finalResults = [...state.players].sort(
+            (a, b) => b.score - a.score
+          );
+          this.winner =
+            this.finalResults.length > 0 ? this.finalResults[0] : null;
+        }
+      }
+    },
+
+    submitAnswer(index) {
+      if (!this.currentQuizId || !this.currentQuestion) {
+        this.log("Cannot submit answer: No active question", "warning");
+        return;
+      }
+
+      this.selectedAnswer = index;
+      this.answerSubmitted = true;
+
+      this._stompClient.send(
+        "/app/quiz/submit",
+        {},
+        JSON.stringify({
+          quizId: this.currentQuizId,
+          playerId: this.playerId,
+          questionId: this.currentQuestion.id,
+          selectedOption: index,
+          timestamp: new Date().toISOString(),
+        })
+      );
+      this.log(
+        `Submitted answer ${index} for question ${this.currentQuestion.id}`,
+        "info"
+      );
+    },
+
+    nextQuestion() {
+      if (!this.currentQuizId) {
+        this.log("No quiz selected", "warning");
+        return;
+      }
+
+      this._stompClient.send(
+        "/app/quiz/next",
+        {},
+        JSON.stringify({ quizId: this.currentQuizId })
+      );
+      this.log("Moving to next question", "info");
+    },
+
+    testConnection() {
+      const url = this.serverUrl.trim();
+      if (!url) {
+        alert("Please enter a server URL to test");
+        return;
+      }
+
+      this.log(`Testing connection to ${url}...`, "info");
+      fetch(url + "/info")
+        .then((response) => {
+          if (response.ok) {
+            this.log(
+              "Connection test successful! SockJS info endpoint is reachable.",
+              "success"
+            );
+            return response.json();
+          } else {
+            this.log(
+              `Connection test failed: Status ${response.status}`,
+              "danger"
+            );
+          }
+        })
+        .then((info) => {
+          if (info) {
+            this.log(
+              `Server info: WebSocket enabled: ${info.websocket}`,
+              "info"
+            );
+          }
+        })
+        .catch((error) => {
+          this.log(`Connection test error: ${error.message}`, "danger");
+        });
+    },
+
+    // Computed helpers
+    get isWaiting() {
+      return this.quizStatus === "WAITING" || this.quizStatus === "CREATED";
+    },
+    get isInProgress() {
+      return this.quizStatus === "IN_PROGRESS" || this.quizStatus === "STARTED";
+    },
+    get isCompleted() {
+      return this.quizStatus === "COMPLETED" || this.quizStatus === "FINISHED";
+    },
+    get startButtonLabel() {
+      if (this.quizStatus === "WAITING" || this.quizStatus === "CREATED") {
+        return '<i class="bi bi-hourglass-split me-2"></i>Starting...';
+      }
+      if (this.currentQuizId && this.isQuizCreator) {
+        return `<i class="bi bi-play-circle me-2"></i>Start "${this.quizTitle}"`;
+      }
+      return '<i class="bi bi-play-circle me-2"></i>Start Quiz';
+    },
+  };
+}

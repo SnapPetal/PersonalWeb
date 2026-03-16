@@ -13,6 +13,7 @@
   <version>0.0.1-SNAPSHOT</version>
 
   <properties>
+    <alpinejs.version>3.14.9</alpinejs.version>
     <bootstrap-icons.version>1.13.1</bootstrap-icons.version>
     <bootstrap.version>5.3.8</bootstrap.version>
     <caffeine.version>3.2.3</caffeine.version>
@@ -215,6 +216,11 @@
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>webjars-locator-lite</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.webjars.npm</groupId>
+      <artifactId>alpinejs</artifactId>
+      <version>${alpinejs.version}</version>
     </dependency>
     <dependency>
       <groupId>org.webjars.npm</groupId>
