@@ -4,11 +4,9 @@ import biz.thonbecker.personal.skatetricks.api.SupportedTrick;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
 import biz.thonbecker.personal.skatetricks.api.TrickSequenceEntry;
 import biz.thonbecker.personal.skatetricks.domain.TrickCatalog;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
@@ -26,10 +24,7 @@ import software.amazon.awssdk.services.s3vectors.model.VectorData;
 @Slf4j
 class BedrockTrickAnalyzer implements TrickAnalyzer {
 
-    private static final Pattern JSON_BLOCK_PATTERN = Pattern.compile("\\{[\\s\\S]*}", Pattern.MULTILINE);
-
     private final ChatClient chatClient;
-    private final ObjectMapper objectMapper;
     private final PoseEstimationService poseEstimationService;
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
@@ -43,12 +38,10 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     @Autowired(required = false)
     BedrockTrickAnalyzer(
             ChatModel chatModel,
-            ObjectMapper objectMapper,
             PoseEstimationService poseEstimationService,
             S3VectorsClient s3VectorsClient,
             EmbeddingService embeddingService) {
         this.chatClient = chatModel != null ? ChatClient.create(chatModel) : null;
-        this.objectMapper = objectMapper;
         this.poseEstimationService = poseEstimationService;
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
@@ -202,58 +195,16 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
     /**
      * Calls the AI model with native structured output via Bedrock's outputSchema.
-     * Falls back to raw text + JSON extraction if native parsing fails.
      */
     private TrickAnalysisResponseSchema callAndExtract(
             final String systemPrompt, final String userPrompt, final Media... media) throws Exception {
-        try {
-            return chatClient
-                    .prompt()
-                    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
-                    .system(systemPrompt)
-                    .user(u -> u.text(userPrompt).media(media))
-                    .call()
-                    .entity(TrickAnalysisResponseSchema.class);
-        } catch (Exception e) {
-            log.warn("Native structured output failed, falling back to JSON extraction: {}", e.getMessage());
-            final var responseText = chatClient
-                    .prompt()
-                    .system(systemPrompt)
-                    .user(u -> u.text(userPrompt).media(media))
-                    .call()
-                    .content();
-            return extractJson(responseText, TrickAnalysisResponseSchema.class);
-        }
-    }
-
-    /**
-     * Extracts JSON from a response that may contain text before/after the JSON object.
-     * Claude sometimes prefaces JSON with analysis text — this finds and parses just the JSON block.
-     * Also normalizes trickSequence entries from strings to objects if needed.
-     */
-    private <T> T extractJson(final String responseText, final Class<T> targetType) throws Exception {
-        final var matcher = JSON_BLOCK_PATTERN.matcher(responseText);
-        if (matcher.find()) {
-            final var jsonCandidate = matcher.group();
-            final var tree = objectMapper.readTree(jsonCandidate);
-
-            // Normalize trickSequence: convert ["KICKFLIP"] to [{"trick":"KICKFLIP","timeframe":"","confidence":0}]
-            if (tree.has("trickSequence") && tree.get("trickSequence").isArray()) {
-                final var seqNode = (com.fasterxml.jackson.databind.node.ArrayNode) tree.get("trickSequence");
-                for (int i = 0; i < seqNode.size(); i++) {
-                    if (seqNode.get(i).isTextual()) {
-                        final var obj = objectMapper.createObjectNode();
-                        obj.put("trick", seqNode.get(i).asText());
-                        obj.put("timeframe", "");
-                        obj.put("confidence", 0);
-                        seqNode.set(i, obj);
-                    }
-                }
-            }
-
-            return objectMapper.treeToValue(tree, targetType);
-        }
-        throw new IllegalStateException("No JSON object found in AI response");
+        return chatClient
+                .prompt()
+                .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+                .system(systemPrompt)
+                .user(u -> u.text(userPrompt).media(media))
+                .call()
+                .entity(TrickAnalysisResponseSchema.class);
     }
 
     private String fetchSimilarExamples(final String poseText) {
