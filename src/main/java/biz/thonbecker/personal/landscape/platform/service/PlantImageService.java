@@ -55,6 +55,7 @@ public class PlantImageService {
 
     /**
      * Extracts the best available thumbnail URL from a Perenual plant record.
+     * Filters out the "upgrade_access.jpg" placeholder that Perenual returns for paywalled plants.
      */
     private String extractThumbnailUrl(final PerenualPlant plant) {
         final var image = plant.defaultImage();
@@ -62,20 +63,12 @@ public class PlantImageService {
             return null;
         }
 
-        if (Objects.nonNull(image.thumbnail()) && !image.thumbnail().isBlank()) {
-            return image.thumbnail();
-        }
-        if (Objects.nonNull(image.smallUrl()) && !image.smallUrl().isBlank()) {
-            return image.smallUrl();
-        }
-        if (Objects.nonNull(image.mediumUrl()) && !image.mediumUrl().isBlank()) {
-            return image.mediumUrl();
-        }
-        if (Objects.nonNull(image.regularUrl()) && !image.regularUrl().isBlank()) {
-            return image.regularUrl();
-        }
-        if (Objects.nonNull(image.originalUrl()) && !image.originalUrl().isBlank()) {
-            return image.originalUrl();
+        for (final var url : new String[] {
+            image.thumbnail(), image.smallUrl(), image.mediumUrl(), image.regularUrl(), image.originalUrl()
+        }) {
+            if (Objects.nonNull(url) && !url.isBlank() && !url.contains("upgrade_access")) {
+                return url;
+            }
         }
 
         return null;

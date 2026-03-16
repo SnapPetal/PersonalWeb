@@ -541,7 +541,9 @@
   function loadPlantImage(symbol, name, x, y, borderColor, markerEntry) {
     if (!symbol) return;
 
-    fetch(`/landscape/plants/image?symbol=${encodeURIComponent(symbol)}`)
+    const params = new URLSearchParams({ symbol });
+    if (name) params.append("name", name);
+    fetch(`/landscape/plants/image?${params}`)
       .then(function (response) {
         if (!response.ok) return null;
         return response.json();
@@ -973,15 +975,18 @@
   function loadRecommendationImages() {
     document.querySelectorAll(".recommendation-card").forEach(function (card) {
       const symbol = card.dataset.usdaSymbol;
+      const name = card.dataset.commonName;
       const wrapper = card.querySelector(".plant-image-wrapper");
       if (!wrapper || !symbol) return;
 
-      fetchPlantImage(symbol, wrapper);
+      fetchPlantImage(symbol, name, wrapper);
     });
   }
 
-  function fetchPlantImage(symbol, wrapper) {
-    fetch(`/landscape/plants/image?symbol=${encodeURIComponent(symbol)}`)
+  function fetchPlantImage(symbol, name, wrapper) {
+    const params = new URLSearchParams({ symbol });
+    if (name) params.append("name", name);
+    fetch(`/landscape/plants/image?${params}`)
       .then(function (response) {
         if (!response.ok) return null;
         return response.json();

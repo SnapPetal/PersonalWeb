@@ -224,43 +224,43 @@ public class LandscapeController {
     }
 
     /**
-     * Fetches a plant image URL from USDA Plants Database.
+     * Fetches a plant image URL from the plant data provider.
      *
-     * @param symbol USDA plant symbol (e.g., "ACRU")
+     * @param symbol Plant symbol identifier
+     * @param name Optional common name (used for Perenual search since USDA symbols don't work there)
      * @return JSON with imageUrl field pointing to the proxy endpoint
      */
     @GetMapping("/plants/image")
     @ResponseBody
-    public ResponseEntity<java.util.Map<String, String>> getPlantImage(@RequestParam("symbol") final String symbol) {
+    public ResponseEntity<java.util.Map<String, String>> getPlantImage(
+            @RequestParam("symbol") final String symbol,
+            @RequestParam(value = "name", required = false) final String name) {
         try {
-            final var imageUrl = landscapeService.getPlantImageUrl(symbol);
+            // Prefer searching by common name if available (Perenual doesn't understand USDA symbols)
+            final var searchTerm = (name != null && !name.isBlank()) ? name : symbol;
+            final var imageUrl = landscapeService.getPlantImageUrl(searchTerm);
             if (imageUrl != null) {
                 return ResponseEntity.ok(java.util.Map.of(
                         "imageUrl",
-                        "/landscape/plants/image/proxy?symbol=" + java.net.URLEncoder.encode(symbol, "UTF-8")));
+                        "/landscape/plants/image/proxy?url=" + java.net.URLEncoder.encode(imageUrl, "UTF-8")));
             }
             return ResponseEntity.notFound().build();
         } catch (final Exception e) {
-            log.error("Failed to fetch plant image for symbol '{}': {}", symbol, e.getMessage());
+            log.error("Failed to fetch plant image for '{}': {}", name != null ? name : symbol, e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
 
     /**
-     * Proxies a plant image from USDA to avoid CORS issues when loading images onto Fabric.js canvas.
+     * Proxies a plant image to avoid CORS issues when loading images onto Fabric.js canvas.
      *
-     * @param symbol USDA plant symbol
+     * @param url The external image URL to proxy
      * @return Proxied image bytes with appropriate content type
      */
     @GetMapping("/plants/image/proxy")
-    public ResponseEntity<byte[]> proxyPlantImage(@RequestParam("symbol") final String symbol) {
+    public ResponseEntity<byte[]> proxyPlantImage(@RequestParam("url") final String url) {
         try {
-            final var imageUrl = landscapeService.getPlantImageUrl(symbol);
-            if (imageUrl == null) {
-                return ResponseEntity.notFound().build();
-            }
-
-            final var uri = java.net.URI.create(imageUrl);
+            final var uri = java.net.URI.create(url);
             final var request = java.net.http.HttpRequest.newBuilder()
                     .uri(uri)
                     .timeout(java.time.Duration.ofSeconds(10))
@@ -282,7 +282,7 @@ public class LandscapeController {
                     .header("Cache-Control", "public, max-age=86400")
                     .body(response.body());
         } catch (final Exception e) {
-            log.error("Failed to proxy plant image for symbol '{}': {}", symbol, e.getMessage());
+            log.error("Failed to proxy plant image for '{}': {}", url, e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
