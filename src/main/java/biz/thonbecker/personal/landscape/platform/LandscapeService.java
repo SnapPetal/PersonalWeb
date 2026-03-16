@@ -90,7 +90,7 @@ public class LandscapeService {
     }
 
     @Transactional
-    public void addPlantPlacement(
+    public Long addPlantPlacement(
             final Long planId,
             final String usdaSymbol,
             final String plantName,
@@ -122,9 +122,27 @@ public class LandscapeService {
         placement.setNotes(notes);
         placement.setQuantity(1);
 
-        placementRepository.save(placement);
+        final var saved = placementRepository.save(placement);
 
-        log.info("Successfully added plant placement for plan {}", planId);
+        log.info("Successfully added plant placement {} for plan {}", saved.getId(), planId);
+        return saved.getId();
+    }
+
+    @Transactional
+    public void removePlantPlacement(final Long planId, final Long placementId) {
+        log.info("Removing plant placement {} from plan {}", placementId, planId);
+
+        final var placement = placementRepository
+                .findById(placementId)
+                .orElseThrow(() -> new IllegalArgumentException("Placement not found: " + placementId));
+
+        if (!placement.getPlan().getId().equals(planId)) {
+            throw new IllegalArgumentException("Placement " + placementId + " does not belong to plan " + planId);
+        }
+
+        placementRepository.delete(placement);
+
+        log.info("Successfully removed plant placement {} from plan {}", placementId, planId);
     }
 
     @Transactional(readOnly = true)

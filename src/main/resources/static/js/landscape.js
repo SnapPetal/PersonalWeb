@@ -422,7 +422,8 @@
           (placement.yCoord / 100) * canvasHeight,
           placement.commonName || placement.plantName,
           placement.usdaSymbol,
-          true
+          true,
+          placement.id
         );
       });
     }
@@ -446,14 +447,19 @@
       const xPercent = (pointer.x / canvasWidth) * 100;
       const yPercent = (pointer.y / canvasHeight) * 100;
 
-      savePlacement(currentPlanId, selectedPlant, xPercent, yPercent);
-
       addMarkerToCanvas(
         pointer.x,
         pointer.y,
         selectedPlant.commonName || selectedPlant.scientificName,
         selectedPlant.usdaSymbol,
         false
+      );
+
+      const newEntry = placedMarkers[placedMarkers.length - 1];
+      savePlacement(currentPlanId, selectedPlant, xPercent, yPercent).then(
+        function (placementId) {
+          if (placementId) newEntry.placementId = placementId;
+        }
       );
 
       showNotification(
@@ -469,6 +475,10 @@
       if (e.key === "Delete" || e.key === "Backspace") {
         const active = canvas.getActiveObject();
         if (active && active._isPlantMarker) {
+          const entry = placedMarkers.find(function (m) {
+            return m.marker === active;
+          });
+
           canvas.remove(active);
           if (active._labelObj) canvas.remove(active._labelObj);
           placedMarkers = placedMarkers.filter(function (m) {
@@ -478,6 +488,10 @@
           updateLegend();
           canvas.discardActiveObject();
           canvas.renderAll();
+
+          if (entry && entry.placementId && currentPlanId) {
+            deletePlacement(currentPlanId, entry.placementId);
+          }
         }
       }
     };
@@ -490,7 +504,7 @@
     updateLegend();
   }
 
-  function addMarkerToCanvas(x, y, name, usdaSymbol, isExisting) {
+  function addMarkerToCanvas(x, y, name, usdaSymbol, isExisting, placementId) {
     const markerColor = getPlantColor(usdaSymbol);
     const plantType = detectPlantType(name);
 
@@ -524,6 +538,7 @@
       name: name,
       usdaSymbol: usdaSymbol,
       isExisting: isExisting,
+      placementId: placementId || null,
     };
     placedMarkers.push(markerEntry);
 
@@ -696,9 +711,34 @@
       if (!response.ok) {
         throw new Error("Failed to save placement");
       }
+
+      const data = await response.json();
+      return data.id;
     } catch (error) {
       console.error("Error saving placement:", error);
       showNotification("Failed to save plant placement.", "danger");
+      return null;
+    }
+  }
+
+  async function deletePlacement(planId, placementId) {
+    try {
+      const response = await fetch(
+        `/landscape/plans/${planId}/placements/${placementId}`,
+        {
+          method: "DELETE",
+          headers: {
+            [csrfHeader]: csrfToken,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete placement");
+      }
+    } catch (error) {
+      console.error("Error deleting placement:", error);
+      showNotification("Failed to remove plant from plan.", "danger");
     }
   }
 

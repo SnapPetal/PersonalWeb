@@ -207,12 +207,12 @@ public class LandscapeController {
      */
     @PostMapping("/plans/{planId}/placements")
     @ResponseBody
-    public ResponseEntity<Void> addPlantPlacement(
+    public ResponseEntity<java.util.Map<String, Long>> addPlantPlacement(
             @PathVariable final Long planId, @RequestBody final AddPlantRequest request) {
 
         try {
             log.info("Adding plant placement to plan {}: {}", planId, request.usdaSymbol());
-            landscapeService.addPlantPlacement(
+            final var placementId = landscapeService.addPlantPlacement(
                     planId,
                     request.usdaSymbol(),
                     request.plantName(),
@@ -220,9 +220,31 @@ public class LandscapeController {
                     request.xCoord(),
                     request.yCoord(),
                     request.notes());
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(java.util.Map.of("id", placementId));
         } catch (final Exception e) {
             log.error("Failed to add plant placement to plan {}: {}", planId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Removes a plant placement from a plan.
+     *
+     * @param planId Plan identifier
+     * @param placementId Placement identifier
+     * @return Success response
+     */
+    @DeleteMapping("/plans/{planId}/placements/{placementId}")
+    @ResponseBody
+    public ResponseEntity<Void> removePlantPlacement(
+            @PathVariable final Long planId, @PathVariable final Long placementId) {
+
+        try {
+            log.info("Removing plant placement {} from plan {}", placementId, planId);
+            landscapeService.removePlantPlacement(planId, placementId);
+            return ResponseEntity.ok().build();
+        } catch (final Exception e) {
+            log.error("Failed to remove plant placement {} from plan {}: {}", placementId, planId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }
