@@ -188,7 +188,11 @@ public class LandscapeController {
         } catch (final Exception e) {
             log.error("Failed to get recommendations for plan {}: {}", planId, e.getMessage(), e);
             model.addAttribute("recommendations", List.of());
-            model.addAttribute("error", "Failed to load recommendations.");
+            model.addAttribute(
+                    "error",
+                    e.getMessage() != null && e.getMessage().contains("rate limit")
+                            ? e.getMessage()
+                            : "Failed to load recommendations.");
         }
 
         return "landscape/fragments :: recommendations";

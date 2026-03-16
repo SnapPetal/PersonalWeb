@@ -153,6 +153,16 @@ public class PlantApiService {
             log.info("Found {} plants for zone {}", plants.size(), zone);
             return plants;
 
+        } catch (final org.springframework.web.reactive.function.client.WebClientResponseException.TooManyRequests e) {
+            final var retryAfter = e.getHeaders().getFirst("Retry-After");
+            log.warn(
+                    "Perenual API rate limit reached for zone {} (Retry-After: {})",
+                    zone,
+                    Objects.nonNull(retryAfter) ? retryAfter : "not specified");
+            throw new PlantApiException(
+                    "Plant API rate limit reached. Please try again later."
+                            + (Objects.nonNull(retryAfter) ? " Retry after: " + retryAfter + " seconds." : ""),
+                    e);
         } catch (final Exception e) {
             log.error("Failed to fetch plants for zone {}: {}", zone, e.getMessage(), e);
             throw new PlantApiException("Failed to fetch plants for zone " + zone, e);
