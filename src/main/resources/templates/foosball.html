@@ -228,7 +228,7 @@
                                       this.reset();
                                       bootstrap.Modal.getInstance(document.getElementById('addGameModal')).hide();
                                       htmx.trigger('#playerStatsList', 'refresh');
-                                      htmx.trigger('#gamesList', 'refresh');
+                                      if (document.getElementById('gamesList')) { htmx.trigger('#gamesList', 'refresh'); }
                                   }
                               }
                           ">
