@@ -238,7 +238,12 @@
                     body: JSON.stringify(bookingData)
                 })
                 .then(response => {
-                    if (!response.ok) throw new Error('Booking failed');
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            console.error('Booking error:', response.status, text);
+                            throw new Error('Booking failed: ' + response.status);
+                        });
+                    }
                     return response.json();
                 })
                 .then(booking => {
