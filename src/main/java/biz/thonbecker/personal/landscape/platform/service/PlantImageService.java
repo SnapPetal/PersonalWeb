@@ -1,5 +1,6 @@
 package biz.thonbecker.personal.landscape.platform.service;
 
+import biz.thonbecker.personal.landscape.platform.client.UsdaPlantHttpClient;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,22 +13,21 @@ import org.springframework.stereotype.Service;
 /**
  * Service for fetching plant images from the USDA Plants Database.
  *
- * <p>Uses the new USDA ImageLibrary thumbnail URL pattern. The old gallery URLs
- * ({@code plants.sc.egov.usda.gov/gallery/}) no longer serve images.
+ * <p>Looks up the ProfileImageFilename from the USDA search API, then constructs
+ * the ImageLibrary thumbnail URL. Falls back to symbol-based URL guessing.
  * Results are cached for 24 hours.
  */
 @Service
 @Slf4j
 public class PlantImageService {
 
-    private static final String USDA_THUMBNAIL_URL =
-            "https://plants.sc.egov.usda.gov/ImageLibrary/thumbnail/%s_001_shp.jpg";
-    private static final String USDA_THUMBNAIL_ALT =
-            "https://plants.sc.egov.usda.gov/ImageLibrary/thumbnail/%s_001_php.jpg";
+    private static final String USDA_THUMBNAIL_BASE = "https://plants.sc.egov.usda.gov/ImageLibrary/thumbnail/";
 
     private final HttpClient httpClient;
+    private final UsdaPlantHttpClient usdaClient;
 
-    public PlantImageService() {
+    public PlantImageService(UsdaPlantHttpClient usdaClient) {
+        this.usdaClient = usdaClient;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
                 .followRedirects(HttpClient.Redirect.NORMAL)
@@ -36,6 +36,9 @@ public class PlantImageService {
 
     /**
      * Gets the USDA plant image URL by USDA symbol.
+     *
+     * <p>First queries the USDA API for the ProfileImageFilename, then validates
+     * the thumbnail URL exists and returns an actual image.
      *
      * @param usdaSymbol USDA plant symbol (e.g., "ACRU", "ECPU")
      * @return Image URL if the image exists, or null
@@ -46,20 +49,34 @@ public class PlantImageService {
             return null;
         }
 
-        final var symbol = usdaSymbol.toLowerCase().trim();
-
-        // Try the standard thumbnail first
-        final var thumbnailUrl = String.format(USDA_THUMBNAIL_URL, symbol);
-        if (imageExists(thumbnailUrl)) {
-            log.info("Found USDA thumbnail for '{}': {}", usdaSymbol, thumbnailUrl);
-            return thumbnailUrl;
+        // Try to get the actual filename from the USDA API
+        try {
+            final var response = usdaClient.searchPlants(usdaSymbol, "Symbol", 1);
+            if (response.plantResults() != null) {
+                for (final var plant : response.plantResults()) {
+                    if (usdaSymbol.equalsIgnoreCase(plant.symbol())
+                            && plant.profileImageFilename() != null
+                            && !plant.profileImageFilename().isBlank()) {
+                        final var url = USDA_THUMBNAIL_BASE + plant.profileImageFilename();
+                        if (imageExists(url)) {
+                            log.info("Found USDA image for '{}': {}", usdaSymbol, url);
+                            return url;
+                        }
+                    }
+                }
+            }
+        } catch (final Exception e) {
+            log.debug("Failed to look up profile image for '{}': {}", usdaSymbol, e.getMessage());
         }
 
-        // Try the publication thumbnail as fallback
-        final var altUrl = String.format(USDA_THUMBNAIL_ALT, symbol);
-        if (imageExists(altUrl)) {
-            log.info("Found USDA alt thumbnail for '{}': {}", usdaSymbol, altUrl);
-            return altUrl;
+        // Fall back to guessed symbol-based filenames
+        final var symbol = usdaSymbol.toLowerCase().trim();
+        for (final var suffix : new String[] {"_001_shp.jpg", "_001_php.jpg", "_001_tvp.jpg"}) {
+            final var url = USDA_THUMBNAIL_BASE + symbol + suffix;
+            if (imageExists(url)) {
+                log.info("Found USDA image for '{}' via fallback: {}", usdaSymbol, url);
+                return url;
+            }
         }
 
         log.info("No USDA image found for '{}'", usdaSymbol);
