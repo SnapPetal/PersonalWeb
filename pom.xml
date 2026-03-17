@@ -13,7 +13,7 @@
   <version>0.0.1-SNAPSHOT</version>
 
   <properties>
-    <alpinejs.version>3.14.9</alpinejs.version>
+    <alpinejs.version>3.15.8</alpinejs.version>
     <bootstrap-icons.version>1.13.1</bootstrap-icons.version>
     <bootstrap.version>5.3.8</bootstrap.version>
     <caffeine.version>3.2.3</caffeine.version>
