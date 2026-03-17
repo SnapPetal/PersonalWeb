@@ -1,6 +1,6 @@
 // bible-verse.js — Alpine.js component
-function bibleVerse() {
-  return {
+document.addEventListener("alpine:init", () => {
+  Alpine.data("bibleVerse", () => ({
     verseText: "",
     verseTranslation: "",
     loading: true,
@@ -22,5 +22,5 @@ function bibleVerse() {
           this.loading = false;
         });
     },
-  };
-}
+  }));
+});

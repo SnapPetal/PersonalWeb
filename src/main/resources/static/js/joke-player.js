@@ -1,6 +1,6 @@
 // joke-player.js — Alpine.js component
-function jokePlayer() {
-  return {
+document.addEventListener("alpine:init", () => {
+  Alpine.data("jokePlayer", () => ({
     playing: false,
     spinning: false,
 
@@ -45,5 +45,5 @@ function jokePlayer() {
       this.playing = false;
       this.spinning = false;
     },
-  };
-}
+  }));
+});

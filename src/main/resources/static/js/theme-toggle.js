@@ -1,6 +1,6 @@
 // theme-toggle.js — Alpine.js component
-function themeToggle() {
-  return {
+document.addEventListener("alpine:init", () => {
+  Alpine.data("themeToggle", () => ({
     isDark: localStorage.getItem("darkMode") === "enabled",
 
     init() {
@@ -21,5 +21,5 @@ function themeToggle() {
     get iconClass() {
       return this.isDark ? "bi bi-moon-stars-fill" : "bi bi-sun-fill";
     },
-  };
-}
+  }));
+});
