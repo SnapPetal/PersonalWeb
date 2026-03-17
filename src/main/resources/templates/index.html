@@ -27,19 +27,19 @@
     <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
-    <script src="/js/bible-verse.js"></script>
-    <script src="/js/experience-counter.js"></script>
-    <script src="/js/theme-toggle.js"></script>
-    <script src="/js/joke-player.js"></script>
+    <script th:src="@{/js/bible-verse.js}"></script>
+    <script th:src="@{/js/experience-counter.js}"></script>
+    <script th:src="@{/js/theme-toggle.js}"></script>
+    <script th:src="@{/js/joke-player.js}"></script>
     <script defer th:src="@{/webjars/alpinejs/dist/cdn.min.js}"></script>
 
     <!-- CSS Dependencies -->
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
-    <link href="/css/main.css" rel="stylesheet">
-    <link href="/css/bible-verse.css" rel="stylesheet">
-    <link href="/css/htmx-indicators.css" rel="stylesheet">
-    <link href="/css/theme-toggle.css" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/css/bible-verse.css}" rel="stylesheet">
+    <link th:href="@{/css/htmx-indicators.css}" rel="stylesheet">
+    <link th:href="@{/css/theme-toggle.css}" rel="stylesheet">
 
     <script type="application/ld+json">
         {

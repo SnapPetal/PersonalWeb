@@ -10,7 +10,7 @@
     <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
-    <link rel="stylesheet" href="/css/landscape.css">
+    <link rel="stylesheet" th:href="@{/css/landscape.css}">
 </head>
 <body class="landscape-page">
     <div class="container-fluid py-4">
@@ -181,7 +181,7 @@
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
     <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
-    <script src="/js/landscape.js"></script>
+    <script th:src="@{/js/landscape.js}"></script>
     <script defer th:src="@{/webjars/alpinejs/dist/cdn.min.js}"></script>
 </body>
 </html>

@@ -10,7 +10,7 @@
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
     <link rel="stylesheet" th:href="@{/webjars/plyr/dist/plyr.css}">
-    <link rel="stylesheet" href="/css/skatetricks.css">
+    <link rel="stylesheet" th:href="@{/css/skatetricks.css}">
 </head>
 <body class="skatetricks-page">
     <div class="container py-4" x-data="skatetricksApp()">
@@ -260,7 +260,7 @@
     <script th:src="@{/webjars/sockjs-client/sockjs.min.js}"></script>
     <script th:src="@{/webjars/stomp-websocket/stomp.min.js}"></script>
     <script th:src="@{/webjars/plyr/dist/plyr.min.js}"></script>
-    <script src="/js/skatetricks.js"></script>
+    <script th:src="@{/js/skatetricks.js}"></script>
     <script defer th:src="@{/webjars/alpinejs/dist/cdn.min.js}"></script>
 </body>
 </html>
