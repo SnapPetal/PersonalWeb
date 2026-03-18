@@ -1,5 +1,5 @@
 server:
-  forward-headers-strategy: native
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -88,6 +88,7 @@ spring:
             client-secret: ${COGNITO_CLIENT_SECRET}
             scope: openid,profile,email
             client-name: AWS Cognito
+            redirect-uri: ${COGNITO_REDIRECT_URI:{baseUrl}/login/oauth2/code/{registrationId}}
         provider:
           cognito:
             issuer-uri: https://cognito-idp.${AWS_REGION:us-east-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
