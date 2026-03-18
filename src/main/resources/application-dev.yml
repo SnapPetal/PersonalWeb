@@ -9,6 +9,13 @@ spring:
     user: dbmasteruser
     password:
 
+  security:
+    oauth2:
+      client:
+        registration:
+          cognito:
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
   # DevTools configuration for hot reload
   devtools:
     restart:

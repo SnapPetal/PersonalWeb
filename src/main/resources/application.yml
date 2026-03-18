@@ -88,7 +88,7 @@ spring:
             client-secret: ${COGNITO_CLIENT_SECRET}
             scope: openid,profile,email
             client-name: AWS Cognito
-            redirect-uri: ${COGNITO_REDIRECT_URI:{baseUrl}/login/oauth2/code/{registrationId}}
+            redirect-uri: https://thonbecker.biz/login/oauth2/code/cognito
         provider:
           cognito:
             issuer-uri: https://cognito-idp.${AWS_REGION:us-east-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
