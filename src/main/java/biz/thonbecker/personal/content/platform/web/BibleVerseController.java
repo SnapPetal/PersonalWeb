@@ -3,7 +3,6 @@ package biz.thonbecker.personal.content.platform.web;
 import biz.thonbecker.personal.content.domain.BibleVerse;
 import biz.thonbecker.personal.content.domain.BibleVerseResponse;
 import biz.thonbecker.personal.content.platform.client.BibleVerseHttpClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.time.LocalDate;
@@ -17,6 +16,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import tools.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/bible")

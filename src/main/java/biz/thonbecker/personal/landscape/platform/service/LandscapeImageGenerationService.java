@@ -1,6 +1,5 @@
 package biz.thonbecker.personal.landscape.platform.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,6 +13,7 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service for generating landscape images using Amazon Nova Canvas via Bedrock.
