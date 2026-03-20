@@ -2,8 +2,10 @@ package biz.thonbecker.personal.calendar.platform;
 
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
 import java.time.ZoneId;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import net.fortuna.ical4j.model.Calendar;
+import net.fortuna.ical4j.model.ParameterList;
 import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.Cn;
 import net.fortuna.ical4j.model.parameter.Role;
@@ -31,7 +33,7 @@ class IcsGenerator {
     public String generate(final BookingCreatedEvent event, final String organizerEmail, final String uid) {
         final var calendar = new Calendar();
         calendar.add(new ProdId(PRODUCT_ID));
-        calendar.add(new Version(new net.fortuna.ical4j.model.ParameterList(), "2.0"));
+        calendar.add(new Version(new ParameterList(), "2.0"));
         calendar.add(new CalScale(CalScale.VALUE_GREGORIAN));
 
         final var startZoned = event.startTime().atZone(DEFAULT_ZONE);
@@ -44,10 +46,10 @@ class IcsGenerator {
         description.append("Booking Type: ").append(event.bookingTypeName()).append("\n");
         description.append("Attendee: ").append(event.attendeeName()).append("\n");
         description.append("Email: ").append(event.attendeeEmail()).append("\n");
-        if (event.attendeePhone() != null && !event.attendeePhone().isBlank()) {
+        if (Objects.nonNull(event.attendeePhone()) && !event.attendeePhone().isBlank()) {
             description.append("Phone: ").append(event.attendeePhone()).append("\n");
         }
-        if (event.message() != null && !event.message().isBlank()) {
+        if (Objects.nonNull(event.message()) && !event.message().isBlank()) {
             description.append("\nMessage:\n").append(event.message());
         }
 

@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import javax.xml.parsers.DocumentBuilderFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -69,7 +70,7 @@ class NextcloudCalDavService {
                     .toBodilessEntity()
                     .block();
 
-            if (response != null && response.getStatusCode().is2xxSuccessful()) {
+            if (Objects.nonNull(response) && response.getStatusCode().is2xxSuccessful()) {
                 log.info("Nextcloud Bookings calendar already exists");
                 return;
             }
@@ -165,7 +166,7 @@ class NextcloudCalDavService {
 
     private List<String> parseHrefsFromMultistatus(final String xml) {
         final var uids = new ArrayList<String>();
-        if (xml == null || xml.isBlank()) {
+        if (Objects.isNull(xml) || xml.isBlank()) {
             return uids;
         }
 
