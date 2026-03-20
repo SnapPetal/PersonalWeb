@@ -3,5 +3,6 @@
 |Base package
 |`biz.thonbecker.personal.booking`
 |Events listened to
-|* `org.springframework.boot.context.event.ApplicationReadyEvent` 
+|* `b.t.p.b.api.BookingCancellationRequestedEvent` 
+* `org.springframework.boot.context.event.ApplicationReadyEvent` 
 |===

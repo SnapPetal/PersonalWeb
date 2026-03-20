@@ -1,0 +1,30 @@
+@startuml
+title <size:24>Calendar Integration</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="") {
+  Container_Boundary("PersonalApplication.PersonalApplication_boundary", "PersonalApplication", $tags="") {
+    Component(PersonalApplication.PersonalApplication.CalendarIntegration, "Calendar Integration", $techn="Module", $descr="", $tags="", $link="")
+    Component(PersonalApplication.PersonalApplication.Booking, "Booking", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+Rel(PersonalApplication.PersonalApplication.CalendarIntegration, PersonalApplication.PersonalApplication.Booking, "listens to", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

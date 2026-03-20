@@ -1,0 +1,44 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="027-calendar-event-mappings" author="thonbecker">
+        <comment>Create table for mapping bookings to Nextcloud CalDAV calendar events</comment>
+
+        <createTable tableName="calendar_event_mappings" schemaName="booking">
+            <column name="id" type="BIGSERIAL" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="booking_id" type="BIGINT">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="calendar_uid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="calendar_href" type="VARCHAR(512)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="calendar_event_mappings" schemaName="booking" indexName="idx_calendar_event_mappings_booking_id">
+            <column name="booking_id"/>
+        </createIndex>
+
+        <createIndex tableName="calendar_event_mappings" schemaName="booking" indexName="idx_calendar_event_mappings_calendar_uid">
+            <column name="calendar_uid"/>
+        </createIndex>
+
+        <addForeignKeyConstraint
+                baseTableSchemaName="booking"
+                baseTableName="calendar_event_mappings"
+                baseColumnNames="booking_id"
+                constraintName="fk_calendar_event_mappings_booking"
+                referencedTableSchemaName="booking"
+                referencedTableName="bookings"
+                referencedColumnNames="id"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>

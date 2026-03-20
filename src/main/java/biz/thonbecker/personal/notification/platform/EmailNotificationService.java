@@ -2,15 +2,26 @@ package biz.thonbecker.personal.notification.platform;
 
 import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
+import jakarta.mail.Message;
+import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.util.Properties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.ses.SesClient;
+import software.amazon.awssdk.services.ses.model.RawMessage;
+import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
 
 /**
- * Service for sending email notifications about bookings.
- *
- * <p>Currently logs emails to console. In production, integrate with AWS SES.
- * Works with event data from shared events package.
+ * Service for sending email notifications about bookings via AWS SES.
  */
 @Service
 @RequiredArgsConstructor
@@ -18,110 +29,164 @@ import org.springframework.stereotype.Service;
 public class EmailNotificationService {
 
     private final CalendarService calendarService;
-
-    private static final String SENDER_EMAIL = "thon.becker@gmail.com";
-    private static final String ADMIN_EMAIL = "thon.becker@gmail.com";
+    private final SesClient sesClient;
+    private final NotificationProperties properties;
 
     /**
-     * Sends a booking confirmation email to the attendee.
-     *
-     * @param event The booking created event
+     * Sends a booking confirmation email with .ics attachment to the attendee.
      */
+    @Retryable(maxAttempts = 3)
     public void sendBookingConfirmation(final BookingCreatedEvent event) {
-        final var icsContent = calendarService.generateICalendar(event, SENDER_EMAIL);
+        final var sender = properties.sender();
+        final var icsContent = calendarService.generateICalendar(event, sender);
+        final var subject = "Booking Confirmation - " + event.bookingTypeName();
 
-        log.info("=== BOOKING CONFIRMATION EMAIL ===");
-        log.info("To: {}", event.attendeeEmail());
-        log.info("Subject: Booking Confirmation - {}", event.bookingTypeName());
-        log.info("Body:");
-        log.info("Hi {},", event.attendeeName());
-        log.info("");
-        log.info("Your booking has been confirmed!");
-        log.info("");
-        log.info("Booking Details:");
-        log.info("  Type: {}", event.bookingTypeName());
-        log.info("  Date/Time: {} - {}", event.startTime(), event.endTime());
-        log.info("  Confirmation Code: {}", event.confirmationCode());
-        log.info("");
-        log.info("You can view or cancel your booking at:");
-        log.info("  https://thonbecker.com/booking/confirmation/{}", event.confirmationCode());
-        log.info("");
-        log.info("The meeting details are attached as a calendar file (.ics).");
-        log.info("");
-        log.info("Looking forward to speaking with you!");
-        log.info("");
-        log.info("Best regards,");
-        log.info("Thon Becker");
-        log.info("================================");
-        log.debug("iCalendar attachment content:\n{}", icsContent);
+        final var body = String.format(
+                """
+                Hi %s,
 
-        // TODO: Integrate with AWS SES to actually send email
-        // final var request = SendEmailRequest.builder()
-        //     .destination(d -> d.toAddresses(event.attendeeEmail()))
-        //     .message(m -> m
-        //         .subject(s -> s.data("Booking Confirmation - " + event.bookingTypeName()))
-        //         .body(b -> b.text(t -> t.data(emailBody))))
-        //     .source(SENDER_EMAIL)
-        //     .build();
-        // sesClient.sendEmail(request);
+                Your booking has been confirmed!
+
+                Booking Details:
+                  Type: %s
+                  Date/Time: %s - %s
+                  Confirmation Code: %s
+
+                You can view or cancel your booking at:
+                  https://thonbecker.biz/booking/confirmation/%s
+
+                The meeting details are attached as a calendar file (.ics).
+
+                Looking forward to speaking with you!
+
+                Best regards,
+                Thon Becker""",
+                event.attendeeName(),
+                event.bookingTypeName(),
+                event.startTime(),
+                event.endTime(),
+                event.confirmationCode(),
+                event.confirmationCode());
+
+        if (!properties.enabled()) {
+            log.info(
+                    "Email disabled — would send confirmation to {} for booking {}",
+                    event.attendeeEmail(),
+                    event.confirmationCode());
+            log.debug("Subject: {}\nBody:\n{}", subject, body);
+            return;
+        }
+
+        sendEmailWithAttachment(sender, event.attendeeEmail(), subject, body, icsContent, event.confirmationCode());
+        log.info(
+                "Sent booking confirmation email to {} for booking {}",
+                event.attendeeEmail(),
+                event.confirmationCode());
     }
 
     /**
-     * Sends a booking notification to the admin.
-     *
-     * @param event The booking created event
+     * Sends a cancellation notification email to the attendee.
      */
-    public void sendBookingNotificationToAdmin(final BookingCreatedEvent event) {
-        log.info("=== BOOKING NOTIFICATION TO ADMIN ===");
-        log.info("To: {}", ADMIN_EMAIL);
-        log.info("Subject: New Booking - {}", event.bookingTypeName());
-        log.info("Body:");
-        log.info("New booking received!");
-        log.info("");
-        log.info("Booking Details:");
-        log.info("  Type: {}", event.bookingTypeName());
-        log.info("  Date/Time: {} - {}", event.startTime(), event.endTime());
-        log.info("  Attendee: {} ({})", event.attendeeName(), event.attendeeEmail());
-        if (event.attendeePhone() != null && !event.attendeePhone().isBlank()) {
-            log.info("  Phone: {}", event.attendeePhone());
-        }
-        log.info("  Confirmation Code: {}", event.confirmationCode());
-        if (event.message() != null && !event.message().isBlank()) {
-            log.info("");
-            log.info("Message from attendee:");
-            log.info("{}", event.message());
-        }
-        log.info("================================");
-
-        // TODO: Integrate with AWS SES
-    }
-
-    /**
-     * Sends a cancellation notification to the attendee.
-     *
-     * @param event The booking cancelled event
-     */
+    @Retryable(maxAttempts = 3)
     public void sendCancellationNotification(final BookingCancelledEvent event) {
-        log.info("=== BOOKING CANCELLATION EMAIL ===");
-        log.info("To: {}", event.attendeeEmail());
-        log.info("Subject: Booking Cancelled - {}", event.bookingTypeName());
-        log.info("Body:");
-        log.info("Hi {},", event.attendeeName());
-        log.info("");
-        log.info("Your booking has been cancelled.");
-        log.info("");
-        log.info("Cancelled Booking Details:");
-        log.info("  Type: {}", event.bookingTypeName());
-        log.info("  Date/Time: {} - {}", event.startTime(), event.endTime());
-        log.info("  Confirmation Code: {}", event.confirmationCode());
-        log.info("");
-        log.info("If you'd like to reschedule, please visit:");
-        log.info("  https://thonbecker.com/booking");
-        log.info("");
-        log.info("Best regards,");
-        log.info("Thon Becker");
-        log.info("================================");
+        final var sender = properties.sender();
+        final var subject = "Booking Cancelled - " + event.bookingTypeName();
 
-        // TODO: Integrate with AWS SES
+        final var body = String.format(
+                """
+                Hi %s,
+
+                Your booking has been cancelled.
+
+                Cancelled Booking Details:
+                  Type: %s
+                  Date/Time: %s - %s
+                  Confirmation Code: %s
+
+                If you'd like to reschedule, please visit:
+                  https://thonbecker.biz/booking
+
+                Best regards,
+                Thon Becker""",
+                event.attendeeName(),
+                event.bookingTypeName(),
+                event.startTime(),
+                event.endTime(),
+                event.confirmationCode());
+
+        if (!properties.enabled()) {
+            log.info(
+                    "Email disabled — would send cancellation to {} for booking {}",
+                    event.attendeeEmail(),
+                    event.confirmationCode());
+            return;
+        }
+
+        sendPlainEmail(sender, event.attendeeEmail(), subject, body);
+        log.info("Sent cancellation email to {} for booking {}", event.attendeeEmail(), event.confirmationCode());
+    }
+
+    private void sendEmailWithAttachment(
+            final String from,
+            final String to,
+            final String subject,
+            final String body,
+            final String icsContent,
+            final String confirmationCode) {
+        try {
+            final var session = Session.getDefaultInstance(new Properties());
+            final var message = new MimeMessage(session);
+            message.setSubject(subject, "UTF-8");
+            message.setFrom(new InternetAddress(from, "Thon Becker"));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+
+            // Text body part
+            final var textPart = new MimeBodyPart();
+            textPart.setText(body, "UTF-8");
+
+            // Calendar attachment
+            final var calendarPart = new MimeBodyPart();
+            calendarPart.setContent(icsContent, "text/calendar; charset=UTF-8; method=REQUEST");
+            calendarPart.setFileName("booking-" + confirmationCode + ".ics");
+
+            // Combine
+            final var multipart = new MimeMultipart("mixed");
+            multipart.addBodyPart(textPart);
+            multipart.addBodyPart(calendarPart);
+            message.setContent(multipart);
+
+            sendRawEmail(message);
+        } catch (final Exception e) {
+            log.error("Failed to send email with attachment to {}: {}", to, e.getMessage(), e);
+            throw new RuntimeException("Failed to send booking confirmation email", e);
+        }
+    }
+
+    private void sendPlainEmail(final String from, final String to, final String subject, final String body) {
+        try {
+            final var session = Session.getDefaultInstance(new Properties());
+            final var message = new MimeMessage(session);
+            message.setSubject(subject, "UTF-8");
+            message.setFrom(new InternetAddress(from, "Thon Becker"));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setText(body, "UTF-8");
+
+            sendRawEmail(message);
+        } catch (final Exception e) {
+            log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
+            throw new RuntimeException("Failed to send email", e);
+        }
+    }
+
+    private void sendRawEmail(final MimeMessage message) throws Exception {
+        final var outputStream = new ByteArrayOutputStream();
+        message.writeTo(outputStream);
+
+        final var rawMessage = RawMessage.builder()
+                .data(SdkBytes.fromByteBuffer(ByteBuffer.wrap(outputStream.toByteArray())))
+                .build();
+
+        sesClient.sendRawEmail(
+                SendRawEmailRequest.builder().rawMessage(rawMessage).build());
     }
 }

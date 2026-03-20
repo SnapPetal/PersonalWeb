@@ -35,7 +35,7 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 
 ## Local Development Setup
 
-1. Copy `.env.example` to `.env` and fill in AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`).
+1. Copy `.env.example` to `.env` and fill in AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`) and Nextcloud credentials (`NEXTCLOUD_USERNAME`, `NEXTCLOUD_APP_PASSWORD`).
 2. Add Cognito OAuth2 credentials to `.env`:
 
    ```bash
@@ -100,6 +100,8 @@ aws-vault exec thonbecker -- aws cognito-idp admin-create-user \
 COGNITO_USER_POOL_ID
 COGNITO_CLIENT_ID
 COGNITO_CLIENT_SECRET
+NEXTCLOUD_USERNAME
+NEXTCLOUD_APP_PASSWORD
 ```
 
 ## Architecture
@@ -120,18 +122,19 @@ Each module follows this internal package convention:
 
 ### Modules
 
-|     Module     |       Service        |                                  Purpose                                   |
-|----------------|----------------------|----------------------------------------------------------------------------|
-| `foosball`     | `FoosballService`    | Table soccer game tracking, stats, tournaments, ELO rating                 |
-| `trivia`       | `TriviaService`      | AI-powered FPU trivia, WebSocket multiplayer                               |
-| `skatetricks`  | `SkateTricksService` | YOLO pose estimation + Bedrock AI trick detection                          |
-| `landscape`    | `LandscapeService`   | AI-powered landscape planning with USDA plant database integration         |
-| `booking`      | `BookingService`     | Appointment scheduling with auto-availability, event publishing            |
-| `tankgame`     | _(self-contained)_   | WebSocket tank game with player progression                                |
-| `user`         | `UserService`        | User management                                                            |
-| `notification` | _(event-driven)_     | Email notifications via event subscribers (zero coupling to other modules) |
-| `content`      | _(self-contained)_   | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter            |
-| `shared`       | _(config only)_      | Infrastructure configuration classes (Security, Cache, AWS, WebSocket)     |
+|     Module     |       Service        |                                Purpose                                 |
+|----------------|----------------------|------------------------------------------------------------------------|
+| `foosball`     | `FoosballService`    | Table soccer game tracking, stats, tournaments, ELO rating             |
+| `trivia`       | `TriviaService`      | AI-powered FPU trivia, WebSocket multiplayer                           |
+| `skatetricks`  | `SkateTricksService` | YOLO pose estimation + Bedrock AI trick detection                      |
+| `landscape`    | `LandscapeService`   | AI-powered landscape planning with USDA plant database integration     |
+| `booking`      | `BookingService`     | Appointment scheduling with auto-availability, event publishing        |
+| `tankgame`     | _(self-contained)_   | WebSocket tank game with player progression                            |
+| `user`         | `UserService`        | User management                                                        |
+| `calendar`     | _(event-driven)_     | Nextcloud CalDAV integration, calendar sync for bookings               |
+| `notification` | _(event-driven)_     | Email notifications via AWS SES (zero coupling to other modules)       |
+| `content`      | _(self-contained)_   | Bible verse, Dad jokes (AWS Polly TTS + S3), experience counter        |
+| `shared`       | _(config only)_      | Infrastructure configuration classes (Security, Cache, AWS, WebSocket) |
 
 ### Module Boundaries
 
@@ -149,19 +152,20 @@ All modules use `@ApplicationModule` with **closed** boundaries (no `Type.OPEN`)
 
 Each module owns the events it publishes in its `api/` package. Events are immutable records containing ALL data needed for processing (no callbacks to the source module).
 
-|           Event           | Published By |      Consumed By       |            Purpose             |
-|---------------------------|--------------|------------------------|--------------------------------|
-| `BookingCreatedEvent`     | booking      | notification           | Send confirmation email        |
-| `BookingCancelledEvent`   | booking      | notification           | Send cancellation email        |
-| `GameRecordedEvent`       | foosball     | notification (logging) | Log game activity              |
-| `PlayerCreatedEvent`      | foosball     | notification (logging) | Log player creation            |
-| `QuizStartedEvent`        | trivia       | notification (logging) | Log quiz start                 |
-| `QuizCompletedEvent`      | trivia       | notification (logging) | Log quiz completion            |
-| `PlayerJoinedQuizEvent`   | trivia       | notification (logging) | Log player join                |
-| `UserRegisteredEvent`     | user         | notification (logging) | Log registration               |
-| `UserLoginEvent`          | user         | notification (logging) | Log login                      |
-| `UserProfileUpdatedEvent` | user         | notification (logging) | Log profile update             |
-| `TrickAnalysisEvent`      | skatetricks  | _(none)_               | Published but no consumers yet |
+|                Event                | Published By |      Consumed By       |             Purpose              |
+|-------------------------------------|--------------|------------------------|----------------------------------|
+| `BookingCreatedEvent`               | booking      | notification, calendar | Send email + create CalDAV event |
+| `BookingCancelledEvent`             | booking      | notification, calendar | Send email + delete CalDAV event |
+| `BookingCancellationRequestedEvent` | calendar     | booking                | Cancel booking (calendar sync)   |
+| `GameRecordedEvent`                 | foosball     | notification (logging) | Log game activity                |
+| `PlayerCreatedEvent`                | foosball     | notification (logging) | Log player creation              |
+| `QuizStartedEvent`                  | trivia       | notification (logging) | Log quiz start                   |
+| `QuizCompletedEvent`                | trivia       | notification (logging) | Log quiz completion              |
+| `PlayerJoinedQuizEvent`             | trivia       | notification (logging) | Log player join                  |
+| `UserRegisteredEvent`               | user         | notification (logging) | Log registration                 |
+| `UserLoginEvent`                    | user         | notification (logging) | Log login                        |
+| `UserProfileUpdatedEvent`           | user         | notification (logging) | Log profile update               |
+| `TrickAnalysisEvent`                | skatetricks  | _(none)_               | Published but no consumers yet   |
 
 ### Event Publication Registry
 
@@ -486,39 +490,104 @@ landscape:
 
 #### Booking Module
 
-The `booking` module provides appointment scheduling with event-driven notifications.
+The `booking` module provides appointment scheduling with event-driven notifications and calendar integration.
 
 **Architecture:**
-- **Event-Driven Notifications** — publishes `BookingCreatedEvent` and `BookingCancelledEvent` from `booking.api`; notification module handles email sending via `@TransactionalEventListener`
+- **Event-Driven** — publishes `BookingCreatedEvent` and `BookingCancelledEvent` from `booking.api`; notification module sends emails, calendar module creates CalDAV events
+- **Cancellation via Events** — listens for `BookingCancellationRequestedEvent` (published by the calendar module when a Nextcloud calendar event is deleted) to cancel bookings. The `BookingCancellationListener` handles this in `booking.platform`.
 - **Event Publication Registry** — `spring-modulith-starter-jpa` persists events to `event_publication` table for guaranteed delivery and replay
 - **Automatic Availability Generation** — `AvailabilityScheduler` creates recurring weekly slots (Monday-Friday, 11 AM-12 PM and 6-9 PM) for 4 weeks ahead
 - **iCal4j Library** — generates RFC-compliant `.ics` calendar files with Central Time (America/Chicago) timezone
 
 **Key classes:**
 - `BookingService` — booking creation, cancellation, availability management, event publishing
+- `BookingCancellationListener` — handles `BookingCancellationRequestedEvent` from calendar module
 - `AvailabilityScheduler` — generates recurring weekly availability slots automatically
 - `BookingController` — public endpoints for booking creation and management
 - `BookingAdminController` — protected admin endpoints for system configuration
 
 **Domain Events** (in `booking.api`):
 - `BookingCreatedEvent` — contains all booking details (attendee info, times, confirmation code, message)
-- `BookingCancelledEvent` — contains cancellation details for notification
+- `BookingCancelledEvent` — contains cancellation details for notification and calendar
+- `BookingCancellationRequestedEvent` — published by external modules (calendar) to request booking cancellation
+
+#### Calendar Module
+
+The `calendar` module provides **Nextcloud CalDAV integration** for automatic calendar management. It is fully event-driven.
+
+**Architecture:**
+- **Event-Driven** — listens for `BookingCreatedEvent` and `BookingCancelledEvent` to create/delete CalDAV events
+- **Calendar Sync** — `CalendarSyncScheduler` polls Nextcloud every 5 minutes (ShedLock-protected) for deleted events; publishes `BookingCancellationRequestedEvent` when a deletion is detected
+- **CalDAV via WebClient** — uses `WebClient` for CalDAV HTTP methods (PROPFIND, PUT, DELETE, MKCALENDAR). No dedicated CalDAV library.
+- **Conditional** — all CalDAV beans are `@ConditionalOnProperty(name = "calendar.nextcloud.enabled")`, disabled in dev/test
+
+**Key classes:**
+- `CalendarEventListener` — handles `BookingCreatedEvent` (creates CalDAV event + stores mapping) and `BookingCancelledEvent` (deletes CalDAV event) with `@TransactionalEventListener`
+- `NextcloudCalDavService` — CalDAV HTTP client (MKCALENDAR, PUT, DELETE, PROPFIND)
+- `CalendarSyncScheduler` — polls for deleted events, publishes `BookingCancellationRequestedEvent`
+- `IcsGenerator` — generates `.ics` content with deterministic UIDs (`booking-{code}@thonbecker.biz`)
+- `CalendarEventMappingEntity` — persists booking-to-CalDAV-UID mapping in `booking.calendar_event_mappings` table
+
+**Configuration** (`application.yml`):
+
+```yaml
+calendar:
+  nextcloud:
+    enabled: true
+    base-url: https://cloud.thonbecker.biz
+    username: ${NEXTCLOUD_USERNAME}
+    password: ${NEXTCLOUD_APP_PASSWORD}
+    calendar-name: bookings
+    organizer-email: thon.becker@gmail.com
+    sync-cron: "0 */5 * * * *"
+```
+
+**Environment variables:**
+- `NEXTCLOUD_USERNAME` — Nextcloud username
+- `NEXTCLOUD_APP_PASSWORD` — Nextcloud app password (generate in Settings > Security > App passwords)
+
+**CalDAV URL pattern:** `https://cloud.thonbecker.biz/remote.php/dav/calendars/{username}/bookings/`
+
+**Cancellation flow when calendar event deleted from Nextcloud:**
+1. `CalendarSyncScheduler` detects missing UID via PROPFIND
+2. Deletes mapping from `calendar_event_mappings`
+3. Publishes `BookingCancellationRequestedEvent`
+4. `BookingCancellationListener` (booking module) cancels the booking
+5. `BookingCancelledEvent` fires → notification sends cancellation email
+6. Calendar module's `CalendarEventListener` tries to delete CalDAV event → mapping already gone, skips
 
 #### Notification Module
 
-The `notification` module is **fully event-driven** with no public service API.
+The `notification` module is **fully event-driven** with no public service API. It handles **email only** via AWS SES.
 
 **Architecture:**
 - **Zero Coupling** — depends only on event types from other modules' `api` packages via `@NamedInterface`
 - **`@TransactionalEventListener`** — for booking events (guaranteed delivery via event publication registry)
 - **`@EventListener` + `@Async`** — for logging events (non-critical, fire-and-forget)
-- **Email Service** — currently logs to console; ready for AWS SES integration
+- **AWS SES** — sends real emails with `.ics` attachments via `SendRawEmail` (MIME multipart)
+- **Conditional** — email sending disabled in dev/test via `notification.email.enabled=false`
 
 **Key classes:**
 - `NotificationEventListener` — handles `BookingCreatedEvent` and `BookingCancelledEvent` with `@TransactionalEventListener`
 - `EventLoggingListener` — logs events from trivia, foosball, user modules with `@Async`
-- `EmailNotificationService` — formats booking confirmation/cancellation emails
-- `CalendarService` — generates `.ics` calendar attachments from event data
+- `EmailNotificationService` — sends booking confirmation (with `.ics` attachment) and cancellation emails via SES
+- `CalendarService` — generates `.ics` calendar attachments from event data (for email attachments)
+
+**Configuration** (`application.yml`):
+
+```yaml
+notification:
+  email:
+    enabled: true
+    sender: thon.becker@gmail.com
+    admin: thon.becker@gmail.com
+```
+
+**AWS SES prerequisites:**
+- Sender email (`thon.becker@gmail.com`) must be verified in SES
+- SES must be in production mode (not sandbox) to send to unverified recipients
+- Uses existing AWS credentials (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`)
+- `SesClient` bean configured in `AwsConfig`
 
 #### Shared Module
 

@@ -8,3 +8,18 @@ spring:
         region: us-east-1
         access-key: test
         secret-key: test
+
+notification:
+  email:
+    enabled: false
+    sender: test@test.com
+    admin: test@test.com
+
+calendar:
+  nextcloud:
+    enabled: false
+    base-url: https://localhost
+    username: test
+    password: test
+    calendar-name: bookings
+    organizer-email: test@test.com

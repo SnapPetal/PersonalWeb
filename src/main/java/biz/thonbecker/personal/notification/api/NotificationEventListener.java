@@ -11,7 +11,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 /**
  * Event listener for notification-related events from other modules.
  *
- * <p>Listens for events across modules and sends appropriate notifications.
+ * <p>Listens for booking events and sends appropriate email notifications.
  * Events contain all necessary data, so no callbacks to originating modules are needed.
  *
  * <p>Uses {@link TransactionalEventListener} so events are processed after the publishing
@@ -25,29 +25,16 @@ class NotificationEventListener {
 
     private final EmailNotificationService emailService;
 
-    /**
-     * Handles booking creation events by sending confirmation emails.
-     * Runs after the booking transaction commits to ensure the booking is persisted.
-     *
-     * @param event The booking created event
-     */
     @TransactionalEventListener
     void onBookingCreated(final BookingCreatedEvent event) {
-        log.info("Notification module handling BookingCreatedEvent for booking {}", event.confirmationCode());
+        log.info("Sending booking confirmation email for {}", event.confirmationCode());
         emailService.sendBookingConfirmation(event);
-        emailService.sendBookingNotificationToAdmin(event);
-        log.info("Successfully sent booking notifications for {}", event.confirmationCode());
+        log.info("Successfully sent booking confirmation for {}", event.confirmationCode());
     }
 
-    /**
-     * Handles booking cancellation events by sending cancellation emails.
-     * Runs after the cancellation transaction commits.
-     *
-     * @param event The booking cancelled event
-     */
     @TransactionalEventListener
     void onBookingCancelled(final BookingCancelledEvent event) {
-        log.info("Notification module handling BookingCancelledEvent for booking {}", event.confirmationCode());
+        log.info("Sending cancellation email for {}", event.confirmationCode());
         emailService.sendCancellationNotification(event);
         log.info("Successfully sent cancellation notification for {}", event.confirmationCode());
     }

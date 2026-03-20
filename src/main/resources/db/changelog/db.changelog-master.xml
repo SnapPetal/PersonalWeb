@@ -30,4 +30,5 @@
     <include file="classpath:db/changelog/changes/024-booking-schema.xml"/>
     <include file="classpath:db/changelog/changes/025-add-pose-data-column.xml"/>
     <include file="classpath:db/changelog/changes/026-update-event-publication-schema.xml"/>
+    <include file="classpath:db/changelog/changes/027-calendar-event-mappings.xml"/>
 </databaseChangeLog>

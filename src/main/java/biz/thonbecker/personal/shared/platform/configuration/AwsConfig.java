@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.polly.PollyClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
+import software.amazon.awssdk.services.ses.SesClient;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -71,6 +72,22 @@ public class AwsConfig {
         final var credentialsProvider = StaticCredentialsProvider.create(credentials);
 
         return BedrockRuntimeClient.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    /**
+     * Creates a configured SesClient bean for sending emails.
+     *
+     * @return Configured SesClient
+     */
+    @Bean
+    public SesClient sesClient() {
+        final var credentials = AwsBasicCredentials.create(accessKey, secretKey);
+        final var credentialsProvider = StaticCredentialsProvider.create(credentials);
+
+        return SesClient.builder()
                 .region(Region.of(awsRegion))
                 .credentialsProvider(credentialsProvider)
                 .build();

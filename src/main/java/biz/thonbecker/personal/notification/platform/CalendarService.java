@@ -8,7 +8,6 @@ import net.fortuna.ical4j.model.component.VEvent;
 import net.fortuna.ical4j.model.parameter.Cn;
 import net.fortuna.ical4j.model.parameter.Role;
 import net.fortuna.ical4j.model.property.*;
-import net.fortuna.ical4j.util.RandomUidGenerator;
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,18 +23,30 @@ class CalendarService {
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("America/Chicago");
 
     /**
-     * Generates an iCalendar (.ics) file content for a booking.
+     * Generates an iCalendar (.ics) file content for a booking with a random UID.
      *
      * @param event The booking created event
      * @param organizerEmail Email address of the organizer
      * @return iCalendar file content as a string
      */
     public String generateICalendar(final BookingCreatedEvent event, final String organizerEmail) {
+        return generateICalendar(event, organizerEmail, null);
+    }
+
+    /**
+     * Generates an iCalendar (.ics) file content for a booking.
+     *
+     * @param event The booking created event
+     * @param organizerEmail Email address of the organizer
+     * @param uid Optional deterministic UID for CalDAV compatibility (null for random)
+     * @return iCalendar file content as a string
+     */
+    public String generateICalendar(final BookingCreatedEvent event, final String organizerEmail, final String uid) {
         try {
             // Create calendar
             final var calendar = new Calendar();
             calendar.add(new ProdId(PRODUCT_ID));
-            calendar.add(new Version());
+            calendar.add(new Version(new net.fortuna.ical4j.model.ParameterList(), "2.0"));
             calendar.add(new CalScale(CalScale.VALUE_GREGORIAN));
 
             // Convert LocalDateTime to ZonedDateTime
@@ -45,9 +56,12 @@ class CalendarService {
             // Create event
             final var vEvent = new VEvent(startZoned.toInstant(), endZoned.toInstant(), event.bookingTypeName());
 
-            // Add unique ID
-            final var uidGenerator = new RandomUidGenerator();
-            vEvent.add(uidGenerator.generateUid());
+            // Add UID (deterministic if provided, random otherwise)
+            if (uid != null) {
+                vEvent.add(new Uid(uid));
+            } else {
+                vEvent.add(new net.fortuna.ical4j.util.RandomUidGenerator().generateUid());
+            }
 
             // Add description
             final var description = new StringBuilder();

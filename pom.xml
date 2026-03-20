@@ -151,6 +151,10 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-mail</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-oauth2-client</artifactId>
     </dependency>
     <dependency>
@@ -252,6 +256,10 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>s3vectors</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>ses</artifactId>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>

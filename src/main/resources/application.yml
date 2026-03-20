@@ -126,6 +126,24 @@ landscape:
     cdn-domain: https://cdn.thonbecker.com
     folder-prefix: landscape-plans/
 
+# Notification Configuration (email only)
+notification:
+  email:
+    enabled: true
+    sender: thon.becker@gmail.com
+    admin: thon.becker@gmail.com
+
+# Calendar Integration (Nextcloud CalDAV)
+calendar:
+  nextcloud:
+    enabled: true
+    base-url: https://cloud.thonbecker.biz
+    username: ${NEXTCLOUD_USERNAME}
+    password: ${NEXTCLOUD_APP_PASSWORD}
+    calendar-name: bookings
+    organizer-email: thon.becker@gmail.com
+    sync-cron: "0 */5 * * * *"
+
 # Spring Modulith Configuration (2.0.1)
 spring.modulith:
   # Event publication and handling

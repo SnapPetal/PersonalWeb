@@ -23,4 +23,11 @@ spring:
       additional-paths: src/main/resources
     livereload:
       enabled: true
-  
+
+notification:
+  email:
+    enabled: false
+
+calendar:
+  nextcloud:
+    enabled: false
