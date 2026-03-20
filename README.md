@@ -58,7 +58,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 | **Database**  | PostgreSQL 18, Liquibase migrations, Caffeine cache                                 |
 | **Frontend**  | Thymeleaf, HTMX, Alpine.js, Bootstrap 5, Fabric.js, WebJars                         |
 | **Real-time** | STOMP over SockJS (trivia, tank game)                                               |
-| **AWS**       | Bedrock, S3, S3 Vectors, CloudFront, Polly, Cognito, Lightsail                      |
+| **AWS**       | Bedrock, S3, S3 Vectors, SES, CloudFront, Polly, Cognito, Lightsail                 |
 
 ### Modules
 
@@ -71,7 +71,8 @@ src/main/java/biz/thonbecker/personal/
 ├── booking/        # Appointment scheduling with auto-availability
 ├── tankgame/       # WebSocket tank game with player progression
 ├── user/           # User management
-├── notification/   # Event-driven email notifications (zero coupling)
+├── calendar/       # Nextcloud CalDAV integration with calendar sync
+├── notification/   # Event-driven email notifications via AWS SES
 ├── content/        # Bible verse, Dad jokes (Polly TTS + S3)
 └── shared/         # Infrastructure configuration (Security, Cache, AWS, WebSocket)
 ```
