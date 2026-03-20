@@ -3,6 +3,6 @@
 |Base package
 |`biz.thonbecker.personal.calendar`
 |Events listened to
-|* `b.t.p.b.api.BookingCancelledEvent` 
-* `b.t.p.b.api.BookingCreatedEvent` 
+|* `b.t.p.b.api.BookingCancelledEvent` (async) 
+* `b.t.p.b.api.BookingCreatedEvent` (async) 
 |===
