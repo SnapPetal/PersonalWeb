@@ -6,12 +6,16 @@ import biz.thonbecker.personal.calendar.platform.persistence.CalendarEventMappin
 import biz.thonbecker.personal.calendar.platform.persistence.CalendarEventMappingRepository;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.lang.Nullable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Listens for booking events and manages corresponding Nextcloud calendar entries.
+ *
+ * <p>Uses {@link Async} so CalDAV calls to Nextcloud don't block the booking HTTP response.
  */
 @Component
 @Slf4j
@@ -30,7 +34,9 @@ class CalendarEventListener {
         this.properties = properties;
     }
 
-    @TransactionalEventListener
+    @EventListener
+    @Async
+    @Transactional
     void onBookingCreated(final BookingCreatedEvent event) {
         if (!properties.enabled() || Objects.isNull(calDavService)) {
             log.debug("Nextcloud integration disabled, skipping calendar event creation");
@@ -56,7 +62,9 @@ class CalendarEventListener {
         }
     }
 
-    @TransactionalEventListener
+    @EventListener
+    @Async
+    @Transactional
     void onBookingCancelled(final BookingCancelledEvent event) {
         if (!properties.enabled() || Objects.isNull(calDavService)) {
             return;
