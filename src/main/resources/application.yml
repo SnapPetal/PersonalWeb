@@ -10,6 +10,8 @@ server:
 spring:
   application:
     name: "personal"
+  main:
+    lazy-initialization: true  # Defer bean creation to reduce startup time for Lightsail 6-min deployment timeout
 
   # File Upload Configuration
   servlet:
@@ -172,4 +174,4 @@ spring.modulith:
 
   # NEW in 2.0: Module observability
   observability:
-    enabled: true  # Enable module interaction logging and metrics
+    enabled: false  # Disabled to reduce startup time; triggers ArchUnit scanning
