@@ -280,6 +280,7 @@
       <groupId>ai.djl.pytorch</groupId>
       <artifactId>pytorch-native-cpu</artifactId>
       <version>${djl.pytorch.version}</version>
+      <classifier>linux-x86_64</classifier>
       <scope>runtime</scope>
     </dependency>
     <dependency>
