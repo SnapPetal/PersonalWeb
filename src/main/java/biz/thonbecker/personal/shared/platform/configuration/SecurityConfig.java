@@ -53,7 +53,10 @@ public class SecurityConfig {
                 .logout(logout -> logout.logoutSuccessUrl("/").permitAll())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        .ignoringRequestMatchers(
+                                "/skatetricks-websocket/**",
+                                "/quiz-websocket/**"))
                 .addFilterAfter(new CsrfCookieFilter(), org.springframework.security.web.csrf.CsrfFilter.class);
         return http.build();
     }
