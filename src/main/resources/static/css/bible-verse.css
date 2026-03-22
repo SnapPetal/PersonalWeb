@@ -31,3 +31,18 @@
     text-align: right;
     margin-top: 0.5rem;
 }
+
+.verse-toggleable {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.verse-toggleable:hover {
+    opacity: 0.85;
+}
+
+.verse-toggle-hint {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    font-style: italic;
+}

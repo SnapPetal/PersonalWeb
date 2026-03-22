@@ -135,9 +135,12 @@
                                 <p class="text-danger">Error loading verse</p>
                             </template>
                             <template x-if="!loading && !error">
-                                <div class="verse-content">
-                                    <p class="verse-text mb-2" x-text="verseText"></p>
-                                    <p class="verse-translation mb-2" x-text="verseTranslation"></p>
+                                <div class="verse-content" :class="{ 'verse-toggleable': hasGreek }" @click="toggle()">
+                                    <p class="verse-text mb-2" x-text="displayText"></p>
+                                    <div class="d-flex justify-content-end align-items-center gap-2">
+                                        <span x-show="hasGreek" class="verse-toggle-hint" x-text="showGreek ? 'Tap for English' : 'Tap for Greek'"></span>
+                                        <p class="verse-translation mb-0" x-text="displayTranslation"></p>
+                                    </div>
                                 </div>
                             </template>
                         </div>
