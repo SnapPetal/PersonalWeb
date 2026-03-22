@@ -168,7 +168,7 @@ spring.modulith:
 
   # NEW in 2.0: Startup validation
   validation:
-    enabled: true  # Validate module structure at startup
+    enabled: false  # Module structure validated in tests (ModuleStructureTest), not at runtime
 
   # NEW in 2.0: Module observability
   observability:
