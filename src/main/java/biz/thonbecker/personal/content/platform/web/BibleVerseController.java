@@ -22,7 +22,7 @@ import tools.jackson.databind.ObjectMapper;
 @RequestMapping("/api/bible")
 @Slf4j
 public class BibleVerseController {
-    private static final String BIBLE_VERSION = "KJV";
+    private static final String PREFERRED_VERSION = "CSB";
     private static final String VERSE_FORMAT = "%s (%s %s:%s)";
     private static final String FETCH_ERROR_MESSAGE = "Failed to fetch bible verse";
 
@@ -73,9 +73,14 @@ public class BibleVerseController {
     }
 
     private BibleVerse formatBibleVerse(BibleVerseResponse response) {
-        String text = response.text().get(BIBLE_VERSION);
-        String formattedText = String.format(VERSE_FORMAT, text, response.book(), response.chapter(), response.verse());
-        return new BibleVerse(formattedText, BIBLE_VERSION);
+        final var textMap = response.text();
+        final var version = textMap.containsKey(PREFERRED_VERSION)
+                ? PREFERRED_VERSION
+                : textMap.keySet().iterator().next();
+        final var text = textMap.get(version);
+        final var formattedText =
+                String.format(VERSE_FORMAT, text, response.book(), response.chapter(), response.verse());
+        return new BibleVerse(formattedText, version);
     }
 
     private static class BibleVerseFetchException extends RuntimeException {
