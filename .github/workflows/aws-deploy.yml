@@ -1,4 +1,4 @@
-name: Deploy to ECS
+name: Build and Push to ECR
 
 on:
   push:
@@ -8,9 +8,11 @@ on:
 env:
   BP_JVM_VERSION: 25
   IMAGE_NAME: "personal"
+  ECR_REPOSITORY: "personal"
+  AWS_REGION: "us-east-1"
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -39,33 +41,22 @@ jobs:
         env:
           BP_JVM_VERSION: ${{ env.BP_JVM_VERSION }}
 
-      - name: Authenticate to AWS
-        run: |
-          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY }}
-          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_KEY }}
-          aws configure set default.region ${{ secrets.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Install Lightsail plugin
-        run: |
-          sudo curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
-          sudo chmod +x /usr/local/bin/lightsailctl
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Clean up old Lightsail container images
+      - name: Tag and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          OLD_IMAGES=$(aws lightsail get-container-images \
-            --service-name personal-service --region us-east-1 \
-            --query 'containerImages[5:].image' --output text 2>/dev/null || true)
-          for IMAGE in $OLD_IMAGES; do
-            echo "Deleting old image: $IMAGE"
-            aws lightsail delete-container-image \
-              --service-name personal-service --region us-east-1 \
-              --image "$IMAGE" || true
-          done
-
-      - name: Build and push Docker image
-        run: |
-          aws lightsail push-container-image \
-            --region us-east-1 \
-            --service-name personal-service \
-            --label personal \
-            --image personal:latest
+          docker tag ${{ env.IMAGE_NAME }}:latest $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+          docker tag ${{ env.IMAGE_NAME }}:latest $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:${{ github.sha }}

@@ -10,9 +10,6 @@ server:
 spring:
   application:
     name: "personal"
-  main:
-    lazy-initialization: true  # Defer bean creation to reduce startup time for Lightsail 6-min deployment timeout
-
   # File Upload Configuration
   servlet:
     multipart:
@@ -170,8 +167,8 @@ spring.modulith:
 
   # NEW in 2.0: Startup validation
   validation:
-    enabled: false  # Module structure validated in tests (ModuleStructureTest), not at runtime
+    enabled: true  # Validate module structure at startup
 
   # NEW in 2.0: Module observability
   observability:
-    enabled: false  # Disabled to reduce startup time; triggers ArchUnit scanning
+    enabled: true  # Enable module interaction logging and metrics
