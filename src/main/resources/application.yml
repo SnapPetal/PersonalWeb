@@ -32,8 +32,8 @@ spring:
   # Database Configuration
   datasource:
     url: jdbc:postgresql://ls-d58c718c47b3e4713b1e40ba54194bc87f99e527.cmldxjsfqvn4.us-east-1.rds.amazonaws.com:5432/dbmaster
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${PERSONAL_DB_USERNAME}
+    password: ${PERSONAL_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   # Liquibase Configuration
@@ -68,9 +68,9 @@ spring:
           model: amazon.titan-embed-text-v2:0
           input-type: TEXT
       aws:
-        region: ${AWS_REGION:us-east-1}
-        access-key: ${AWS_ACCESS_KEY_ID}
-        secret-key: ${AWS_SECRET_ACCESS_KEY}
+        region: ${PERSONAL_AWS_REGION:us-east-1}
+        access-key: ${PERSONAL_AWS_ACCESS_KEY_ID}
+        secret-key: ${PERSONAL_AWS_SECRET_ACCESS_KEY}
     model:
       embedding: bedrock-titan
 
@@ -89,14 +89,14 @@ spring:
       client:
         registration:
           cognito:
-            client-id: ${COGNITO_CLIENT_ID}
-            client-secret: ${COGNITO_CLIENT_SECRET}
+            client-id: ${PERSONAL_COGNITO_CLIENT_ID}
+            client-secret: ${PERSONAL_COGNITO_CLIENT_SECRET}
             scope: openid,profile,email
             client-name: AWS Cognito
             redirect-uri: https://thonbecker.biz/login/oauth2/code/cognito
         provider:
           cognito:
-            issuer-uri: https://cognito-idp.${AWS_REGION:us-east-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
+            issuer-uri: https://cognito-idp.${PERSONAL_AWS_REGION:us-east-1}.amazonaws.com/${PERSONAL_COGNITO_USER_POOL_ID}
 
 # Bible Verse API Configuration
 bible:
@@ -124,7 +124,7 @@ skatetricks:
 landscape:
   plant-api:
     base-url: https://perenual.com/api/v2
-    key: ${PERENUAL_API_KEY}
+    key: ${PERSONAL_PERENUAL_API_KEY}
     timeout: 10000
   storage:
     bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq
@@ -143,8 +143,8 @@ calendar:
   nextcloud:
     enabled: true
     base-url: https://cloud.thonbecker.biz
-    username: ${NEXTCLOUD_USERNAME}
-    password: ${NEXTCLOUD_APP_PASSWORD}
+    username: ${PERSONAL_NEXTCLOUD_USERNAME}
+    password: ${PERSONAL_NEXTCLOUD_APP_PASSWORD}
     calendar-name: bookings
     organizer-email: thon.becker@gmail.com
     sync-cron: "0 */5 * * * *"
