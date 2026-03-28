@@ -405,23 +405,29 @@ The `skatetricks` module uses **AWS S3 Vectors** as a vector store for Retrieval
 - **Claude Sonnet 4.6** (inference profile `us.anthropic.claude-sonnet-4-6`) — visual trick analysis via Spring AI / Bedrock Converse API
 - **Titan Text Embeddings V2** (`amazon.titan-embed-text-v2:0`) — 1024-dimension normalized float embeddings via Spring AI `EmbeddingModel` (auto-configured by `spring-ai-starter-model-bedrock`)
 
-**Store flow** (verified attempt -> vector store):
-1. Trick analyzed by Claude; YOLO pose data saved to `pose_data` column in DB via `SkateTricksService.saveResult()`
-2. Auto-verified if `confidence >= 80`; otherwise surfaced to user for confirmation/correction
-3. On verification: `writeToVectorStore()` embeds the **pose data text** (NOT trick name) via `EmbeddingService`, stores with `PutInputVector` keyed `attempt-{id}` and `Document` metadata (`trickName`, `confidence`, `formScore`, `attemptId`, `feedback`)
-4. Attempts without pose data (e.g., direct video analysis path) are skipped for vector store writes
+**Embedding strategy — two text outputs from PoseData:**
+- `toPromptText()` — verbose per-frame skeletal data injected into Claude's system prompt for visual analysis
+- `toEmbeddingText()` — compact motion signature (5 key frames: setup/launch/peak/descent/landing, overall motion stats) optimized for Titan text embedding. This is what gets embedded and stored in the vector store.
 
-**IMPORTANT**: Both the stored vectors and query vectors must embed the **same type of data** (pose data). Previously, stored vectors used `"trick:{name} feedback:{feedback}"` while queries used pose data — this semantic mismatch made RAG retrieval meaningless. The fix embeds pose data for both storage and query.
+The `embedding_text` column on `trick_attempts` stores the compact text. If null (legacy rows), falls back to raw `pose_data` for embedding.
+
+**Store flow** (verified attempt -> vector store):
+1. Trick analyzed by Claude; YOLO pose data saved to `pose_data` column, embedding text to `embedding_text` column in DB
+2. Auto-verified if `confidence >= 80`; otherwise surfaced to user for confirmation/correction
+3. On verification: `writeToVectorStore()` embeds the **embedding text** (compact motion signature) via `EmbeddingService`, stores with `PutInputVector` keyed `attempt-{id}` and `Document` metadata (`trickName`, `confidence`, `formScore`, `attemptId`, `feedback`)
+4. Attempts without pose/embedding data (e.g., direct video analysis path) are skipped for vector store writes
+
+**IMPORTANT**: Both the stored vectors and query vectors must embed the **same type of data** (embedding text from `toEmbeddingText()`). The embedding text captures motion signatures (rotation, airborne ratio, knee bend, key frame angles) so that similar trick mechanics cluster together in vector space.
 
 **RAG query flow** (frame analysis path only):
-1. `BedrockTrickAnalyzer.fetchSimilarExamples()` embeds the YOLO pose data text
+1. `BedrockTrickAnalyzer.fetchSimilarExamples()` embeds the compact embedding text
 2. Queries `queryVectors` top-3 by cosine similarity
 3. Similar verified past attempts (with feedback from metadata) are injected as few-shot examples into Claude's system prompt
 
 **Key classes:**
 - `EmbeddingService` — wraps Spring AI `EmbeddingModel` (Titan Embed V2), returns `List<Float>` (1024 dims)
-- `VectorStoreInitializer` — `@PostConstruct` creates the index (`DataType.FLOAT32`, `DistanceMetric.COSINE`, dim=1024); supports `recreate` flag for index reset
-- `writeToVectorStore()` in `SkateTricksService` — embeds pose data, upserts (same key replaces on correction)
+- `VectorStoreInitializer` — `@PostConstruct` creates the index (`DataType.FLOAT32`, `DistanceMetric.COSINE`, dim=1024); supports `recreate` flag for index reset. Conditional on `skatetricks.vectorstore.enabled`.
+- `writeToVectorStore()` in `SkateTricksService` — embeds embedding text, upserts (same key replaces on correction)
 - `fetchSimilarExamples()` in `BedrockTrickAnalyzer` — RAG retrieval for frame analysis
 
 **Configuration** (`application.yml`):
@@ -433,7 +439,10 @@ skatetricks:
     index: skatetricks-tricks
     dimension: 1024
     recreate: false  # Set to true to wipe and recreate the index on startup
+    enabled: true    # Set to false to disable vector store (disabled in dev profile)
 ```
+
+The `S3VectorsClient` bean, `VectorStoreInitializer`, and `EmbeddingService` are all conditional on `skatetricks.vectorstore.enabled` (defaults to `true`, set to `false` in `application-dev.yml`).
 
 **AWS prerequisite:** `amazon.titan-embed-text-v2:0` must be enabled in the Bedrock Model Access console in `us-east-1`.
 
