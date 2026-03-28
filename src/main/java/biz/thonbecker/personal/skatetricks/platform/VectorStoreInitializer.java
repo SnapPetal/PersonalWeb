@@ -16,6 +16,10 @@ import software.amazon.awssdk.services.s3vectors.model.NotFoundException;
  */
 @Component
 @Slf4j
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "skatetricks.vectorstore.enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 class VectorStoreInitializer {
 
     private final S3VectorsClient s3VectorsClient;

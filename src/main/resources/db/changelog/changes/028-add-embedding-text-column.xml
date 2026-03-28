@@ -1,0 +1,17 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="028-add-embedding-text-column" author="thonbecker">
+        <addColumn schemaName="skatetricks" tableName="trick_attempts">
+            <column name="embedding_text" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="028-truncate-trick-attempts" author="thonbecker">
+        <comment>Clear old trick attempts since embedding format changed — old pose data embeddings are incompatible with new compact embedding text</comment>
+        <sql>TRUNCATE TABLE skatetricks.trick_attempts</sql>
+    </changeSet>
+
+</databaseChangeLog>

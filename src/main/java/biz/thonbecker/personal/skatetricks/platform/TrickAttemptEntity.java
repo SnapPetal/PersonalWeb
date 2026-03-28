@@ -42,6 +42,9 @@ class TrickAttemptEntity {
     @Column(name = "pose_data", columnDefinition = "TEXT")
     private String poseData;
 
+    @Column(name = "embedding_text", columnDefinition = "TEXT")
+    private String embeddingText;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

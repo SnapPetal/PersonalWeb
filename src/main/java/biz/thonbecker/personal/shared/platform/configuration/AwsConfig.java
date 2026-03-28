@@ -109,6 +109,10 @@ public class AwsConfig {
      * @return Configured S3VectorsClient
      */
     @Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+            name = "skatetricks.vectorstore.enabled",
+            havingValue = "true",
+            matchIfMissing = true)
     public S3VectorsClient s3VectorsClient() {
         final var credentials = AwsBasicCredentials.create(accessKey, secretKey);
         final var credentialsProvider = StaticCredentialsProvider.create(credentials);

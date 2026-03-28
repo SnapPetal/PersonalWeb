@@ -31,3 +31,7 @@ notification:
 calendar:
   nextcloud:
     enabled: false
+
+skatetricks:
+  vectorstore:
+    enabled: false

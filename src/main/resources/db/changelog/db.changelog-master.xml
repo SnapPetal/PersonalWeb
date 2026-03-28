@@ -31,4 +31,5 @@
     <include file="classpath:db/changelog/changes/025-add-pose-data-column.xml"/>
     <include file="classpath:db/changelog/changes/026-update-event-publication-schema.xml"/>
     <include file="classpath:db/changelog/changes/027-calendar-event-mappings.xml"/>
+    <include file="classpath:db/changelog/changes/028-add-embedding-text-column.xml"/>
 </databaseChangeLog>

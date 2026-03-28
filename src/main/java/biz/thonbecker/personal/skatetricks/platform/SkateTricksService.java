@@ -35,19 +35,22 @@ public class SkateTricksService {
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
 
-    @Value("${skatetricks.vectorstore.bucket}")
+    @Value("${skatetricks.vectorstore.bucket:}")
     private String vectorBucket;
 
-    @Value("${skatetricks.vectorstore.index}")
+    @Value("${skatetricks.vectorstore.index:}")
     private String vectorIndex;
+
+    @Value("${skatetricks.vectorstore.enabled:true}")
+    private boolean vectorStoreEnabled;
 
     SkateTricksService(
             TrickAnalyzer trickAnalyzer,
             TrickAttemptRepository trickAttemptRepository,
             ApplicationEventPublisher eventPublisher,
             FFmpegVideoConverter videoConverter,
-            S3VectorsClient s3VectorsClient,
-            EmbeddingService embeddingService) {
+            @org.springframework.lang.Nullable S3VectorsClient s3VectorsClient,
+            @org.springframework.lang.Nullable EmbeddingService embeddingService) {
         this.trickAnalyzer = trickAnalyzer;
         this.trickAttemptRepository = trickAttemptRepository;
         this.eventPublisher = eventPublisher;
@@ -120,6 +123,7 @@ public class SkateTricksService {
         entity.setFeedback(Objects.nonNull(result.feedback()) ? String.join("|", result.feedback()) : "");
         entity.setTrickSequence(encodeTrickSequence(result.trickSequence()));
         entity.setPoseData(result.poseData());
+        entity.setEmbeddingText(result.embeddingText());
 
         if (result.confidence() >= AUTO_VERIFY_CONFIDENCE_THRESHOLD) {
             entity.setVerified(true);
@@ -159,9 +163,20 @@ public class SkateTricksService {
     }
 
     private void writeToVectorStore(final TrickAttemptEntity entity) {
+        if (!vectorStoreEnabled || Objects.isNull(s3VectorsClient) || Objects.isNull(embeddingService)) {
+            log.info("Vector store disabled, skipping write for attempt {}", entity.getId());
+            return;
+        }
         try {
-            if (Objects.isNull(entity.getPoseData()) || entity.getPoseData().isBlank()) {
-                log.info("Skipping vector store write for attempt {} — no pose data available", entity.getId());
+            final var textToEmbed = Objects.nonNull(entity.getEmbeddingText())
+                            && !entity.getEmbeddingText().isBlank()
+                    ? entity.getEmbeddingText()
+                    : entity.getPoseData();
+
+            if (Objects.isNull(textToEmbed) || textToEmbed.isBlank()) {
+                log.info(
+                        "Skipping vector store write for attempt {} — no embedding or pose data available",
+                        entity.getId());
                 return;
             }
 
@@ -176,8 +191,8 @@ public class SkateTricksService {
                     vectorBucket,
                     vectorIndex);
 
-            log.debug("Embedding pose data (length={})", entity.getPoseData().length());
-            final var embedding = embeddingService.embed(entity.getPoseData());
+            log.debug("Embedding text (length={})", textToEmbed.length());
+            final var embedding = embeddingService.embed(textToEmbed);
             log.debug("Generated embedding with {} dimensions", embedding.size());
 
             final var metadata = Document.fromMap(Map.of(
@@ -326,6 +341,7 @@ public class SkateTricksService {
                         e.getFeedback() != null ? List.of(e.getFeedback().split("\\|")) : List.of(),
                         decodeTrickSequence(e.getTrickSequence()),
                         e.getPoseData(),
+                        e.getEmbeddingText(),
                         e.getId()))
                 .toList();
     }

@@ -29,18 +29,18 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
 
-    @Value("${skatetricks.vectorstore.bucket}")
+    @Value("${skatetricks.vectorstore.bucket:}")
     private String vectorBucket;
 
-    @Value("${skatetricks.vectorstore.index}")
+    @Value("${skatetricks.vectorstore.index:}")
     private String vectorIndex;
 
     @Autowired(required = false)
     BedrockTrickAnalyzer(
             ChatModel chatModel,
             PoseEstimationService poseEstimationService,
-            S3VectorsClient s3VectorsClient,
-            EmbeddingService embeddingService) {
+            @org.springframework.lang.Nullable S3VectorsClient s3VectorsClient,
+            @org.springframework.lang.Nullable EmbeddingService embeddingService) {
         this.chatClient = chatModel != null ? ChatClient.create(chatModel) : null;
         this.poseEstimationService = poseEstimationService;
         this.s3VectorsClient = s3VectorsClient;
@@ -62,10 +62,11 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                             .build())
                     .toList();
 
-            final var poseDataText = buildPoseDataText(base64Frames);
-            final var similarExamples = fetchSimilarExamples(poseDataText);
+            final var poseTexts = buildPoseDataText(base64Frames);
+            final var similarExamples = fetchSimilarExamples(poseTexts.embeddingText());
 
-            String systemPrompt = """
+            String systemPrompt =
+                    """
                     You are an expert skateboarding trick judge. Your output MUST be ONLY a valid JSON object. \
                     Do NOT include any text, reasoning, frame-by-frame analysis, markdown, or explanation — \
                     only the JSON object itself.
@@ -98,7 +99,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
                     Use ENUM_NAME exactly (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, \
                     BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
-                    """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseDataText;
+                    """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseTexts.promptText();
 
             String userPrompt =
                     ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
@@ -116,7 +117,8 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                             .map(e -> new TrickSequenceEntry(
                                     TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
                             .toList(),
-                    poseDataText.isBlank() ? null : poseDataText);
+                    poseTexts.promptText().isBlank() ? null : poseTexts.promptText(),
+                    poseTexts.embeddingText().isBlank() ? null : poseTexts.embeddingText());
 
         } catch (Exception e) {
             log.error("Error analyzing skateboard trick frames", e);
@@ -251,13 +253,17 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
         }
     }
 
-    private String buildPoseDataText(List<String> base64Frames) {
+    private record PoseTexts(String promptText, String embeddingText) {
+        static final PoseTexts EMPTY = new PoseTexts("", "");
+    }
+
+    private PoseTexts buildPoseDataText(List<String> base64Frames) {
         try {
             PoseData.SequencePoseData poseData = poseEstimationService.estimatePoses(base64Frames);
             if (poseData == null) {
-                return "";
+                return PoseTexts.EMPTY;
             }
-            return """
+            final var promptText = """
 
                     POSE ESTIMATION DATA:
                     Below is structured skeletal pose data from YOLO11n-Pose.
@@ -270,9 +276,11 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                     - board airborne (detected via YOLO object detection) = board left the ground
 
                     """ + poseData.toPromptText();
+            final var embeddingText = poseData.toEmbeddingText();
+            return new PoseTexts(promptText, embeddingText);
         } catch (Exception e) {
             log.warn("Failed to generate pose data for prompt, continuing without it", e);
-            return "";
+            return PoseTexts.EMPTY;
         }
     }
 
