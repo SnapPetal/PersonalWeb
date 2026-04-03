@@ -10,7 +10,7 @@
   </parent>
   <groupId>biz.thonbecker</groupId>
   <artifactId>personal</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.0</version>
 
   <properties>
     <alpinejs.version>3.15.8</alpinejs.version>
@@ -340,6 +340,26 @@
               <binding>${project.basedir}/Aptfile:/workspace/Aptfile</binding>
             </bindings>
           </image>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build-info</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+        <configuration>
+          <failOnNoGitDirectory>false</failOnNoGitDirectory>
+          <generateGitPropertiesFile>true</generateGitPropertiesFile>
+          <includeOnlyProperties>
+            <includeOnlyProperty>git.commit.id.abbrev</includeOnlyProperty>
+            <includeOnlyProperty>git.commit.time</includeOnlyProperty>
+            <includeOnlyProperty>git.branch</includeOnlyProperty>
+          </includeOnlyProperties>
         </configuration>
       </plugin>
       <plugin>
