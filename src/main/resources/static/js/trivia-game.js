@@ -23,6 +23,7 @@ function triviaGame() {
     difficulty: "MEDIUM",
     joinQuizId: "",
     creatingQuiz: false,
+    quizCreated: false,
 
     // Lists
     players: [],
@@ -175,6 +176,7 @@ function triviaGame() {
 
     _onQuizCreated(quiz) {
       this.creatingQuiz = false;
+      this.quizCreated = true;
       this.log(`Quiz created: ${quiz.title} with ID ${quiz.id}`, "success");
       this.currentQuizId = quiz.id;
 
@@ -255,9 +257,14 @@ function triviaGame() {
 
       if (state.status === "IN_PROGRESS" || state.status === "STARTED") {
         if (state.currentQuestion) {
+          const isNewQuestion =
+            !this.currentQuestion ||
+            this.currentQuestion.id !== state.currentQuestion.id;
           this.currentQuestion = state.currentQuestion;
-          this.selectedAnswer = null;
-          this.answerSubmitted = false;
+          if (isNewQuestion) {
+            this.selectedAnswer = null;
+            this.answerSubmitted = false;
+          }
         }
         if (state.players && state.players.length > 0) {
           this.scoreboard = [...state.players].sort(

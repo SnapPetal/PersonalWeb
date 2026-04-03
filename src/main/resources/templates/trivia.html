@@ -122,7 +122,7 @@
                     </div>
                     <div class="mt-4">
                         <button class="btn btn-success btn-lg w-100"
-                                :disabled="!isConnected || creatingQuiz" @click="createQuiz()">
+                                :disabled="!isConnected || creatingQuiz || quizCreated" @click="createQuiz()">
                             <template x-if="creatingQuiz">
                                 <span>
                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
