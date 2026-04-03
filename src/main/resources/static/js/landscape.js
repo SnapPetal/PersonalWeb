@@ -1013,26 +1013,30 @@
    * The image URL is stored in the parent placeholder's data-image-url attribute.
    */
   window.showPlantImage = function (button) {
-    const placeholder = button.closest(".plant-image-placeholder");
-    const imageUrl = placeholder.dataset.imageUrl;
-    if (!imageUrl) return;
+    const container = button.closest(".plant-image-container");
+    const externalUrl = container.dataset.imageUrl;
+    if (!externalUrl) return;
 
     button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
     button.disabled = true;
 
-    const img = document.createElement("img");
-    img.src = imageUrl;
-    img.alt = "Plant image";
-    img.loading = "lazy";
+    const proxyUrl =
+      "/landscape/plants/image/proxy?url=" + encodeURIComponent(externalUrl);
+
+    const img = new Image();
     img.onload = function () {
-      const wrapper = placeholder.closest(".plant-image-wrapper");
-      wrapper.innerHTML = "";
-      wrapper.appendChild(img);
+      container.innerHTML = "";
+      container.style.minHeight = "auto";
+      img.style.width = "100%";
+      img.style.display = "block";
+      img.style.borderRadius = "0.375rem 0.375rem 0 0";
+      container.appendChild(img);
     };
     img.onerror = function () {
       button.innerHTML = '<i class="bi bi-image"></i> Unavailable';
       button.disabled = true;
     };
+    img.src = proxyUrl;
   };
 
   function initializeLoadPlanLinks() {

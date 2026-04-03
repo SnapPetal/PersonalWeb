@@ -48,14 +48,12 @@
                      th:data-usda-symbol="${rec.usdaSymbol()}"
                      th:data-scientific-name="${rec.scientificName()}"
                      th:data-common-name="${rec.commonName()}">
-                    <div class="plant-image-wrapper">
-                        <div class="plant-image-placeholder" th:data-image-url="${rec.imageUrl()}">
-                            <button th:if="${rec.imageUrl()}" class="btn btn-sm btn-outline-secondary show-image-btn"
-                                    onclick="showPlantImage(this)" type="button">
-                                <i class="bi bi-image"></i> Show Image
-                            </button>
-                            <i th:unless="${rec.imageUrl()}" class="bi bi-flower3"></i>
-                        </div>
+                    <div class="plant-image-container" th:data-image-url="${rec.imageUrl()}">
+                        <button th:if="${rec.imageUrl()}" class="btn btn-sm btn-outline-secondary show-image-btn"
+                                onclick="showPlantImage(this)" type="button">
+                            <i class="bi bi-image"></i> Show Image
+                        </button>
+                        <i th:unless="${rec.imageUrl()}" class="bi bi-flower3 plant-icon-fallback"></i>
                     </div>
                     <div class="card-body">
                         <h6 class="card-title" th:text="${rec.commonName()} ?: ${rec.scientificName()}"></h6>
