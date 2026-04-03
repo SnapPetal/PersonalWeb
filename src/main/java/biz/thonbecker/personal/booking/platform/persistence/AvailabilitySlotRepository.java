@@ -1,9 +1,11 @@
 package biz.thonbecker.personal.booking.platform.persistence;
 
+import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -25,6 +27,16 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
         ORDER BY a.startTime
         """)
     List<AvailabilitySlotEntity> findOverlappingSlots(
+            @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT a FROM AvailabilitySlotEntity a
+        WHERE a.startTime < :endTime
+        AND a.endTime > :startTime
+        ORDER BY a.startTime
+        """)
+    List<AvailabilitySlotEntity> findOverlappingSlotsForUpdate(
             @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 
     /**

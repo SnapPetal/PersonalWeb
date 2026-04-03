@@ -2,13 +2,17 @@ package biz.thonbecker.personal.skatetricks.platform.web;
 
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
 import biz.thonbecker.personal.skatetricks.platform.SkateTricksService;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +31,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 class SkateTricksController {
 
+    private static final long MAX_UPLOAD_BYTES = 50L * 1024 * 1024;
+    private static final int STATUS_TTL_MINUTES = 10;
+    private static final int WORKER_THREADS = 2;
+    private static final int MAX_QUEUE_DEPTH = 20;
+
     private final SkateTricksService skateTricksService;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -35,8 +44,20 @@ class SkateTricksController {
     private final Map<String, ConversionStatus> conversionStatuses = new ConcurrentHashMap<>();
     private final Map<String, AnalysisStatus> analysisStatuses = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
-    private final ExecutorService conversionExecutor = Executors.newFixedThreadPool(2);
-    private final ExecutorService analysisExecutor = Executors.newFixedThreadPool(2);
+    private final ExecutorService conversionExecutor = new ThreadPoolExecutor(
+            WORKER_THREADS,
+            WORKER_THREADS,
+            0L,
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(MAX_QUEUE_DEPTH),
+            new ThreadPoolExecutor.AbortPolicy());
+    private final ExecutorService analysisExecutor = new ThreadPoolExecutor(
+            WORKER_THREADS,
+            WORKER_THREADS,
+            0L,
+            TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(MAX_QUEUE_DEPTH),
+            new ThreadPoolExecutor.AbortPolicy());
 
     SkateTricksController(SkateTricksService skateTricksService, SimpMessagingTemplate messagingTemplate) {
         this.skateTricksService = skateTricksService;
@@ -54,6 +75,9 @@ class SkateTricksController {
 
         if (video.isEmpty()) {
             return ResponseEntity.badRequest().build();
+        }
+        if (video.getSize() > MAX_UPLOAD_BYTES) {
+            return ResponseEntity.status(413).build();
         }
 
         // Generate video ID immediately
@@ -76,7 +100,12 @@ class SkateTricksController {
             conversionStatuses.put(videoId, new ConversionStatus("pending", 0, null, null));
 
             // Return immediately with video ID, process async
-            conversionExecutor.submit(() -> processVideoConversion(videoId, sessionId, videoBytes, filename));
+            try {
+                conversionExecutor.submit(() -> processVideoConversion(videoId, sessionId, videoBytes, filename));
+            } catch (RejectedExecutionException e) {
+                conversionStatuses.remove(videoId);
+                return ResponseEntity.status(429).build();
+            }
 
             return ResponseEntity.accepted().body(new ConvertResponse(videoId, 0, "pending"));
 
@@ -104,7 +133,7 @@ class SkateTricksController {
                         conversionStatuses.remove(videoId);
                         log.debug("Cleaned up converted video: {}", videoId);
                     },
-                    10,
+                    STATUS_TTL_MINUTES,
                     TimeUnit.MINUTES);
 
             log.info("Video converted successfully: {} -> {} bytes, id={}", filename, mp4Data.length, videoId);
@@ -116,7 +145,18 @@ class SkateTricksController {
             log.error("Failed to convert video: {}", videoId, e);
             updateConversionStatus(videoId, sessionId, "error", 0, null);
             conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, e.getMessage()));
+            scheduleConversionStatusCleanup(videoId);
         }
+    }
+
+    private void scheduleConversionStatusCleanup(String videoId) {
+        cleanupExecutor.schedule(
+                () -> {
+                    conversionStatuses.remove(videoId);
+                    log.debug("Cleaned up conversion status: {}", videoId);
+                },
+                STATUS_TTL_MINUTES,
+                TimeUnit.MINUTES);
     }
 
     private void updateConversionStatus(String videoId, String sessionId, String status, int progress, Long size) {
@@ -177,7 +217,12 @@ class SkateTricksController {
         analysisStatuses.put(analysisId, new AnalysisStatus("pending", null, null));
 
         // Return immediately, process async
-        analysisExecutor.submit(() -> processAnalysis(analysisId, sessionId, videoData, videoId));
+        try {
+            analysisExecutor.submit(() -> processAnalysis(analysisId, sessionId, videoData, videoId));
+        } catch (RejectedExecutionException e) {
+            analysisStatuses.remove(analysisId);
+            return ResponseEntity.status(429).build();
+        }
 
         return ResponseEntity.accepted().body(new AnalysisResponse(analysisId, "pending"));
     }
@@ -206,13 +251,24 @@ class SkateTricksController {
                         analysisStatuses.remove(analysisId);
                         log.debug("Cleaned up analysis result: {}", analysisId);
                     },
-                    10,
+                    STATUS_TTL_MINUTES,
                     TimeUnit.MINUTES);
 
         } catch (Exception e) {
             log.error("Failed to analyze video: {}", analysisId, e);
             analysisStatuses.put(analysisId, new AnalysisStatus("error", null, e.getMessage()));
+            scheduleAnalysisStatusCleanup(analysisId);
         }
+    }
+
+    private void scheduleAnalysisStatusCleanup(String analysisId) {
+        cleanupExecutor.schedule(
+                () -> {
+                    analysisStatuses.remove(analysisId);
+                    log.debug("Cleaned up analysis status: {}", analysisId);
+                },
+                STATUS_TTL_MINUTES,
+                TimeUnit.MINUTES);
     }
 
     @GetMapping("/skatetricks/analyze/{analysisId}/status")
@@ -250,4 +306,11 @@ class SkateTricksController {
     record AnalysisStatusResponse(String status, TrickAnalysisResult result, String error) {}
 
     record VerifyRequest(String correctedTrickName) {}
+
+    @PreDestroy
+    void shutdownExecutors() {
+        conversionExecutor.shutdown();
+        analysisExecutor.shutdown();
+        cleanupExecutor.shutdown();
+    }
 }

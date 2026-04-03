@@ -32,4 +32,5 @@
     <include file="classpath:db/changelog/changes/026-update-event-publication-schema.xml"/>
     <include file="classpath:db/changelog/changes/027-calendar-event-mappings.xml"/>
     <include file="classpath:db/changelog/changes/028-add-embedding-text-column.xml"/>
+    <include file="classpath:db/changelog/changes/029-booking-overlap-exclusion.xml"/>
 </databaseChangeLog>

@@ -1,0 +1,24 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="029-booking-overlap-exclusion" author="codex">
+        <comment>Prevent overlapping active bookings at the database level</comment>
+
+        <sql dbms="postgresql">CREATE EXTENSION IF NOT EXISTS btree_gist</sql>
+        <sql dbms="postgresql">
+            ALTER TABLE booking.bookings
+            ADD CONSTRAINT booking_no_overlapping_confirmed
+            EXCLUDE USING gist (tsrange(start_time, end_time, '[)') WITH &amp;&amp;)
+            WHERE (status IN ('CONFIRMED', 'PENDING'))
+        </sql>
+        <rollback>
+            <sql dbms="postgresql">
+                ALTER TABLE booking.bookings DROP CONSTRAINT IF EXISTS booking_no_overlapping_confirmed
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

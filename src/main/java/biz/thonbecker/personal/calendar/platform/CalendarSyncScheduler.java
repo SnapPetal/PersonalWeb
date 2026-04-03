@@ -56,7 +56,6 @@ class CalendarSyncScheduler {
                             mapping.getCalendarUid(),
                             mapping.getBookingId());
 
-                    mappingRepository.delete(mapping);
                     eventPublisher.publishEvent(new BookingCancellationRequestedEvent(mapping.getBookingId()));
                     deletedCount++;
                 }

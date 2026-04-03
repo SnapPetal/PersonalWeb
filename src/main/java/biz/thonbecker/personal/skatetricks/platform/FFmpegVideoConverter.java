@@ -106,8 +106,10 @@ class FFmpegVideoConverter {
                     Files.size(outputPath));
 
             return outputPath;
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            throw new VideoConversionException("Video conversion failed: " + e.getMessage(), e);
+        } catch (IOException e) {
             throw new VideoConversionException("Video conversion failed: " + e.getMessage(), e);
         }
     }
@@ -182,8 +184,10 @@ class FFmpegVideoConverter {
             log.info("Extracted {} frames from video", frames.size());
             return frames;
 
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            throw new VideoConversionException("Frame extraction failed: " + e.getMessage(), e);
+        } catch (IOException e) {
             throw new VideoConversionException("Frame extraction failed: " + e.getMessage(), e);
         } finally {
             // Clean up temp directory
@@ -207,9 +211,9 @@ class FFmpegVideoConverter {
     /**
      * Gets the duration of a video file in seconds using ffprobe.
      */
-    private double getVideoDuration(Path inputPath) throws VideoConversionException {
+    private double getVideoDuration(final Path inputPath) {
         try {
-            ProcessBuilder pb = new ProcessBuilder(
+            final var pb = new ProcessBuilder(
                     "ffprobe",
                     "-v",
                     "error",
@@ -221,10 +225,10 @@ class FFmpegVideoConverter {
 
             configureEnvironment(pb);
             pb.redirectErrorStream(true);
-            Process process = pb.start();
+            final var process = pb.start();
 
-            String output = new String(process.getInputStream().readAllBytes()).trim();
-            boolean finished = process.waitFor(10, TimeUnit.SECONDS);
+            final var output = new String(process.getInputStream().readAllBytes()).trim();
+            final var finished = process.waitFor(10, TimeUnit.SECONDS);
 
             if (!finished || process.exitValue() != 0) {
                 log.warn("Could not get video duration, defaulting to 10 seconds");
@@ -232,26 +236,9 @@ class FFmpegVideoConverter {
             }
 
             return Double.parseDouble(output);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("Error getting video duration: {}, defaulting to 10 seconds", e.getMessage());
             return 10.0;
-        }
-    }
-
-    /**
-     * Checks if FFmpeg is available on the system.
-     */
-    public boolean isFFmpegAvailable() {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-version");
-            configureEnvironment(pb);
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            boolean finished = process.waitFor(5, TimeUnit.SECONDS);
-            return finished && process.exitValue() == 0;
-        } catch (Exception e) {
-            log.warn("FFmpeg not available: {}", e.getMessage());
-            return false;
         }
     }
 

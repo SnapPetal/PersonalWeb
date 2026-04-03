@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents when working with code in this repository.
 
 ## Build & Development Commands
 
@@ -146,6 +146,7 @@ All modules use `@ApplicationModule` with **closed** boundaries (no `Type.OPEN`)
 @ApplicationModule(
     displayName = "Notification Services",
     allowedDependencies = {"shared", "booking :: api", "trivia :: api", "foosball :: api", "user :: api"})
+class NotificationModule {}
 ```
 
 ### Domain Events
@@ -210,11 +211,18 @@ class BookingModuleTest {
 
     @Test
     void publishesBookingCreatedEvent(Scenario scenario) {
-        scenario.stimulate(() -> bookingService.createBooking(...))
+        final var requestStart = LocalDateTime.now().plusDays(1).withHour(11).withMinute(0);
+
+        scenario.stimulate(() -> bookingService.createBooking(
+                        1L,
+                        "Test User",
+                        "test@example.com",
+                        "555-555-5555",
+                        requestStart,
+                        "Test booking",
+                        "user-123"))
             .andWaitForEventOfType(BookingCreatedEvent.class)
-            .toArriveAndVerify(event -> {
-                assertThat(event.attendeeEmail()).isNotBlank();
-            });
+            .toArriveAndVerify(event -> assertThat(event.attendeeEmail()).isNotBlank());
     }
 }
 ```
@@ -322,16 +330,18 @@ The `LandscapeImageGenerationService` uses **Amazon Nova Canvas** (`amazon.nova-
 
 ```java
 // TEXT_IMAGE with CANNY_EDGE conditioning preserves the structure of the input image
-Map.of(
-    "taskType", "TEXT_IMAGE",
-    "textToImageParams", Map.of(
-        "text", prompt,
-        "conditionImage", base64Image,
-        "controlMode", "CANNY_EDGE",
-        "controlStrength", 0.8),
-    "imageGenerationConfig", Map.of(
-        "width", 1024, "height", 1024,
-        "quality", "standard", "numberOfImages", 1));
+final var request = Map.of(
+        "taskType", "TEXT_IMAGE",
+        "textToImageParams", Map.of(
+                "text", prompt,
+                "conditionImage", base64Image,
+                "controlMode", "CANNY_EDGE",
+                "controlStrength", 0.8),
+        "imageGenerationConfig", Map.of(
+                "width", 1024,
+                "height", 1024,
+                "quality", "standard",
+                "numberOfImages", 1));
 ```
 
 **Key constraints:**
@@ -377,20 +387,20 @@ When using Spring AI's `PromptTemplate` with JSON examples in prompts, **escape 
 
 ```java
 // WRONG - Throws IllegalArgumentException: "The template string is not valid"
-"""
-Return JSON like this:
-{
-  "field": "value"
-}
-"""
+final var badTemplate = """
+        Return JSON like this:
+        {
+          "field": "value"
+        }
+        """;
 
 // CORRECT - Escape braces in examples
-"""
-Return JSON like this:
-{{
-  "field": "value"
-}}
-"""
+final var goodTemplate = """
+        Return JSON like this:
+        {{
+          "field": "value"
+        }}
+        """;
 ```
 
 This applies to FinancialPeaceQuestionGenerator (trivia module). For image analysis, prefer `String.format()` with multimodal UserMessage (see above).

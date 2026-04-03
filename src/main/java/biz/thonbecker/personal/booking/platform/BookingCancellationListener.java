@@ -22,10 +22,6 @@ class BookingCancellationListener {
     @EventListener
     void onCancellationRequested(final BookingCancellationRequestedEvent event) {
         log.info("Cancellation requested for booking {}", event.bookingId());
-        try {
-            bookingService.cancelBooking(event.bookingId());
-        } catch (final Exception e) {
-            log.warn("Failed to cancel booking {}: {}", event.bookingId(), e.getMessage());
-        }
+        bookingService.cancelBooking(event.bookingId());
     }
 }

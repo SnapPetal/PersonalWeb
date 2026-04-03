@@ -14,6 +14,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class BookingService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String CONFIRMATION_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final String OVERLAP_CONSTRAINT = "booking_no_overlapping_confirmed";
 
     @Transactional(readOnly = true)
     public List<BookingType> getActiveBookingTypes() {
@@ -140,7 +142,7 @@ public class BookingService {
         }
 
         // Check if time falls within an availability slot
-        final var availabilitySlots = availabilitySlotRepository.findOverlappingSlots(startTime, endTime);
+        final var availabilitySlots = availabilitySlotRepository.findOverlappingSlotsForUpdate(startTime, endTime);
         if (availabilitySlots.isEmpty()) {
             throw new SlotNotAvailableException("No availability slot exists for the selected time");
         }
@@ -158,7 +160,15 @@ public class BookingService {
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setUserId(userId);
 
-        final var savedBooking = bookingRepository.save(booking);
+        final BookingEntity savedBooking;
+        try {
+            savedBooking = bookingRepository.saveAndFlush(booking);
+        } catch (final DataIntegrityViolationException e) {
+            if (isOverlapConstraintViolation(e)) {
+                throw new SlotNotAvailableException(startTime);
+            }
+            throw e;
+        }
         log.info("Created booking with confirmation code: {}", savedBooking.getConfirmationCode());
 
         // Publish event (notifications will be sent by event listener)
@@ -184,23 +194,6 @@ public class BookingService {
                 .findByConfirmationCode(confirmationCode)
                 .map(this::convertBookingToDomain)
                 .orElseThrow(() -> new BookingNotFoundException(confirmationCode));
-    }
-
-    @Transactional(readOnly = true)
-    public Booking getBooking(final Long bookingId) {
-        log.debug("Fetching booking {}", bookingId);
-        return bookingRepository
-                .findById(bookingId)
-                .map(this::convertBookingToDomain)
-                .orElseThrow(() -> new BookingNotFoundException(bookingId));
-    }
-
-    @Transactional(readOnly = true)
-    public List<Booking> getUserBookings(final String userId) {
-        log.debug("Fetching bookings for user {}", userId);
-        return bookingRepository.findByUserIdOrderByStartTimeDesc(userId).stream()
-                .map(this::convertBookingToDomain)
-                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -328,5 +321,10 @@ public class BookingService {
             code.append(CONFIRMATION_CODE_CHARS.charAt(RANDOM.nextInt(CONFIRMATION_CODE_CHARS.length())));
         }
         return code.toString();
+    }
+
+    private boolean isOverlapConstraintViolation(final DataIntegrityViolationException exception) {
+        final var message = exception.getMostSpecificCause().getMessage();
+        return message != null && message.contains(OVERLAP_CONSTRAINT);
     }
 }
