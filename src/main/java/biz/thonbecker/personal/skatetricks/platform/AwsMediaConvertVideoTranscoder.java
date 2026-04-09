@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.mediaconvert.model.FileGroupSettings;
 import software.amazon.awssdk.services.mediaconvert.model.GetJobResponse;
 import software.amazon.awssdk.services.mediaconvert.model.H264CodecLevel;
 import software.amazon.awssdk.services.mediaconvert.model.H264CodecProfile;
+import software.amazon.awssdk.services.mediaconvert.model.H264QvbrSettings;
 import software.amazon.awssdk.services.mediaconvert.model.H264RateControlMode;
 import software.amazon.awssdk.services.mediaconvert.model.H264Settings;
 import software.amazon.awssdk.services.mediaconvert.model.Input;
@@ -41,6 +42,9 @@ import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 @Component
 @Slf4j
 class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
+
+    private static final int H264_MAX_BITRATE = 5_000_000;
+    private static final int H264_QVBR_QUALITY_LEVEL = 7;
 
     private final S3Client s3Client;
     private final MediaConvertClient mediaConvertDiscoveryClient;
@@ -197,11 +201,7 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
                                                 .videoDescription(VideoDescription.builder()
                                                         .codecSettings(VideoCodecSettings.builder()
                                                                 .codec(VideoCodec.H_264)
-                                                                .h264Settings(H264Settings.builder()
-                                                                        .rateControlMode(H264RateControlMode.QVBR)
-                                                                        .codecProfile(H264CodecProfile.MAIN)
-                                                                        .codecLevel(H264CodecLevel.AUTO)
-                                                                        .build())
+                                                                .h264Settings(buildH264Settings())
                                                                 .build())
                                                         .build())
                                                 .extension("mp4")
@@ -210,6 +210,18 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
                                 .build()))
                 .job()
                 .id();
+    }
+
+    static H264Settings buildH264Settings() {
+        return H264Settings.builder()
+                .rateControlMode(H264RateControlMode.QVBR)
+                .codecProfile(H264CodecProfile.MAIN)
+                .codecLevel(H264CodecLevel.AUTO)
+                .maxBitrate(H264_MAX_BITRATE)
+                .qvbrSettings(H264QvbrSettings.builder()
+                        .qvbrQualityLevel(H264_QVBR_QUALITY_LEVEL)
+                        .build())
+                .build();
     }
 
     private void waitForCompletion(String jobId) throws InterruptedException, VideoTranscodingException {
