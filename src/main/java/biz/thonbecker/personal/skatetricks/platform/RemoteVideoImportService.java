@@ -274,21 +274,25 @@ public class RemoteVideoImportService {
         };
     }
 
-    private static boolean requiresProviderResolution(URI uri) {
+    static boolean requiresProviderResolution(URI uri) {
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
         return isInstagramHost(host) || isFacebookHost(host) || isYouTubeHost(host);
     }
 
     private static boolean isInstagramHost(String host) {
-        return host.contains("instagram.com");
+        return matchesDomain(host, "instagram.com");
     }
 
     private static boolean isFacebookHost(String host) {
-        return host.contains("facebook.com") || host.contains("fb.watch");
+        return matchesDomain(host, "facebook.com") || matchesDomain(host, "fb.watch");
     }
 
     private static boolean isYouTubeHost(String host) {
-        return host.contains("youtube.com") || host.contains("youtu.be");
+        return matchesDomain(host, "youtube.com") || matchesDomain(host, "youtu.be");
+    }
+
+    private static boolean matchesDomain(String host, String domain) {
+        return host.equals(domain) || host.endsWith("." + domain);
     }
 
     private static String extractOgTitle(String html) {

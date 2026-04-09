@@ -1,7 +1,9 @@
 package biz.thonbecker.personal.skatetricks.platform;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import org.junit.jupiter.api.Test;
@@ -100,5 +102,19 @@ class RemoteVideoImportServiceTest {
                 URI.create("https://www.youtube.com/watch?v=missing"), html);
 
         assertNull(resolved);
+    }
+
+    @Test
+    void doesNotTreatInstagramCdnMediaHostAsProviderPage() {
+        assertTrue(RemoteVideoImportService.requiresProviderResolution(URI.create("https://www.instagram.com/p/CMryoSqgKj6/")));
+        assertFalse(RemoteVideoImportService.requiresProviderResolution(URI.create(
+                "https://scontent-iad3-1.cdninstagram.com/o1/v/t16/f2/m84/video.mp4")));
+    }
+
+    @Test
+    void doesNotTreatFacebookCdnMediaHostAsProviderPage() {
+        assertTrue(RemoteVideoImportService.requiresProviderResolution(URI.create("https://www.facebook.com/watch/?v=123")));
+        assertFalse(RemoteVideoImportService.requiresProviderResolution(URI.create(
+                "https://video.xx.fbcdn.net/v/t42.1790-2/98765.mp4")));
     }
 }
