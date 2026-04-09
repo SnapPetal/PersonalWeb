@@ -15,7 +15,6 @@ import org.springframework.ai.content.Media;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
 import software.amazon.awssdk.services.s3vectors.model.VectorData;
@@ -26,6 +25,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
     private final ChatClient chatClient;
     private final PoseEstimationService poseEstimationService;
+    private final VideoFrameExtractor videoFrameExtractor;
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
 
@@ -39,10 +39,12 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     BedrockTrickAnalyzer(
             ChatModel chatModel,
             PoseEstimationService poseEstimationService,
+            VideoFrameExtractor videoFrameExtractor,
             @org.springframework.lang.Nullable S3VectorsClient s3VectorsClient,
             @org.springframework.lang.Nullable EmbeddingService embeddingService) {
         this.chatClient = chatModel != null ? ChatClient.create(chatModel) : null;
         this.poseEstimationService = poseEstimationService;
+        this.videoFrameExtractor = videoFrameExtractor;
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
     }
@@ -55,70 +57,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
         }
 
         try {
-            List<Media> mediaList = base64Frames.stream()
-                    .map(frame -> Media.builder()
-                            .mimeType(MimeTypeUtils.IMAGE_JPEG)
-                            .data(Base64.getDecoder().decode(frame))
-                            .build())
-                    .toList();
-
-            final var poseTexts = buildPoseDataText(base64Frames);
-            final var similarExamples = fetchSimilarExamples(poseTexts.embeddingText());
-
-            String systemPrompt =
-                    """
-                    You are an expert skateboarding trick judge. Your output MUST be ONLY a valid JSON object. \
-                    Do NOT include any text, reasoning, frame-by-frame analysis, markdown, or explanation — \
-                    only the JSON object itself.
-
-                    Internally analyze the sequential frames using these rules, but output ONLY JSON:
-
-                    DETECTION RULES:
-                    - Board LEAVES GROUND completely → NOT Manual or Cruising (use OLLIE or flip/spin variant)
-                    - Board contacts rail/ledge and slides → GRIND variant
-                    - OLLIE: tail pop, board rises, ALL wheels off ground, lands back down
-                    - 180 variants: ollie + 180° body/board rotation
-                    - KICKFLIP: ollie + board flips along length axis (grip tape flashes)
-                    - HEELFLIP: opposite flip direction from kickflip
-                    - POP_SHUVIT: board spins 180° flat, no flip
-                    - TREFLIP: kickflip + 360 shuvit simultaneously
-                    - BOARDSLIDE: board perpendicular across rail/obstacle
-                    - FIFTY_FIFTY: both trucks grinding on edge
-                    - FIVE_O: back truck only on edge, nose lifted
-                    - NOSEGRIND: front truck only on edge, tail lifted
-                    - MANUAL: back wheels only, nose lifted, wheels NEVER leave ground
-                    - CRUISING: all 4 wheels on flat ground entire clip, no trick
-                    - DROP_IN: rider at top of ramp/bowl, transitions down the ramp
-
-                    Look for: setup stance → pop/initiation → airborne phase → catch/landing.
-
-                    MULTIPLE TRICKS: List ALL tricks in trickSequence chronologically. \
-                    The "trick" field is the most significant one.
-
-                    Known trick enum values: %s
-
-                    Use ENUM_NAME exactly (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, \
-                    BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
-                    """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseTexts.promptText();
-
-            String userPrompt =
-                    ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
-                                    + "Frame 1 is earliest, frame %d is latest. Analyze the full progression of movement across all frames and identify all tricks performed in sequence.")
-                            .formatted(base64Frames.size(), base64Frames.size());
-
-            final var schema = callAndExtract(systemPrompt, userPrompt, mediaList.toArray(new Media[0]));
-
-            return new TrickAnalysisResult(
-                    TrickCatalog.fromName(schema.trick()),
-                    schema.confidence(),
-                    schema.formScore(),
-                    schema.feedback(),
-                    schema.trickSequence().stream()
-                            .map(e -> new TrickSequenceEntry(
-                                    TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
-                            .toList(),
-                    poseTexts.promptText().isBlank() ? null : poseTexts.promptText(),
-                    poseTexts.embeddingText().isBlank() ? null : poseTexts.embeddingText());
+            return analyzeFramesInternal(base64Frames);
 
         } catch (Exception e) {
             log.error("Error analyzing skateboard trick frames", e);
@@ -134,65 +73,84 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
         }
 
         try {
-            Media videoMedia = Media.builder()
-                    .mimeType(MimeType.valueOf("video/mp4"))
-                    .data(mp4VideoData)
-                    .build();
-
-            String systemPrompt = """
-                    You are an expert skateboarding trick judge. Your output MUST be ONLY a valid JSON object. \
-                    Do NOT include any text, reasoning, frame-by-frame analysis, markdown, or explanation — \
-                    only the JSON object itself.
-
-                    Internally analyze the video using these rules, but output ONLY JSON:
-
-                    DETECTION RULES:
-                    - Board LEAVES GROUND completely → NOT Manual or Cruising (use OLLIE or flip/spin variant)
-                    - Board contacts rail/ledge and slides → GRIND variant
-                    - OLLIE: tail pop, board rises, ALL wheels off ground, lands back down
-                    - 180 variants: ollie + 180° body/board rotation
-                    - KICKFLIP: ollie + board flips along length axis (grip tape flashes)
-                    - HEELFLIP: opposite flip direction from kickflip
-                    - POP_SHUVIT: board spins 180° flat, no flip
-                    - TREFLIP: kickflip + 360 shuvit simultaneously
-                    - BOARDSLIDE: board perpendicular across rail/obstacle
-                    - FIFTY_FIFTY: both trucks grinding on edge
-                    - FIVE_O: back truck only on edge, nose lifted
-                    - NOSEGRIND: front truck only on edge, tail lifted
-                    - MANUAL: back wheels only, nose lifted, wheels NEVER leave ground
-                    - CRUISING: all 4 wheels on flat ground entire clip, no trick
-                    - DROP_IN: rider at top of ramp/bowl, transitions down the ramp
-
-                    Look for: setup stance → pop/initiation → airborne phase → catch/landing.
-
-                    MULTIPLE TRICKS: List ALL tricks in trickSequence chronologically. \
-                    The "trick" field is the most significant one.
-
-                    Known trick enum values: %s
-
-                    Use ENUM_NAME exactly (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, \
-                    BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
-                    """.formatted(TrickCatalog.buildTrickDescriptions());
-
-            String userPrompt = "Watch this skateboarding video and identify the trick being performed. "
-                    + "Pay close attention to the board movement, especially whether it leaves the ground.";
-
-            final var schema = callAndExtract(systemPrompt, userPrompt, videoMedia);
-
-            return new TrickAnalysisResult(
-                    TrickCatalog.fromName(schema.trick()),
-                    schema.confidence(),
-                    schema.formScore(),
-                    schema.feedback(),
-                    schema.trickSequence().stream()
-                            .map(e -> new TrickSequenceEntry(
-                                    TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
-                            .toList());
+            List<String> extractedFrames = videoFrameExtractor.extractBase64Frames(mp4VideoData);
+            if (extractedFrames.isEmpty()) {
+                log.warn("No frames could be extracted from video, returning fallback result");
+                return fallback();
+            }
+            return analyzeFramesInternal(extractedFrames);
 
         } catch (Exception e) {
             log.error("Error analyzing skateboard trick video", e);
             return fallback();
         }
+    }
+
+    private TrickAnalysisResult analyzeFramesInternal(List<String> base64Frames) throws Exception {
+        List<Media> mediaList = base64Frames.stream()
+                .map(frame -> Media.builder()
+                        .mimeType(MimeTypeUtils.IMAGE_JPEG)
+                        .data(Base64.getDecoder().decode(frame))
+                        .build())
+                .toList();
+
+        final var poseTexts = buildPoseDataText(base64Frames);
+        final var similarExamples = fetchSimilarExamples(poseTexts.embeddingText());
+
+        String systemPrompt =
+                """
+                You are an expert skateboarding trick judge. Your output MUST be ONLY a valid JSON object. \
+                Do NOT include any text, reasoning, frame-by-frame analysis, markdown, or explanation — \
+                only the JSON object itself.
+
+                Internally analyze the sequential frames using these rules, but output ONLY JSON:
+
+                DETECTION RULES:
+                - Board LEAVES GROUND completely → NOT Manual or Cruising (use OLLIE or flip/spin variant)
+                - Board contacts rail/ledge and slides → GRIND variant
+                - OLLIE: tail pop, board rises, ALL wheels off ground, lands back down
+                - 180 variants: ollie + 180° body/board rotation
+                - KICKFLIP: ollie + board flips along length axis (grip tape flashes)
+                - HEELFLIP: opposite flip direction from kickflip
+                - POP_SHUVIT: board spins 180° flat, no flip
+                - TREFLIP: kickflip + 360 shuvit simultaneously
+                - BOARDSLIDE: board perpendicular across rail/obstacle
+                - FIFTY_FIFTY: both trucks grinding on edge
+                - FIVE_O: back truck only on edge, nose lifted
+                - NOSEGRIND: front truck only on edge, tail lifted
+                - MANUAL: back wheels only, nose lifted, wheels NEVER leave ground
+                - CRUISING: all 4 wheels on flat ground entire clip, no trick
+                - DROP_IN: rider at top of ramp/bowl, transitions down the ramp
+
+                Look for: setup stance → pop/initiation → airborne phase → catch/landing.
+
+                MULTIPLE TRICKS: List ALL tricks in trickSequence chronologically. \
+                The "trick" field is the most significant one.
+
+                Known trick enum values: %s
+
+                Use ENUM_NAME exactly (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, \
+                BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
+                """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseTexts.promptText();
+
+        String userPrompt =
+                ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
+                                + "Frame 1 is earliest, frame %d is latest. Analyze the full progression of movement across all frames and identify all tricks performed in sequence.")
+                        .formatted(base64Frames.size(), base64Frames.size());
+
+        final var schema = callAndExtract(systemPrompt, userPrompt, mediaList.toArray(new Media[0]));
+
+        return new TrickAnalysisResult(
+                TrickCatalog.fromName(schema.trick()),
+                schema.confidence(),
+                schema.formScore(),
+                schema.feedback(),
+                schema.trickSequence().stream()
+                        .map(e -> new TrickSequenceEntry(
+                                TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
+                        .toList(),
+                poseTexts.promptText().isBlank() ? null : poseTexts.promptText(),
+                poseTexts.embeddingText().isBlank() ? null : poseTexts.embeddingText());
     }
 
     /**
