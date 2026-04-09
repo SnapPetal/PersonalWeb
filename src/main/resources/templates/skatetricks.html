@@ -83,7 +83,7 @@
                                 <div id="plyrContainer" class="mb-3" style="display: none;">
                                     <video id="uploadedVideo" controls playsinline class="w-100 rounded" style="max-height: 400px;"></video>
                                 </div>
-                                <p class="text-muted small mb-2 mt-2">Upload any video format (MOV, MP4, etc) or import a direct remote video URL. Default max 500MB. Videos convert to MP4, publish to the CDN, and then analyze. Instagram and Facebook page URLs usually need provider-specific extraction and may fail unless they resolve to a direct video file.</p>
+                                <p class="text-muted small mb-2 mt-2">Upload any video format (MOV, MP4, etc) or import a remote video URL. Default max 500MB. Videos convert to MP4, publish to the CDN, and then analyze. Public Instagram, Facebook, and YouTube page URLs now attempt provider-specific resolution, but private or protected videos can still fail.</p>
                                 <button class="btn btn-success"
                                         :disabled="analyzeUploadDisabled"
                                         @click="analyzeUpload()">
