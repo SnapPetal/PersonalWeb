@@ -26,11 +26,17 @@ class SkateTricksServiceTest {
             public VideoTranscoder.TranscodedVideo convertToMp4(byte[] videoData, String originalFilename) {
                 inputRef.set(videoData);
                 filenameRef.set(originalFilename);
-                return new VideoTranscoder.TranscodedVideo(converted, "https://cdn.example.com/video.mp4");
+                return new VideoTranscoder.TranscodedVideo(
+                        converted, "https://cdn.example.com/video.mp4", "skatetricks/output/test/video.mp4");
             }
 
             @Override
             public VideoTranscoder.TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public byte[] loadTranscodedVideo(String outputKey) {
                 throw new UnsupportedOperationException();
             }
         };
@@ -80,6 +86,56 @@ class SkateTricksServiceTest {
         assertArrayEquals(video, analyzedVideo.get());
     }
 
+    @Test
+    void analyzeConvertedVideoByOutputKeyLoadsBytesBeforeAnalysis() {
+        byte[] video = {7, 8, 9};
+        AtomicReference<String> loadedOutputKey = new AtomicReference<>();
+        AtomicReference<byte[]> analyzedVideo = new AtomicReference<>();
+        TrickAnalysisResult analysis = new TrickAnalysisResult(
+                SupportedTrick.KICKFLIP, 88, 84, List.of("Good flick"), List.of(), "pose-data", "embedding-text");
+
+        TrickAnalyzer analyzer = new TrickAnalyzer() {
+            @Override
+            public TrickAnalysisResult analyze(List<String> base64Frames) {
+                throw new AssertionError("Frame-based analysis should not be used");
+            }
+
+            @Override
+            public TrickAnalysisResult analyzeVideo(byte[] mp4VideoData) {
+                analyzedVideo.set(mp4VideoData);
+                return analysis;
+            }
+        };
+
+        VideoTranscoder transcoder = new VideoTranscoder() {
+            @Override
+            public TranscodedVideo convertToMp4(byte[] videoData, String originalFilename) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public byte[] loadTranscodedVideo(String outputKey) {
+                loadedOutputKey.set(outputKey);
+                return video;
+            }
+        };
+
+        SkateTricksService service =
+                new SkateTricksService(analyzer, repositoryStub(), noOpPublisher(), transcoder, null, null);
+
+        TrickAnalysisResult result = service.analyzeConvertedVideo("session-2", "skatetricks/output/test/video.mp4");
+
+        assertEquals(SupportedTrick.KICKFLIP, result.trick());
+        assertEquals(42L, result.attemptId());
+        assertEquals("skatetricks/output/test/video.mp4", loadedOutputKey.get());
+        assertArrayEquals(video, analyzedVideo.get());
+    }
+
     private static TrickAnalyzer fallbackAnalyzer() {
         return new TrickAnalyzer() {
             @Override
@@ -98,11 +154,17 @@ class SkateTricksServiceTest {
         return new VideoTranscoder() {
             @Override
             public VideoTranscoder.TranscodedVideo convertToMp4(byte[] videoData, String originalFilename) {
-                return new VideoTranscoder.TranscodedVideo(videoData, "https://cdn.example.com/video.mp4");
+                return new VideoTranscoder.TranscodedVideo(
+                        videoData, "https://cdn.example.com/video.mp4", "skatetricks/output/test/video.mp4");
             }
 
             @Override
             public VideoTranscoder.TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public byte[] loadTranscodedVideo(String outputKey) {
                 throw new UnsupportedOperationException();
             }
         };

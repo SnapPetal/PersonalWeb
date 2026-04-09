@@ -282,6 +282,25 @@ public class SkateTricksService {
         }
     }
 
+    @Transactional
+    public TrickAnalysisResult analyzeConvertedVideo(String sessionId, String outputKey) {
+        log.info("Analyzing converted video for session {} from output key {}", sessionId, outputKey);
+
+        try {
+            byte[] mp4Data = videoTranscoder.loadTranscodedVideo(outputKey);
+            TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
+            Long id = saveResult(sessionId, result);
+            return result.withAttemptId(id);
+
+        } catch (VideoTranscodingException e) {
+            log.error("Failed to load transcoded video for session {} from {}", sessionId, outputKey, e);
+            throw new RuntimeException("Video analysis failed: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Failed to analyze video for session {}", sessionId, e);
+            throw new RuntimeException("Video analysis failed: " + e.getMessage(), e);
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<TrickAnalysisResult> getSessionHistory(String sessionId) {
         return trickAttemptRepository.findBySessionIdOrderByCreatedAtDesc(sessionId).stream()

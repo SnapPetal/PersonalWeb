@@ -103,7 +103,7 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
                     originalFilename,
                     outputKey,
                     mp4Data.length);
-            return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey));
+            return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey), outputKey);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new VideoTranscodingException("MediaConvert transcoding was interrupted", e);
@@ -133,14 +133,14 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
                         .metadataDirective("REPLACE")
                         .build());
                 byte[] mp4Data = downloadOutput(outputKey);
-                return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey));
+                return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey), outputKey);
             }
 
             String mediaConvertJobId = startMediaConvertJob(inputKey, outputKeyPrefix);
             waitForCompletion(mediaConvertJobId);
             String outputKey = resolveOutputKey(outputKeyPrefix);
             byte[] mp4Data = downloadOutput(outputKey);
-            return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey));
+            return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey), outputKey);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new VideoTranscodingException("MediaConvert transcoding was interrupted", e);
@@ -148,6 +148,18 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
             throw new VideoTranscodingException("MediaConvert transcoding failed: " + e.getMessage(), e);
         } finally {
             cleanupInputObject(inputKey);
+        }
+    }
+
+    @Override
+    public byte[] loadTranscodedVideo(String outputKey) throws VideoTranscodingException {
+        if (isBlank(outputKey)) {
+            throw new VideoTranscodingException("Missing transcoded video output key");
+        }
+        try {
+            return downloadOutput(outputKey);
+        } catch (Exception e) {
+            throw new VideoTranscodingException("Failed to load transcoded video: " + e.getMessage(), e);
         }
     }
 

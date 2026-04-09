@@ -47,6 +47,8 @@ cp .env.example .env
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
+For Skatetricks transcoding, set `SKATETRICKS_MEDIACONVERT_ROLE_ARN` from the HomeWeb CDK `MediaConvertRoleArn` output. Do not set `SKATETRICKS_MEDIACONVERT_ENDPOINT`; the app discovers the correct account-specific endpoint automatically via `DescribeEndpoints`.
+
 ## Architecture
 
 ### Stack

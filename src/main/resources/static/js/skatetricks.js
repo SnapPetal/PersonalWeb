@@ -31,6 +31,7 @@ function skatetricksApp() {
     capturing: false,
     captureBtnLabel: "Capture & Analyze",
     analyzeUploadDisabled: true,
+    importUrlLoading: false,
     result: null,
     resultError: null,
     resultLoading: false,
@@ -51,6 +52,9 @@ function skatetricksApp() {
     captureInterval: null,
     currentVideoId: null,
     currentInputKey: null,
+    currentOutputKey: null,
+    currentVideoUrl: null,
+    importVideoUrl: "",
     plyrPlayer: null,
 
     // ── Lifecycle ──────────────────────────────────────────────────
@@ -250,6 +254,8 @@ function skatetricksApp() {
 
       self.currentVideoId = null;
       self.currentInputKey = null;
+      self.currentOutputKey = null;
+      self.currentVideoUrl = null;
       self.analyzeUploadDisabled = true;
 
       var plyrContainer = document.getElementById("plyrContainer");
@@ -336,6 +342,58 @@ function skatetricksApp() {
       }
     },
 
+    async importVideoFromUrl() {
+      var self = this;
+      if (!self.importVideoUrl || !self.importVideoUrl.trim()) return;
+
+      self.currentVideoId = null;
+      self.currentInputKey = null;
+      self.currentOutputKey = null;
+      self.currentVideoUrl = null;
+      self.analyzeUploadDisabled = true;
+      self.importUrlLoading = true;
+      self.frameCounterText = "Importing remote video...";
+
+      var plyrContainer = document.getElementById("plyrContainer");
+      plyrContainer.style.display = "none";
+
+      if (self.plyrPlayer) {
+        self.plyrPlayer.destroy();
+        self.plyrPlayer = null;
+      }
+
+      try {
+        var response = await fetch("/skatetricks/import-url", {
+          method: "POST",
+          headers: Object.assign(
+            { "Content-Type": "application/json" },
+            self.getHeaders()
+          ),
+          body: JSON.stringify({
+            sessionId: self.sessionId,
+            videoUrl: self.importVideoUrl.trim(),
+          }),
+        });
+
+        if (!response.ok) {
+          var errorText = "Failed to import URL: " + response.status;
+          throw new Error(errorText);
+        }
+
+        var result = await response.json();
+        self.currentVideoId = result.videoId;
+        self.frameCounterText = "Remote import queued. Starting conversion...";
+        setTimeout(function () {
+          self.pollConversionStatus(self.currentVideoId);
+        }, 2000);
+      } catch (e) {
+        self.frameCounterText = "URL import failed: " + e.message;
+        self.analyzeUploadDisabled = true;
+      } finally {
+        self.importUrlLoading = false;
+      }
+    },
+
     handleConversionStatus(status) {
       if (status.videoId !== this.currentVideoId) return;
 
@@ -343,6 +401,8 @@ function skatetricksApp() {
         this.frameCounterText = "Converting video... " + status.progress + "%";
       } else if (status.status === "complete") {
         this.frameCounterText = "Conversion complete! Loading video...";
+        this.currentOutputKey = status.outputKey || null;
+        this.currentVideoUrl = status.videoUrl || null;
         this.loadConvertedVideo(status.videoUrl, status.size);
       } else if (status.status === "error") {
         this.frameCounterText = "Conversion failed";
@@ -401,6 +461,8 @@ function skatetricksApp() {
           if (!status || status.videoId !== self.currentVideoId) return;
 
           if (status.status === "complete") {
+            self.currentOutputKey = status.outputKey || null;
+            self.currentVideoUrl = status.videoUrl || null;
             self.loadConvertedVideo(status.videoUrl, status.size);
           } else if (status.status === "error") {
             self.frameCounterText = "Conversion failed";
@@ -420,7 +482,7 @@ function skatetricksApp() {
 
     // ── Video analysis ─────────────────────────────────────────────
     async analyzeUpload() {
-      if (!this.currentVideoId) return;
+      if (!this.currentVideoId && !this.currentOutputKey && !this.currentVideoUrl) return;
 
       this.analyzeUploadDisabled = true;
       this.frameCounterText = "Analyzing video...";
@@ -430,10 +492,7 @@ function skatetricksApp() {
       this.resultLoadingText = "Analyzing video with AI...";
 
       try {
-        var analyzeUrl =
-          "/skatetricks/analyze/" + this.currentVideoId;
-
-        var response = await fetch(analyzeUrl, {
+        var response = await fetch("/skatetricks/analyze", {
           method: "POST",
           headers: Object.assign(
             { "Content-Type": "application/json" },
@@ -441,6 +500,9 @@ function skatetricksApp() {
           ),
           body: JSON.stringify({
             sessionId: this.sessionId,
+            videoId: this.currentVideoId,
+            outputKey: this.currentOutputKey,
+            videoUrl: this.currentVideoUrl,
           }),
         });
 

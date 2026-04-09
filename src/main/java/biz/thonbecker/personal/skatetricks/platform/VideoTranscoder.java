@@ -6,7 +6,9 @@ public interface VideoTranscoder {
 
     TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename) throws VideoTranscodingException;
 
-    record TranscodedVideo(byte[] mp4Data, String videoUrl) {}
+    byte[] loadTranscodedVideo(String outputKey) throws VideoTranscodingException;
+
+    record TranscodedVideo(byte[] mp4Data, String videoUrl, String outputKey) {}
 
     class VideoTranscodingException extends Exception {
         public VideoTranscodingException(String message) {
