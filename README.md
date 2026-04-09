@@ -51,6 +51,8 @@ For Skatetricks transcoding, set `SKATETRICKS_MEDIACONVERT_ROLE_ARN` from the Ho
 
 Skatetricks remote import supports direct downloadable video URLs and now attempts provider-specific resolution for public Instagram, Facebook, and YouTube page URLs before transcoding. Private, auth-gated, or stream-protected videos can still fail.
 
+Skatetricks video analysis extracts duration-aware sequential frames from uploaded/imported MP4s before calling Bedrock. Tune `SKATETRICKS_ANALYSIS_MAX_FRAMES` if production needs more or fewer images per analysis; the default is `24`.
+
 ## Architecture
 
 ### Stack
