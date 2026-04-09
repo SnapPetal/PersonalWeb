@@ -50,6 +50,7 @@ function skatetricksApp() {
     frameCount: 0,
     captureInterval: null,
     currentVideoId: null,
+    currentInputKey: null,
     plyrPlayer: null,
 
     // ── Lifecycle ──────────────────────────────────────────────────
@@ -248,6 +249,7 @@ function skatetricksApp() {
       if (!file) return;
 
       self.currentVideoId = null;
+      self.currentInputKey = null;
       self.analyzeUploadDisabled = true;
 
       var plyrContainer = document.getElementById("plyrContainer");
@@ -269,31 +271,67 @@ function skatetricksApp() {
 
       self.frameCounterText = "Uploading video...";
 
-      var formData = new FormData();
-      formData.append("video", file);
-      formData.append("sessionId", self.sessionId);
-
       try {
-        var response = await fetch("/skatetricks/convert", {
+        var uploadInitResponse = await fetch("/skatetricks/upload-url", {
           method: "POST",
-          headers: self.getHeaders(),
-          body: formData,
+          headers: Object.assign(
+            { "Content-Type": "application/json" },
+            self.getHeaders()
+          ),
+          body: JSON.stringify({
+            filename: file.name,
+            contentType: file.type || "application/octet-stream",
+            size: file.size,
+          }),
         });
 
-        if (!response.ok) {
-          throw new Error("Upload failed: " + response.status);
+        if (!uploadInitResponse.ok) {
+          throw new Error("Failed to create upload URL: " + uploadInitResponse.status);
         }
 
-        var result = await response.json();
-        self.currentVideoId = result.videoId;
+        var uploadInit = await uploadInitResponse.json();
+        self.currentVideoId = uploadInit.videoId;
+        self.currentInputKey = uploadInit.inputKey;
 
-        self.frameCounterText = "Converting video...";
+        self.frameCounterText = "Uploading directly to S3...";
+
+        var uploadResponse = await fetch(uploadInit.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": uploadInit.contentType,
+          },
+          body: file,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("S3 upload failed: " + uploadResponse.status);
+        }
+
+        self.frameCounterText = "Upload complete. Starting conversion...";
+
+        var convertResponse = await fetch("/skatetricks/convert", {
+          method: "POST",
+          headers: Object.assign(
+            { "Content-Type": "application/json" },
+            self.getHeaders()
+          ),
+          body: JSON.stringify({
+            videoId: uploadInit.videoId,
+            sessionId: self.sessionId,
+            inputKey: uploadInit.inputKey,
+            filename: file.name,
+          }),
+        });
+
+        if (!convertResponse.ok) {
+          throw new Error("Failed to start conversion: " + convertResponse.status);
+        }
 
         setTimeout(function () {
           self.pollConversionStatus(self.currentVideoId);
         }, 3000);
       } catch (e) {
-        self.frameCounterText = "Conversion failed: " + e.message;
+        self.frameCounterText = "Upload failed: " + e.message;
         self.analyzeUploadDisabled = true;
       }
     },
@@ -305,19 +343,18 @@ function skatetricksApp() {
         this.frameCounterText = "Converting video... " + status.progress + "%";
       } else if (status.status === "complete") {
         this.frameCounterText = "Conversion complete! Loading video...";
-        this.loadConvertedVideo(status.videoId, status.size);
+        this.loadConvertedVideo(status.videoUrl, status.size);
       } else if (status.status === "error") {
         this.frameCounterText = "Conversion failed";
         this.analyzeUploadDisabled = true;
       }
     },
 
-    loadConvertedVideo(videoId, size) {
+    loadConvertedVideo(videoUrl, size) {
       var self = this;
-      var videoUrl = "/skatetricks/video/" + videoId + "?t=" + Date.now();
       var uploadedVideo = document.getElementById("uploadedVideo");
       var plyrContainer = document.getElementById("plyrContainer");
-      uploadedVideo.src = videoUrl;
+      uploadedVideo.src = videoUrl + "?t=" + Date.now();
       uploadedVideo.load();
 
       uploadedVideo.addEventListener(
@@ -364,7 +401,7 @@ function skatetricksApp() {
           if (!status || status.videoId !== self.currentVideoId) return;
 
           if (status.status === "complete") {
-            self.loadConvertedVideo(status.videoId, status.size);
+            self.loadConvertedVideo(status.videoUrl, status.size);
           } else if (status.status === "error") {
             self.frameCounterText = "Conversion failed";
           } else if (
@@ -394,14 +431,17 @@ function skatetricksApp() {
 
       try {
         var analyzeUrl =
-          "/skatetricks/analyze/" +
-          this.currentVideoId +
-          "?sessionId=" +
-          encodeURIComponent(this.sessionId);
+          "/skatetricks/analyze/" + this.currentVideoId;
 
         var response = await fetch(analyzeUrl, {
           method: "POST",
-          headers: this.getHeaders(),
+          headers: Object.assign(
+            { "Content-Type": "application/json" },
+            this.getHeaders()
+          ),
+          body: JSON.stringify({
+            sessionId: this.sessionId,
+          }),
         });
 
         if (!response.ok) {

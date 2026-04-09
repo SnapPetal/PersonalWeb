@@ -13,8 +13,8 @@ spring:
   # File Upload Configuration
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
+      max-file-size: ${SKATETRICKS_UPLOAD_MAX_FILE_SIZE:500MB}
+      max-request-size: ${SKATETRICKS_UPLOAD_MAX_REQUEST_SIZE:500MB}
 
   # Thymeleaf Configuration
   thymeleaf:
@@ -114,6 +114,19 @@ audio:
 
 # Skatetricks Vector Store Configuration
 skatetricks:
+  upload:
+    max-file-size: ${SKATETRICKS_UPLOAD_MAX_FILE_SIZE:500MB}
+    presign-duration: ${SKATETRICKS_UPLOAD_PRESIGN_DURATION:15m}
+  transcoding:
+    input-bucket: ${SKATETRICKS_TRANSCODING_INPUT_BUCKET:cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq}
+    output-bucket: ${SKATETRICKS_TRANSCODING_OUTPUT_BUCKET:cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq}
+    mediaconvert-role-arn: ${SKATETRICKS_MEDIACONVERT_ROLE_ARN:}
+    endpoint: ${SKATETRICKS_MEDIACONVERT_ENDPOINT:}
+    input-prefix: skatetricks/input/
+    output-prefix: skatetricks/output/
+    cdn-domain: ${SKATETRICKS_CDN_DOMAIN:https://cdn.thonbecker.com}
+    poll-interval: 5s
+    timeout: 5m
   vectorstore:
     bucket: thonbecker-vectors
     index: skatetricks-tricks

@@ -2,8 +2,8 @@ package biz.thonbecker.personal.skatetricks.platform.web;
 
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
 import biz.thonbecker.personal.skatetricks.platform.SkateTricksService;
+import biz.thonbecker.personal.skatetricks.platform.SkateTricksUploadService;
 import jakarta.annotation.PreDestroy;
-import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -15,32 +15,34 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @Slf4j
 class SkateTricksController {
 
-    private static final long MAX_UPLOAD_BYTES = 50L * 1024 * 1024;
     private static final int STATUS_TTL_MINUTES = 10;
     private static final int WORKER_THREADS = 2;
     private static final int MAX_QUEUE_DEPTH = 20;
 
     private final SkateTricksService skateTricksService;
+    private final SkateTricksUploadService uploadService;
     private final SimpMessagingTemplate messagingTemplate;
 
-    // Temporary storage for converted videos (auto-expires after 10 minutes)
+    @Value("${skatetricks.upload.max-file-size:500MB}")
+    private DataSize maxUploadSize;
+
+    // Converted videos stay in memory briefly for analysis; playback comes from the CDN URL.
     private final Map<String, byte[]> convertedVideos = new ConcurrentHashMap<>();
+    private final Map<String, UploadReservation> uploadReservations = new ConcurrentHashMap<>();
     private final Map<String, ConversionStatus> conversionStatuses = new ConcurrentHashMap<>();
     private final Map<String, AnalysisStatus> analysisStatuses = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -59,8 +61,12 @@ class SkateTricksController {
             new ArrayBlockingQueue<>(MAX_QUEUE_DEPTH),
             new ThreadPoolExecutor.AbortPolicy());
 
-    SkateTricksController(SkateTricksService skateTricksService, SimpMessagingTemplate messagingTemplate) {
+    SkateTricksController(
+            SkateTricksService skateTricksService,
+            SkateTricksUploadService uploadService,
+            SimpMessagingTemplate messagingTemplate) {
         this.skateTricksService = skateTricksService;
+        this.uploadService = uploadService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -69,64 +75,63 @@ class SkateTricksController {
         return "skatetricks";
     }
 
-    @PostMapping("/skatetricks/convert")
-    public ResponseEntity<ConvertResponse> convertVideo(
-            @RequestParam("video") MultipartFile video, @RequestParam("sessionId") String sessionId) {
-
-        if (video.isEmpty()) {
+    @PostMapping("/skatetricks/upload-url")
+    public ResponseEntity<UploadUrlResponse> createUploadUrl(@RequestBody UploadUrlRequest request) {
+        if (request == null || isBlank(request.filename()) || request.size() == null || request.size() <= 0) {
             return ResponseEntity.badRequest().build();
         }
-        if (video.getSize() > MAX_UPLOAD_BYTES) {
+        if (request.size() > maxUploadSize.toBytes()) {
             return ResponseEntity.status(413).build();
         }
 
-        // Generate video ID immediately
         String videoId = UUID.randomUUID().toString();
-        String filename = video.getOriginalFilename();
-        long fileSize = video.getSize();
+        var upload = uploadService.createPresignedUpload(request.filename(), request.contentType());
+        uploadReservations.put(videoId, new UploadReservation(upload.inputKey(), request.filename(), request.size()));
+        scheduleUploadReservationCleanup(videoId);
 
-        try {
-            // Copy video bytes before returning (MultipartFile may be cleaned up)
-            byte[] videoBytes = video.getBytes();
-
-            log.info(
-                    "Queuing video conversion: {} ({} bytes) for session {}, videoId={}",
-                    filename,
-                    fileSize,
-                    sessionId,
-                    videoId);
-
-            // Set initial status
-            conversionStatuses.put(videoId, new ConversionStatus("pending", 0, null, null));
-
-            // Return immediately with video ID, process async
-            try {
-                conversionExecutor.submit(() -> processVideoConversion(videoId, sessionId, videoBytes, filename));
-            } catch (RejectedExecutionException e) {
-                conversionStatuses.remove(videoId);
-                return ResponseEntity.status(429).build();
-            }
-
-            return ResponseEntity.accepted().body(new ConvertResponse(videoId, 0, "pending"));
-
-        } catch (IOException e) {
-            log.error("Failed to read uploaded video", e);
-            return ResponseEntity.internalServerError().build();
-        }
+        return ResponseEntity.ok(
+                new UploadUrlResponse(videoId, upload.inputKey(), upload.uploadUrl(), upload.contentType()));
     }
 
-    private void processVideoConversion(String videoId, String sessionId, byte[] videoBytes, String filename) {
+    @PostMapping("/skatetricks/convert")
+    public ResponseEntity<ConvertResponse> startConversion(@RequestBody ConvertStartRequest request) {
+        if (request == null
+                || isBlank(request.videoId())
+                || isBlank(request.inputKey())
+                || isBlank(request.filename())
+                || isBlank(request.sessionId())) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        UploadReservation reservation = uploadReservations.get(request.videoId());
+        if (reservation == null || !reservation.inputKey().equals(request.inputKey())) {
+            return ResponseEntity.notFound().build();
+        }
+
+        conversionStatuses.put(request.videoId(), new ConversionStatus("pending", 0, null, null, null));
+
         try {
-            // Send "converting" status
-            updateConversionStatus(videoId, sessionId, "converting", 10, null);
+            conversionExecutor.submit(() -> processVideoConversion(
+                    request.videoId(), request.sessionId(), request.inputKey(), request.filename()));
+        } catch (RejectedExecutionException e) {
+            conversionStatuses.remove(request.videoId());
+            return ResponseEntity.status(429).build();
+        }
 
-            log.info("Starting conversion for videoId={}", videoId);
-            byte[] mp4Data = skateTricksService.convertVideo(videoBytes, filename);
+        return ResponseEntity.accepted().body(new ConvertResponse(request.videoId(), 0, "pending"));
+    }
 
-            // Store converted video
+    private void processVideoConversion(String videoId, String sessionId, String inputKey, String filename) {
+        try {
+            updateConversionStatus(videoId, sessionId, "converting", 10, null, null);
+
+            log.info("Starting conversion for videoId={} from inputKey={}", videoId, inputKey);
+            var transcodedVideo = skateTricksService.transcodeUploadedVideo(inputKey, filename);
+            byte[] mp4Data = transcodedVideo.mp4Data();
+
             convertedVideos.put(videoId, mp4Data);
+            uploadReservations.remove(videoId);
 
-            // Schedule cleanup after 10 minutes
             cleanupExecutor.schedule(
                     () -> {
                         convertedVideos.remove(videoId);
@@ -136,17 +141,23 @@ class SkateTricksController {
                     STATUS_TTL_MINUTES,
                     TimeUnit.MINUTES);
 
-            log.info("Video converted successfully: {} -> {} bytes, id={}", filename, mp4Data.length, videoId);
-
-            // Send "complete" status
-            updateConversionStatus(videoId, sessionId, "complete", 100, (long) mp4Data.length);
-
+            updateConversionStatus(videoId, sessionId, "complete", 100, (long) mp4Data.length, transcodedVideo.videoUrl());
         } catch (Exception e) {
             log.error("Failed to convert video: {}", videoId, e);
-            updateConversionStatus(videoId, sessionId, "error", 0, null);
-            conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, e.getMessage()));
+            conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, e.getMessage(), null));
+            updateConversionStatus(videoId, sessionId, "error", 0, null, null);
             scheduleConversionStatusCleanup(videoId);
         }
+    }
+
+    private void scheduleUploadReservationCleanup(String videoId) {
+        cleanupExecutor.schedule(
+                () -> {
+                    uploadReservations.remove(videoId);
+                    log.debug("Cleaned up upload reservation: {}", videoId);
+                },
+                STATUS_TTL_MINUTES,
+                TimeUnit.MINUTES);
     }
 
     private void scheduleConversionStatusCleanup(String videoId) {
@@ -159,14 +170,13 @@ class SkateTricksController {
                 TimeUnit.MINUTES);
     }
 
-    private void updateConversionStatus(String videoId, String sessionId, String status, int progress, Long size) {
-        ConversionStatus convStatus = new ConversionStatus(status, progress, size, null);
+    private void updateConversionStatus(
+            String videoId, String sessionId, String status, int progress, Long size, String videoUrl) {
+        ConversionStatus convStatus = new ConversionStatus(status, progress, size, null, videoUrl);
         conversionStatuses.put(videoId, convStatus);
 
-        // Send WebSocket update
-        ConversionStatusUpdate update = new ConversionStatusUpdate(videoId, status, progress, size);
+        ConversionStatusUpdate update = new ConversionStatusUpdate(videoId, status, progress, size, videoUrl);
         messagingTemplate.convertAndSend("/topic/skatetricks/conversion/" + sessionId, update);
-        log.debug("Sent conversion status update: {} -> {}", videoId, status);
     }
 
     @GetMapping("/skatetricks/convert/{videoId}/status")
@@ -176,49 +186,26 @@ class SkateTricksController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(
-                new ConversionStatusUpdate(videoId, status.status(), status.progress(), status.size()));
-    }
-
-    @GetMapping("/skatetricks/video/{videoId}")
-    public ResponseEntity<byte[]> getConvertedVideo(@PathVariable String videoId) {
-        log.info("Serving video: {} (stored videos: {})", videoId, convertedVideos.keySet());
-        byte[] videoData = convertedVideos.get(videoId);
-
-        if (videoData == null) {
-            log.warn("Video not found: {}", videoId);
-            return ResponseEntity.notFound().build();
-        }
-
-        log.info("Returning video {} ({} bytes)", videoId, videoData.length);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.valueOf("video/mp4").toString())
-                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(videoData.length))
-                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
-                .header(HttpHeaders.PRAGMA, "no-cache")
-                .header(HttpHeaders.EXPIRES, "0")
-                .body(videoData);
+                new ConversionStatusUpdate(videoId, status.status(), status.progress(), status.size(), status.videoUrl()));
     }
 
     @PostMapping("/skatetricks/analyze/{videoId}")
     public ResponseEntity<AnalysisResponse> analyzeVideo(
-            @PathVariable String videoId, @RequestParam("sessionId") String sessionId) {
+            @PathVariable String videoId, @RequestBody AnalyzeRequest request) {
+        if (request == null || isBlank(request.sessionId())) {
+            return ResponseEntity.badRequest().build();
+        }
 
-        log.info("Analyze request for video: {} (stored videos: {})", videoId, convertedVideos.keySet());
         byte[] videoData = convertedVideos.get(videoId);
-
         if (videoData == null) {
             return ResponseEntity.notFound().build();
         }
 
-        // Generate analysis ID
         String analysisId = UUID.randomUUID().toString();
-
-        // Set initial status
         analysisStatuses.put(analysisId, new AnalysisStatus("pending", null, null));
 
-        // Return immediately, process async
         try {
-            analysisExecutor.submit(() -> processAnalysis(analysisId, sessionId, videoData, videoId));
+            analysisExecutor.submit(() -> processAnalysis(analysisId, request.sessionId(), videoData, videoId));
         } catch (RejectedExecutionException e) {
             analysisStatuses.remove(analysisId);
             return ResponseEntity.status(429).build();
@@ -229,23 +216,10 @@ class SkateTricksController {
 
     private void processAnalysis(String analysisId, String sessionId, byte[] videoData, String videoId) {
         try {
-            log.info(
-                    "Starting analysis for analysisId={}, videoId={} ({} bytes)",
-                    analysisId,
-                    videoId,
-                    videoData.length);
-
-            // Update status to processing
             analysisStatuses.put(analysisId, new AnalysisStatus("processing", null, null));
-
             TrickAnalysisResult result = skateTricksService.analyzeConvertedVideo(sessionId, videoData);
-
-            log.info("Analysis complete for analysisId={}: {}", analysisId, result.trick());
-
-            // Store result
             analysisStatuses.put(analysisId, new AnalysisStatus("complete", result, null));
 
-            // Schedule cleanup after 10 minutes
             cleanupExecutor.schedule(
                     () -> {
                         analysisStatuses.remove(analysisId);
@@ -253,7 +227,6 @@ class SkateTricksController {
                     },
                     STATUS_TTL_MINUTES,
                     TimeUnit.MINUTES);
-
         } catch (Exception e) {
             log.error("Failed to analyze video: {}", analysisId, e);
             analysisStatuses.put(analysisId, new AnalysisStatus("error", null, e.getMessage()));
@@ -293,11 +266,21 @@ class SkateTricksController {
         }
     }
 
+    record UploadUrlRequest(String filename, String contentType, Long size) {}
+
+    record UploadUrlResponse(String videoId, String inputKey, String uploadUrl, String contentType) {}
+
+    record ConvertStartRequest(String videoId, String sessionId, String inputKey, String filename) {}
+
+    record AnalyzeRequest(String sessionId) {}
+
     record ConvertResponse(String videoId, long size, String status) {}
 
-    record ConversionStatus(String status, int progress, Long size, String error) {}
+    record UploadReservation(String inputKey, String filename, long size) {}
 
-    record ConversionStatusUpdate(String videoId, String status, int progress, Long size) {}
+    record ConversionStatus(String status, int progress, Long size, String error, String videoUrl) {}
+
+    record ConversionStatusUpdate(String videoId, String status, int progress, Long size, String videoUrl) {}
 
     record AnalysisResponse(String analysisId, String status) {}
 
@@ -312,5 +295,9 @@ class SkateTricksController {
         conversionExecutor.shutdown();
         analysisExecutor.shutdown();
         cleanupExecutor.shutdown();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

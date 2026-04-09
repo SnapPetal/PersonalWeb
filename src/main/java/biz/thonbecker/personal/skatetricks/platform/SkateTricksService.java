@@ -5,10 +5,7 @@ import biz.thonbecker.personal.skatetricks.api.TrickAnalysisEvent;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
 import biz.thonbecker.personal.skatetricks.api.TrickSequenceEntry;
 import biz.thonbecker.personal.skatetricks.domain.TrickCatalog;
-import biz.thonbecker.personal.skatetricks.platform.FFmpegVideoConverter.VideoConversionException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import biz.thonbecker.personal.skatetricks.platform.VideoTranscoder.VideoTranscodingException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +28,7 @@ public class SkateTricksService {
     private final TrickAnalyzer trickAnalyzer;
     private final TrickAttemptRepository trickAttemptRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final FFmpegVideoConverter videoConverter;
+    private final VideoTranscoder videoTranscoder;
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
 
@@ -48,13 +45,13 @@ public class SkateTricksService {
             TrickAnalyzer trickAnalyzer,
             TrickAttemptRepository trickAttemptRepository,
             ApplicationEventPublisher eventPublisher,
-            FFmpegVideoConverter videoConverter,
+            VideoTranscoder videoTranscoder,
             @org.springframework.lang.Nullable S3VectorsClient s3VectorsClient,
             @org.springframework.lang.Nullable EmbeddingService embeddingService) {
         this.trickAnalyzer = trickAnalyzer;
         this.trickAttemptRepository = trickAttemptRepository;
         this.eventPublisher = eventPublisher;
-        this.videoConverter = videoConverter;
+        this.videoTranscoder = videoTranscoder;
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
     }
@@ -72,44 +69,18 @@ public class SkateTricksService {
     public TrickAnalysisResult analyzeVideo(String sessionId, byte[] videoData, String originalFilename) {
         log.info("Analyzing video for session {}: {} ({} bytes)", sessionId, originalFilename, videoData.length);
 
-        Path inputPath = null;
-        Path convertedPath = null;
-
         try {
-            // Save uploaded video to temp file
-            String extension = getFileExtension(originalFilename);
-            inputPath = Files.createTempFile("upload-", extension);
-            Files.write(inputPath, videoData);
-
-            // Convert to MP4 if needed
-            byte[] mp4Data;
-            if (extension.equalsIgnoreCase(".mp4")) {
-                mp4Data = videoData;
-                log.info("Video is already MP4, skipping conversion");
-            } else {
-                log.info("Converting {} to MP4", extension);
-                convertedPath = videoConverter.convertToMp4(inputPath);
-                mp4Data = Files.readAllBytes(convertedPath);
-            }
+            byte[] mp4Data = videoTranscoder.convertToMp4(videoData, originalFilename).mp4Data();
 
             // Analyze with AI
             TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
             Long id = saveResult(sessionId, result);
             return result.withAttemptId(id);
 
-        } catch (IOException | VideoConversionException e) {
+        } catch (VideoTranscodingException e) {
             log.error("Failed to process video for session {}", sessionId, e);
             throw new RuntimeException("Video processing failed: " + e.getMessage(), e);
-        } finally {
-            // Clean up temp files
-            deleteQuietly(inputPath);
-            deleteQuietly(convertedPath);
         }
-    }
-
-    private String getFileExtension(String filename) {
-        int idx = filename.lastIndexOf('.');
-        return idx >= 0 ? filename.substring(idx) : "";
     }
 
     private static final int AUTO_VERIFY_CONFIDENCE_THRESHOLD = 80;
@@ -262,45 +233,37 @@ public class SkateTricksService {
         return result;
     }
 
-    private void deleteQuietly(Path path) {
-        if (path != null) {
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException e) {
-                log.warn("Failed to delete temp file: {}", path, e);
-            }
-        }
-    }
-
     public byte[] convertVideo(byte[] videoData, String originalFilename) {
         log.info("Converting video: {} ({} bytes)", originalFilename, videoData.length);
 
-        Path inputPath = null;
-        Path convertedPath = null;
-
         try {
-            String extension = getFileExtension(originalFilename);
+            return videoTranscoder.convertToMp4(videoData, originalFilename).mp4Data();
 
-            // If already MP4, return as-is
-            if (extension.equalsIgnoreCase(".mp4")) {
-                log.info("Video is already MP4, skipping conversion");
-                return videoData;
-            }
-
-            // Save to temp file and convert
-            inputPath = Files.createTempFile("upload-", extension);
-            Files.write(inputPath, videoData);
-
-            log.info("Converting {} to MP4", extension);
-            convertedPath = videoConverter.convertToMp4(inputPath);
-            return Files.readAllBytes(convertedPath);
-
-        } catch (IOException | VideoConversionException e) {
+        } catch (VideoTranscodingException e) {
             log.error("Failed to convert video: {}", originalFilename, e);
             throw new RuntimeException("Video conversion failed: " + e.getMessage(), e);
-        } finally {
-            deleteQuietly(inputPath);
-            deleteQuietly(convertedPath);
+        }
+    }
+
+    public VideoTranscoder.TranscodedVideo transcodeVideo(byte[] videoData, String originalFilename) {
+        log.info("Transcoding video: {} ({} bytes)", originalFilename, videoData.length);
+
+        try {
+            return videoTranscoder.convertToMp4(videoData, originalFilename);
+        } catch (VideoTranscodingException e) {
+            log.error("Failed to transcode video: {}", originalFilename, e);
+            throw new RuntimeException("Video conversion failed: " + e.getMessage(), e);
+        }
+    }
+
+    public VideoTranscoder.TranscodedVideo transcodeUploadedVideo(String inputKey, String originalFilename) {
+        log.info("Transcoding uploaded video from S3 key {} ({})", inputKey, originalFilename);
+
+        try {
+            return videoTranscoder.convertUploadedObjectToMp4(inputKey, originalFilename);
+        } catch (VideoTranscodingException e) {
+            log.error("Failed to transcode uploaded video: {} from {}", originalFilename, inputKey, e);
+            throw new RuntimeException("Video conversion failed: " + e.getMessage(), e);
         }
     }
 
@@ -308,26 +271,14 @@ public class SkateTricksService {
     public TrickAnalysisResult analyzeConvertedVideo(String sessionId, byte[] mp4Data) {
         log.info("Analyzing converted video for session {} ({} bytes)", sessionId, mp4Data.length);
 
-        Path tempPath = null;
         try {
-            // Save MP4 to temp file for frame extraction
-            tempPath = Files.createTempFile("analyze-", ".mp4");
-            Files.write(tempPath, mp4Data);
-
-            // Extract frames using FFmpeg
-            List<String> frames = videoConverter.extractFrames(tempPath);
-            log.info("Extracted {} frames for analysis", frames.size());
-
-            // Analyze frames with AI
-            TrickAnalysisResult result = trickAnalyzer.analyze(frames);
+            TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
             Long id = saveResult(sessionId, result);
             return result.withAttemptId(id);
 
-        } catch (IOException | VideoConversionException e) {
+        } catch (Exception e) {
             log.error("Failed to analyze video for session {}", sessionId, e);
             throw new RuntimeException("Video analysis failed: " + e.getMessage(), e);
-        } finally {
-            deleteQuietly(tempPath);
         }
     }
 

@@ -7,8 +7,10 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.mediaconvert.MediaConvertClient;
 import software.amazon.awssdk.services.polly.PollyClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
 import software.amazon.awssdk.services.ses.SesClient;
 import tools.jackson.databind.ObjectMapper;
@@ -56,6 +58,28 @@ public class AwsConfig {
         final var credentialsProvider = StaticCredentialsProvider.create(credentials);
 
         return S3Client.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    @Bean
+    public S3Presigner s3Presigner() {
+        final var credentials = AwsBasicCredentials.create(accessKey, secretKey);
+        final var credentialsProvider = StaticCredentialsProvider.create(credentials);
+
+        return S3Presigner.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider)
+                .build();
+    }
+
+    @Bean
+    public MediaConvertClient mediaConvertClient() {
+        final var credentials = AwsBasicCredentials.create(accessKey, secretKey);
+        final var credentialsProvider = StaticCredentialsProvider.create(credentials);
+
+        return MediaConvertClient.builder()
                 .region(Region.of(awsRegion))
                 .credentialsProvider(credentialsProvider)
                 .build();

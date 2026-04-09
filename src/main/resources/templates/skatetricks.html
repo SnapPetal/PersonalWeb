@@ -69,7 +69,7 @@
                                 <div id="plyrContainer" class="mb-3" style="display: none;">
                                     <video id="uploadedVideo" controls playsinline class="w-100 rounded" style="max-height: 400px;"></video>
                                 </div>
-                                <p class="text-muted small mb-2 mt-2">Upload any video format (MOV, MP4, etc). Max 100MB. Server will convert and analyze.</p>
+                                <p class="text-muted small mb-2 mt-2">Upload any video format (MOV, MP4, etc). Default max 500MB. Videos upload directly to S3, convert to MP4, publish to the CDN, and then analyze.</p>
                                 <button class="btn btn-success"
                                         :disabled="analyzeUploadDisabled"
                                         @click="analyzeUpload()">
