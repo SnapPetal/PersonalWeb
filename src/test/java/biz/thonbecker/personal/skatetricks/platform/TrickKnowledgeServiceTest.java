@@ -18,6 +18,8 @@ class TrickKnowledgeServiceTest {
         assertFalse(promptSection.isBlank());
         assertTrue(promptSection.contains("CURATED TRICK KNOWLEDGE"));
         assertTrue(promptSection.contains("KICKFLIP"));
+        assertTrue(promptSection.contains("HALFCAB"));
+        assertTrue(promptSection.contains("CROOKED_GRIND"));
         assertTrue(promptSection.contains("common confusions"));
         assertTrue(promptSection.contains("HEELFLIP"));
     }

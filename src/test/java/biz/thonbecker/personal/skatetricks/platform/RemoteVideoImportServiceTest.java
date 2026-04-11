@@ -55,6 +55,24 @@ class RemoteVideoImportServiceTest {
     }
 
     @Test
+    void extractsFacebookReelUrlFromBrowserNativeField() {
+        String html = """
+                <html>
+                  <body>
+                    <script>
+                      {"browser_native_hd_url":"https:\\/\\/video.xx.fbcdn.net\\/v\\/t42.1790-2\\/4246188265642127.mp4?strext=1\\u0026efg=foo"}
+                    </script>
+                  </body>
+                </html>
+                """;
+
+        String resolved = RemoteVideoImportService.extractVideoUrlFromHtml(
+                URI.create("https://www.facebook.com/reel/4246188265642127/"), html);
+
+        assertEquals("https://video.xx.fbcdn.net/v/t42.1790-2/4246188265642127.mp4?strext=1&efg=foo", resolved);
+    }
+
+    @Test
     void extractsYouTubeMp4StreamFromPlayerResponse() {
         String html = """
                 <html>
@@ -118,6 +136,14 @@ class RemoteVideoImportServiceTest {
                 URI.create("https://www.facebook.com/watch/?v=123")));
         assertFalse(RemoteVideoImportService.requiresProviderResolution(
                 URI.create("https://video.xx.fbcdn.net/v/t42.1790-2/98765.mp4")));
+    }
+
+    @Test
+    void canonicalizesFacebookShareReelUrlToReelPath() {
+        URI canonical = RemoteVideoImportService.canonicalizeSocialUrl(
+                URI.create("https://www.facebook.com/share/r/18HbqyGiBZ/"));
+
+        assertEquals("https://www.facebook.com/reel/18HbqyGiBZ/", canonical.toString());
     }
 
     @Test

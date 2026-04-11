@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,8 @@ public class RemoteVideoImportService {
             Pattern.compile(
                     "\"playable_url_quality_hd\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\"playable_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"browser_native_sd_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"browser_native_hd_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\"video_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\"contentUrl\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
             Pattern.compile(
@@ -54,7 +57,7 @@ public class RemoteVideoImportService {
     public DownloadedVideo downloadVideo(String sourceUrl, long maxBytes) throws RemoteVideoImportException {
         final var scope = observability.start("remote_import.download_video");
         try {
-            URI uri = validateUrl(sourceUrl);
+            URI uri = canonicalizeSocialUrl(validateUrl(sourceUrl));
             log.info(
                     "event=remote_import_started sourceHost={} sourcePath={} maxBytes={}",
                     uri.getHost(),
@@ -382,6 +385,25 @@ public class RemoteVideoImportService {
     static boolean requiresProviderResolution(URI uri) {
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
         return isInstagramHost(host) || isFacebookHost(host) || isYouTubeHost(host);
+    }
+
+    static URI canonicalizeSocialUrl(URI uri) {
+        if (Objects.isNull(uri)) {
+            return null;
+        }
+
+        final var host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
+        if (!isFacebookHost(host)) {
+            return uri;
+        }
+
+        final var path = uri.getPath() == null ? "" : uri.getPath();
+        if (path.startsWith("/share/r/")) {
+            final var normalizedPath = path.replaceFirst("^/share/r/", "/reel/");
+            return URI.create(uri.getScheme() + "://" + uri.getHost() + normalizedPath);
+        }
+
+        return uri;
     }
 
     private static boolean isInstagramHost(String host) {

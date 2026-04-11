@@ -1,5 +1,6 @@
 tricks:
-  - trick: OLLIE
+  - name: OLLIE
+    supportedTrick: OLLIE
     category: foundational
     aliases:
       - ollie
@@ -14,7 +15,8 @@ tricks:
       - FRONTSIDE_180
       - BACKSIDE_180
 
-  - trick: KICKFLIP
+  - name: KICKFLIP
+    supportedTrick: KICKFLIP
     category: flip
     aliases:
       - kickflip
@@ -30,7 +32,8 @@ tricks:
       - HEELFLIP
       - TREFLIP
 
-  - trick: HEELFLIP
+  - name: HEELFLIP
+    supportedTrick: HEELFLIP
     category: flip
     aliases:
       - heelflip
@@ -46,7 +49,8 @@ tricks:
       - KICKFLIP
       - TREFLIP
 
-  - trick: POP_SHUVIT
+  - name: POP_SHUVIT
+    supportedTrick: POP_SHUVIT
     category: spin
     aliases:
       - pop shuvit
@@ -63,7 +67,8 @@ tricks:
       - TREFLIP
       - BACKSIDE_180
 
-  - trick: TREFLIP
+  - name: TREFLIP
+    supportedTrick: TREFLIP
     category: flip
     aliases:
       - treflip
@@ -80,7 +85,8 @@ tricks:
       - KICKFLIP
       - POP_SHUVIT
 
-  - trick: FRONTSIDE_180
+  - name: FRONTSIDE_180
+    supportedTrick: FRONTSIDE_180
     category: spin
     aliases:
       - frontside 180
@@ -96,15 +102,18 @@ tricks:
       - BACKSIDE_180
       - OLLIE
 
-  - trick: BACKSIDE_180
+  - name: BACKSIDE_180
+    supportedTrick: BACKSIDE_180
     category: spin
     aliases:
       - backside 180
       - bs 180
+      - backside one eighty
     keyCues:
       - Rider and board rotate 180 degrees together backside.
       - Trick still has ollie-style pop and airtime.
       - Board does not flip separately from the body.
+      - Often appears as the exit rotation after a ledge or rail trick.
     disqualifiers:
       - Board flips independently.
       - Rotation direction is frontside.
@@ -112,7 +121,26 @@ tricks:
       - FRONTSIDE_180
       - POP_SHUVIT
 
-  - trick: BOARDSLIDE
+  - name: HALFCAB
+    supportedTrick: HALFCAB
+    category: spin
+    aliases:
+      - halfcab
+      - half-cab
+      - fakie backside 180
+    keyCues:
+      - Rider approaches fakie and rotates backside 180.
+      - Board and body rotate together without a separate flip.
+      - Commonly used as an entry into ledge and rail tricks.
+    disqualifiers:
+      - Approach is not fakie.
+      - Rotation is frontside rather than backside.
+    commonConfusions:
+      - BACKSIDE_180
+      - FRONTSIDE_180
+
+  - name: BOARDSLIDE
+    supportedTrick: BOARDSLIDE
     category: slide
     aliases:
       - boardslide
@@ -129,7 +157,8 @@ tricks:
       - FIVE_O
       - NOSEGRIND
 
-  - trick: FIFTY_FIFTY
+  - name: FIFTY_FIFTY
+    supportedTrick: FIFTY_FIFTY
     category: grind
     aliases:
       - 50-50
@@ -147,7 +176,8 @@ tricks:
       - FIVE_O
       - NOSEGRIND
 
-  - trick: FIVE_O
+  - name: FIVE_O
+    supportedTrick: FIVE_O
     category: grind
     aliases:
       - 5-0
@@ -164,7 +194,8 @@ tricks:
       - FIFTY_FIFTY
       - NOSEGRIND
 
-  - trick: NOSEGRIND
+  - name: NOSEGRIND
+    supportedTrick: NOSEGRIND
     category: grind
     aliases:
       - nosegrind
@@ -180,7 +211,25 @@ tricks:
       - FIVE_O
       - FIFTY_FIFTY
 
-  - trick: MANUAL
+  - name: CROOKED_GRIND
+    supportedTrick: CROOKED_GRIND
+    category: grind
+    aliases:
+      - crooked grind
+      - crook
+    keyCues:
+      - Front truck locks onto the obstacle at an angled, pinched position.
+      - Nose dips inward while the back truck stays off the obstacle.
+      - Commonly exits with a shove or 180 out.
+    disqualifiers:
+      - Both trucks are on the obstacle.
+      - Slide occurs on the deck rather than the front truck lock-in.
+    commonConfusions:
+      - NOSEGRIND
+      - FIFTY_FIFTY
+
+  - name: MANUAL
+    supportedTrick: MANUAL
     category: balance
     aliases:
       - manual
@@ -195,7 +244,8 @@ tricks:
       - OLLIE
       - CRUISING
 
-  - trick: CRUISING
+  - name: CRUISING
+    supportedTrick: CRUISING
     category: baseline
     aliases:
       - cruising
@@ -211,7 +261,8 @@ tricks:
       - MANUAL
       - DROP_IN
 
-  - trick: DROP_IN
+  - name: DROP_IN
+    supportedTrick: DROP_IN
     category: transition
     aliases:
       - drop in

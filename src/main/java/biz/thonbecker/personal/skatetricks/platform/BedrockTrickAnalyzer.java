@@ -157,7 +157,8 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                 Known trick enum values: %s
 
                 Use ENUM_NAME exactly (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, \
-                BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
+                BACKSIDE_180, HALFCAB, BOARDSLIDE, CROOKED_GRIND, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). \
+                Use UNKNOWN only if unidentifiable.
                 """.formatted(TrickCatalog.buildTrickDescriptions())
                 + curatedKnowledge
                 + similarExamples

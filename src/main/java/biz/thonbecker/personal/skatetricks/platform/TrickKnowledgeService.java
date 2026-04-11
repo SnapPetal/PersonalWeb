@@ -48,10 +48,16 @@ class TrickKnowledgeService {
         final var prompt = new StringBuilder("\nCURATED TRICK KNOWLEDGE (use this as high-priority reference):\n");
         for (var trick : catalog.tricks()) {
             prompt.append("- ")
-                    .append(trick.trick().name())
+                    .append(trick.name())
                     .append(" [category: ")
                     .append(trick.category())
                     .append("]\n");
+
+            if (Objects.nonNull(trick.supportedTrick())) {
+                prompt.append("  supported enum output: ")
+                        .append(trick.supportedTrick().name())
+                        .append("\n");
+            }
 
             if (!trick.aliases().isEmpty()) {
                 prompt.append("  aliases: ")
@@ -128,13 +134,15 @@ class TrickKnowledgeService {
             if (!(trickEntry instanceof Map<?, ?> trickMap)) {
                 continue;
             }
-            final var trick = TrickCatalog.fromName(stringValue(trickMap.get("trick")));
-            if (trick == SupportedTrick.UNKNOWN) {
+            final var name = defaultValue(stringValue(trickMap.get("name")), stringValue(trickMap.get("trick")));
+            if (name.isBlank()) {
                 continue;
             }
+            final var supportedTrick = parseSupportedTrick(trickMap);
 
             entries.add(new SkatetricksKnowledgeCatalog.TrickKnowledgeEntry(
-                    trick,
+                    name.toUpperCase(Locale.ROOT).replace(" ", "_").replace("-", "_"),
+                    supportedTrick,
                     defaultValue(stringValue(trickMap.get("category")), "unknown"),
                     stringList(trickMap.get("aliases")),
                     stringList(trickMap.get("keyCues")),
@@ -142,6 +150,20 @@ class TrickKnowledgeService {
                     supportedTrickList(trickMap.get("commonConfusions"))));
         }
         return new SkatetricksKnowledgeCatalog(List.copyOf(entries));
+    }
+
+    private static SupportedTrick parseSupportedTrick(Map<?, ?> trickMap) {
+        final var explicit = TrickCatalog.fromName(stringValue(trickMap.get("supportedTrick")));
+        if (explicit != SupportedTrick.UNKNOWN) {
+            return explicit;
+        }
+
+        final var inferred = TrickCatalog.fromName(stringValue(trickMap.get("trick")));
+        if (inferred != SupportedTrick.UNKNOWN) {
+            return inferred;
+        }
+
+        return null;
     }
 
     private static List<String> stringList(Object raw) {
