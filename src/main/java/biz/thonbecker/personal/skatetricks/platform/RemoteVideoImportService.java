@@ -12,9 +12,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class RemoteVideoImportService {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes(2);
@@ -38,7 +40,13 @@ public class RemoteVideoImportService {
 
     public DownloadedVideo downloadVideo(String sourceUrl, long maxBytes) throws RemoteVideoImportException {
         URI uri = validateUrl(sourceUrl);
+        log.info("Resolving remote video source host={} path={}", uri.getHost(), uri.getPath());
         ResolvedVideoSource resolvedSource = resolveVideoSource(uri, 0, null);
+        log.info(
+                "Resolved remote video source sourceHost={} mediaHost={} referer={}",
+                uri.getHost(),
+                resolvedSource.uri().getHost(),
+                resolvedSource.referer());
         return downloadResolvedVideo(resolvedSource, maxBytes);
     }
 
@@ -57,7 +65,9 @@ public class RemoteVideoImportService {
             HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             int status = response.statusCode();
             if (status < 200 || status >= 300) {
-                throw new RemoteVideoImportException("Remote server returned HTTP " + status);
+                throw new RemoteVideoImportException(
+                        RemoteVideoImportErrorCode.REMOTE_SERVER_ERROR,
+                        "The remote server returned HTTP " + status + " while downloading the video.");
             }
 
             String contentType = response.headers()
@@ -69,14 +79,18 @@ public class RemoteVideoImportService {
                 throw socialUrlException(resolvedSource.sourcePageUri());
             }
             if (SUPPORTED_VIDEO_TYPES.stream().noneMatch(normalizedContentType::equals)) {
-                throw new RemoteVideoImportException("URL did not return a supported video content type: " + contentType);
+                throw new RemoteVideoImportException(
+                        RemoteVideoImportErrorCode.UNSUPPORTED_CONTENT_TYPE,
+                        "The URL did not return a supported video file. Content type was " + contentType + ".");
             }
 
             long declaredLength = response.headers()
                     .firstValueAsLong("content-length")
                     .orElse(-1L);
             if (declaredLength > maxBytes) {
-                throw new RemoteVideoImportException("Remote video exceeds max size of " + maxBytes + " bytes");
+                throw new RemoteVideoImportException(
+                        RemoteVideoImportErrorCode.VIDEO_TOO_LARGE,
+                        "The remote video is larger than the upload limit.");
             }
 
             byte[] bytes = readLimited(response.body(), maxBytes);
@@ -89,18 +103,24 @@ public class RemoteVideoImportService {
         } catch (RemoteVideoImportException e) {
             throw e;
         } catch (Exception e) {
-            throw new RemoteVideoImportException("Failed to download remote video: " + e.getMessage(), e);
+            throw new RemoteVideoImportException(
+                    RemoteVideoImportErrorCode.DOWNLOAD_FAILED,
+                    "Failed to download the resolved video file.",
+                    e);
         }
     }
 
     private ResolvedVideoSource resolveVideoSource(URI sourceUri, int depth, URI referer) throws RemoteVideoImportException {
         if (depth > MAX_RESOLUTION_DEPTH) {
-            throw new RemoteVideoImportException("Provider video URL resolution exceeded max redirect depth");
+            throw new RemoteVideoImportException(
+                    RemoteVideoImportErrorCode.RESOLUTION_DEPTH_EXCEEDED,
+                    "Video URL resolution exceeded the maximum redirect depth.");
         }
         if (!requiresProviderResolution(sourceUri)) {
             return new ResolvedVideoSource(sourceUri, referer != null ? referer.toString() : null, null, sourceUri);
         }
 
+        log.info("Resolving provider page host={} depth={}", sourceUri.getHost(), depth);
         String html = fetchHtml(sourceUri);
         String resolvedUrl = extractVideoUrlFromHtml(sourceUri, html);
         if (resolvedUrl == null || resolvedUrl.isBlank()) {
@@ -131,32 +151,41 @@ public class RemoteVideoImportService {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             int status = response.statusCode();
             if (status < 200 || status >= 300) {
-                throw new RemoteVideoImportException("Remote server returned HTTP " + status);
+                throw new RemoteVideoImportException(
+                        RemoteVideoImportErrorCode.REMOTE_SERVER_ERROR,
+                        "The provider page returned HTTP " + status + ".");
             }
             return response.body();
         } catch (RemoteVideoImportException e) {
             throw e;
         } catch (Exception e) {
-            throw new RemoteVideoImportException("Failed to resolve provider video page: " + e.getMessage(), e);
+            throw new RemoteVideoImportException(
+                    RemoteVideoImportErrorCode.PROVIDER_PAGE_FETCH_FAILED,
+                    "Failed to load the provider page for video resolution.",
+                    e);
         }
     }
 
     private static URI validateUrl(String sourceUrl) throws RemoteVideoImportException {
         if (sourceUrl == null || sourceUrl.isBlank()) {
-            throw new RemoteVideoImportException("Video URL is required");
+            throw new RemoteVideoImportException(RemoteVideoImportErrorCode.MISSING_URL, "Video URL is required.");
         }
         try {
             URI uri = URI.create(sourceUrl.trim());
             String scheme = uri.getScheme();
             if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-                throw new RemoteVideoImportException("Only http and https video URLs are supported");
+                throw new RemoteVideoImportException(
+                        RemoteVideoImportErrorCode.INVALID_URL,
+                        "Only http and https video URLs are supported.");
             }
             if (uri.getHost() == null || uri.getHost().isBlank()) {
-                throw new RemoteVideoImportException("Video URL must include a host");
+                throw new RemoteVideoImportException(
+                        RemoteVideoImportErrorCode.INVALID_URL,
+                        "Video URL must include a host.");
             }
             return uri;
         } catch (IllegalArgumentException e) {
-            throw new RemoteVideoImportException("Invalid video URL", e);
+            throw new RemoteVideoImportException(RemoteVideoImportErrorCode.INVALID_URL, "Invalid video URL.", e);
         }
     }
 
@@ -168,7 +197,9 @@ public class RemoteVideoImportService {
             while ((read = inputStream.read(buffer)) != -1) {
                 total += read;
                 if (total > maxBytes) {
-                    throw new RemoteVideoImportException("Remote video exceeds max size of " + maxBytes + " bytes");
+                    throw new RemoteVideoImportException(
+                            RemoteVideoImportErrorCode.VIDEO_TOO_LARGE,
+                            "The remote video is larger than the upload limit.");
                 }
                 outputStream.write(buffer, 0, read);
             }
@@ -379,37 +410,63 @@ public class RemoteVideoImportService {
     }
 
     private static RemoteVideoImportException socialUrlException(URI uri) {
-        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
         if (requiresProviderResolution(uri)) {
             return unresolvedSocialUrlException(uri);
         }
-        return new RemoteVideoImportException("URL returned HTML instead of a video file");
+        return new RemoteVideoImportException(
+                RemoteVideoImportErrorCode.HTML_INSTEAD_OF_VIDEO,
+                "The URL returned an HTML page instead of a downloadable video file.");
     }
 
     private static RemoteVideoImportException unresolvedSocialUrlException(URI uri) {
         String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
         if (isInstagramHost(host) || isFacebookHost(host)) {
             return new RemoteVideoImportException(
+                    RemoteVideoImportErrorCode.SOCIAL_VIDEO_UNRESOLVED,
                     "Could not resolve a downloadable Instagram or Facebook video from that page URL. The post may be private, geo-restricted, or require authentication.");
         }
         if (isYouTubeHost(host)) {
             return new RemoteVideoImportException(
+                    RemoteVideoImportErrorCode.SOCIAL_VIDEO_UNRESOLVED,
                     "Could not resolve a downloadable YouTube video stream from that page URL. The video may require a provider-specific extractor or have stream protection enabled.");
         }
-        return new RemoteVideoImportException("Could not resolve a downloadable video from that page URL");
+        return new RemoteVideoImportException(
+                RemoteVideoImportErrorCode.SOCIAL_VIDEO_UNRESOLVED,
+                "Could not resolve a downloadable video from that page URL.");
     }
 
     private record ResolvedVideoSource(URI uri, String referer, String filenameHint, URI sourcePageUri) {}
 
     public record DownloadedVideo(byte[] bytes, String filename, String contentType) {}
 
+    public enum RemoteVideoImportErrorCode {
+        MISSING_URL,
+        INVALID_URL,
+        PROVIDER_PAGE_FETCH_FAILED,
+        RESOLUTION_DEPTH_EXCEEDED,
+        SOCIAL_VIDEO_UNRESOLVED,
+        HTML_INSTEAD_OF_VIDEO,
+        UNSUPPORTED_CONTENT_TYPE,
+        REMOTE_SERVER_ERROR,
+        VIDEO_TOO_LARGE,
+        DOWNLOAD_FAILED
+    }
+
     public static class RemoteVideoImportException extends Exception {
-        public RemoteVideoImportException(String message) {
+        private final RemoteVideoImportErrorCode code;
+
+        public RemoteVideoImportException(RemoteVideoImportErrorCode code, String message) {
             super(message);
+            this.code = code;
         }
 
-        public RemoteVideoImportException(String message, Throwable cause) {
+        public RemoteVideoImportException(RemoteVideoImportErrorCode code, String message, Throwable cause) {
             super(message, cause);
+            this.code = code;
+        }
+
+        public RemoteVideoImportErrorCode code() {
+            return code;
         }
     }
 }

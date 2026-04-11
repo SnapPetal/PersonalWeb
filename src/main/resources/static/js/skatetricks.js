@@ -405,7 +405,7 @@ function skatetricksApp() {
         this.currentVideoUrl = status.videoUrl || null;
         this.loadConvertedVideo(status.videoUrl, status.size);
       } else if (status.status === "error") {
-        this.frameCounterText = "Conversion failed";
+        this.frameCounterText = status.error || "Conversion failed";
         this.analyzeUploadDisabled = true;
       }
     },
@@ -465,7 +465,8 @@ function skatetricksApp() {
             self.currentVideoUrl = status.videoUrl || null;
             self.loadConvertedVideo(status.videoUrl, status.size);
           } else if (status.status === "error") {
-            self.frameCounterText = "Conversion failed";
+            self.frameCounterText = status.error || "Conversion failed";
+            self.analyzeUploadDisabled = true;
           } else if (
             status.status === "pending" ||
             status.status === "converting"

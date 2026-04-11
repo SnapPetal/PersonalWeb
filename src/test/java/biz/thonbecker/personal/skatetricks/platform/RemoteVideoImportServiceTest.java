@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URI;
 import org.junit.jupiter.api.Test;
@@ -116,5 +117,24 @@ class RemoteVideoImportServiceTest {
         assertTrue(RemoteVideoImportService.requiresProviderResolution(URI.create("https://www.facebook.com/watch/?v=123")));
         assertFalse(RemoteVideoImportService.requiresProviderResolution(URI.create(
                 "https://video.xx.fbcdn.net/v/t42.1790-2/98765.mp4")));
+    }
+
+    @Test
+    void validatesMissingUrlWithTypedError() {
+        var exception = assertThrows(
+                RemoteVideoImportService.RemoteVideoImportException.class,
+                () -> new RemoteVideoImportService().downloadVideo(" ", 1024));
+
+        assertEquals(RemoteVideoImportService.RemoteVideoImportErrorCode.MISSING_URL, exception.code());
+        assertEquals("Video URL is required.", exception.getMessage());
+    }
+
+    @Test
+    void validatesUnsupportedSchemeWithTypedError() {
+        var exception = assertThrows(
+                RemoteVideoImportService.RemoteVideoImportException.class,
+                () -> new RemoteVideoImportService().downloadVideo("ftp://example.com/video.mp4", 1024));
+
+        assertEquals(RemoteVideoImportService.RemoteVideoImportErrorCode.INVALID_URL, exception.code());
     }
 }

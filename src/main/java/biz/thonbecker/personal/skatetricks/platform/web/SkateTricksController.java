@@ -175,8 +175,9 @@ class SkateTricksController {
                     transcodedVideo.outputKey());
         } catch (Exception e) {
             log.error("Failed to convert video: {}", videoId, e);
-            conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, e.getMessage(), null, null));
-            updateConversionStatus(videoId, sessionId, "error", 0, null, null, null);
+            String error = buildConversionErrorMessage(e);
+            conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, error, null, null));
+            updateConversionStatus(videoId, sessionId, "error", 0, null, null, null, error);
             scheduleConversionStatusCleanup(videoId);
         }
     }
@@ -187,7 +188,13 @@ class SkateTricksController {
             var downloadedVideo = remoteVideoImportService.downloadVideo(sourceUrl, maxUploadSize.toBytes());
 
             updateConversionStatus(videoId, sessionId, "converting", 35, (long) downloadedVideo.bytes().length, null, null);
-            log.info("Importing remote video for videoId={} from {}", videoId, sourceUrl);
+            log.info(
+                    "Importing remote video for videoId={} from host={} filename={} contentType={} size={}",
+                    videoId,
+                    URI.create(sourceUrl).getHost(),
+                    downloadedVideo.filename(),
+                    downloadedVideo.contentType(),
+                    downloadedVideo.bytes().length);
             var transcodedVideo =
                     skateTricksService.transcodeVideo(downloadedVideo.bytes(), downloadedVideo.filename());
 
@@ -211,8 +218,9 @@ class SkateTricksController {
                     transcodedVideo.outputKey());
         } catch (Exception e) {
             log.error("Failed to import remote video: {}", videoId, e);
-            conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, e.getMessage(), null, null));
-            updateConversionStatus(videoId, sessionId, "error", 0, null, null, null);
+            String error = buildConversionErrorMessage(e);
+            conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, error, null, null));
+            updateConversionStatus(videoId, sessionId, "error", 0, null, null, null, error);
             scheduleConversionStatusCleanup(videoId);
         }
     }
@@ -239,11 +247,16 @@ class SkateTricksController {
 
     private void updateConversionStatus(
             String videoId, String sessionId, String status, int progress, Long size, String videoUrl, String outputKey) {
-        ConversionStatus convStatus = new ConversionStatus(status, progress, size, null, videoUrl, outputKey);
+        updateConversionStatus(videoId, sessionId, status, progress, size, videoUrl, outputKey, null);
+    }
+
+    private void updateConversionStatus(
+            String videoId, String sessionId, String status, int progress, Long size, String videoUrl, String outputKey, String error) {
+        ConversionStatus convStatus = new ConversionStatus(status, progress, size, error, videoUrl, outputKey);
         conversionStatuses.put(videoId, convStatus);
 
         ConversionStatusUpdate update =
-                new ConversionStatusUpdate(videoId, status, progress, size, videoUrl, outputKey);
+                new ConversionStatusUpdate(videoId, status, progress, size, videoUrl, outputKey, error);
         messagingTemplate.convertAndSend("/topic/skatetricks/conversion/" + sessionId, update);
     }
 
@@ -254,7 +267,7 @@ class SkateTricksController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(new ConversionStatusUpdate(
-                videoId, status.status(), status.progress(), status.size(), status.videoUrl(), status.outputKey()));
+                videoId, status.status(), status.progress(), status.size(), status.videoUrl(), status.outputKey(), status.error()));
     }
 
     @PostMapping("/skatetricks/analyze/{videoId}")
@@ -358,6 +371,29 @@ class SkateTricksController {
         }
     }
 
+    private static String buildConversionErrorMessage(Exception e) {
+        Throwable root = rootCause(e);
+        if (root instanceof RemoteVideoImportService.RemoteVideoImportException remoteImportException) {
+            return remoteImportException.getMessage();
+        }
+        String message = root.getMessage();
+        if (message != null && message.contains("MediaConvert")) {
+            return "Video transcoding failed while converting the imported clip.";
+        }
+        if (message != null && message.contains("Video conversion failed:")) {
+            return "Video conversion failed while preparing the clip for analysis.";
+        }
+        return "Video import failed. Check that the source URL is public and points to a supported video.";
+    }
+
+    private static Throwable rootCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
     private void scheduleAnalysisStatusCleanup(String analysisId) {
         cleanupExecutor.schedule(
                 () -> {
@@ -406,7 +442,7 @@ class SkateTricksController {
 
     record ConversionStatus(String status, int progress, Long size, String error, String videoUrl, String outputKey) {}
 
-    record ConversionStatusUpdate(String videoId, String status, int progress, Long size, String videoUrl, String outputKey) {}
+    record ConversionStatusUpdate(String videoId, String status, int progress, Long size, String videoUrl, String outputKey, String error) {}
 
     record AnalysisResponse(String analysisId, String status) {}
 
