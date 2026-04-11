@@ -292,7 +292,9 @@ function skatetricksApp() {
         });
 
         if (!uploadInitResponse.ok) {
-          throw new Error("Failed to create upload URL: " + uploadInitResponse.status);
+          throw new Error(
+            "Failed to create upload URL: " + uploadInitResponse.status
+          );
         }
 
         var uploadInit = await uploadInitResponse.json();
@@ -330,7 +332,9 @@ function skatetricksApp() {
         });
 
         if (!convertResponse.ok) {
-          throw new Error("Failed to start conversion: " + convertResponse.status);
+          throw new Error(
+            "Failed to start conversion: " + convertResponse.status
+          );
         }
 
         setTimeout(function () {
@@ -483,7 +487,12 @@ function skatetricksApp() {
 
     // ── Video analysis ─────────────────────────────────────────────
     async analyzeUpload() {
-      if (!this.currentVideoId && !this.currentOutputKey && !this.currentVideoUrl) return;
+      if (
+        !this.currentVideoId &&
+        !this.currentOutputKey &&
+        !this.currentVideoUrl
+      )
+        return;
 
       this.analyzeUploadDisabled = true;
       this.frameCounterText = "Analyzing video...";

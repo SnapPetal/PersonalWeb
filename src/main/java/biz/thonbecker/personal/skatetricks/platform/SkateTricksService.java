@@ -31,6 +31,7 @@ public class SkateTricksService {
     private final VideoTranscoder videoTranscoder;
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
+    private final SkatetricksObservability observability;
 
     @Value("${skatetricks.vectorstore.bucket:}")
     private String vectorBucket;
@@ -47,38 +48,57 @@ public class SkateTricksService {
             ApplicationEventPublisher eventPublisher,
             VideoTranscoder videoTranscoder,
             @org.springframework.lang.Nullable S3VectorsClient s3VectorsClient,
-            @org.springframework.lang.Nullable EmbeddingService embeddingService) {
+            @org.springframework.lang.Nullable EmbeddingService embeddingService,
+            SkatetricksObservability observability) {
         this.trickAnalyzer = trickAnalyzer;
         this.trickAttemptRepository = trickAttemptRepository;
         this.eventPublisher = eventPublisher;
         this.videoTranscoder = videoTranscoder;
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
+        this.observability = observability;
     }
 
     @Transactional
     public TrickAnalysisResult analyzeFrames(String sessionId, List<String> base64Frames) {
-        log.info("Analyzing {} frames for session {}", base64Frames.size(), sessionId);
+        final var scope = observability.start("service.analyze_frames");
+        log.info("event=analyze_frames_started sessionId={} frameCount={}", sessionId, base64Frames.size());
+        observability.recordFrameCount(base64Frames.size(), "mode", "frames");
 
-        TrickAnalysisResult result = trickAnalyzer.analyze(base64Frames);
-        Long id = saveResult(sessionId, result);
-        return result.withAttemptId(id);
+        try {
+            TrickAnalysisResult result = trickAnalyzer.analyze(base64Frames);
+            Long id = saveResult(sessionId, result);
+            observability.success(scope, "trick", result.trick().name());
+            return result.withAttemptId(id);
+        } catch (RuntimeException e) {
+            observability.failure(scope, e, "mode", "frames");
+            throw e;
+        }
     }
 
     @Transactional
     public TrickAnalysisResult analyzeVideo(String sessionId, byte[] videoData, String originalFilename) {
-        log.info("Analyzing video for session {}: {} ({} bytes)", sessionId, originalFilename, videoData.length);
+        final var scope = observability.start("service.analyze_video_upload");
+        log.info(
+                "event=analyze_video_started sessionId={} filename={} bytes={}",
+                sessionId,
+                originalFilename,
+                videoData.length);
+        observability.recordPayloadSize("input_video", videoData.length, "source", "upload");
 
         try {
-            byte[] mp4Data = videoTranscoder.convertToMp4(videoData, originalFilename).mp4Data();
+            byte[] mp4Data =
+                    videoTranscoder.convertToMp4(videoData, originalFilename).mp4Data();
+            observability.recordPayloadSize("converted_video", mp4Data.length, "source", "upload");
 
-            // Analyze with AI
             TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
             Long id = saveResult(sessionId, result);
+            observability.success(scope, "trick", result.trick().name());
             return result.withAttemptId(id);
 
         } catch (VideoTranscodingException e) {
-            log.error("Failed to process video for session {}", sessionId, e);
+            log.error("event=analyze_video_failed sessionId={} filename={}", sessionId, originalFilename, e);
+            observability.failure(scope, e, "source", "upload");
             throw new RuntimeException("Video processing failed: " + e.getMessage(), e);
         }
     }
@@ -99,11 +119,20 @@ public class SkateTricksService {
         if (result.confidence() >= AUTO_VERIFY_CONFIDENCE_THRESHOLD) {
             entity.setVerified(true);
             log.info(
-                    "Auto-verifying attempt for session {} (confidence {}% >= {}%)",
-                    sessionId, result.confidence(), AUTO_VERIFY_CONFIDENCE_THRESHOLD);
+                    "event=attempt_auto_verified sessionId={} confidence={} threshold={}",
+                    sessionId,
+                    result.confidence(),
+                    AUTO_VERIFY_CONFIDENCE_THRESHOLD);
         }
 
         entity = trickAttemptRepository.save(entity);
+        log.info(
+                "event=attempt_saved sessionId={} attemptId={} trick={} confidence={} verified={}",
+                sessionId,
+                entity.getId(),
+                entity.getTrickName(),
+                entity.getConfidence(),
+                entity.isVerified());
 
         if (entity.isVerified()) {
             writeToVectorStore(entity);
@@ -115,6 +144,7 @@ public class SkateTricksService {
 
     @Transactional
     public void verifyAttempt(Long attemptId, String correctedTrickName) {
+        final var scope = observability.start("service.verify_attempt");
         TrickAttemptEntity entity = trickAttemptRepository
                 .findById(attemptId)
                 .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
@@ -122,20 +152,31 @@ public class SkateTricksService {
         entity.setVerified(true);
         if (correctedTrickName != null && !correctedTrickName.isBlank()) {
             entity.setVerifiedTrickName(correctedTrickName);
-            log.info("User corrected attempt {} from {} to {}", attemptId, entity.getTrickName(), correctedTrickName);
+            log.info(
+                    "event=attempt_corrected attemptId={} originalTrick={} correctedTrick={}",
+                    attemptId,
+                    entity.getTrickName(),
+                    correctedTrickName);
         } else {
             log.info(
-                    "User confirmed attempt {} as {} ({}% confidence)",
-                    attemptId, entity.getTrickName(), entity.getConfidence());
+                    "event=attempt_confirmed attemptId={} trick={} confidence={}",
+                    attemptId,
+                    entity.getTrickName(),
+                    entity.getConfidence());
         }
 
         trickAttemptRepository.save(entity);
         writeToVectorStore(entity);
+        observability.incrementStage("attempt_verification", "success");
+        observability.success(scope);
     }
 
     private void writeToVectorStore(final TrickAttemptEntity entity) {
+        final var scope = observability.start("service.write_vector_store");
         if (!vectorStoreEnabled || Objects.isNull(s3VectorsClient) || Objects.isNull(embeddingService)) {
-            log.info("Vector store disabled, skipping write for attempt {}", entity.getId());
+            log.info("event=vector_store_skipped attemptId={} reason=disabled", entity.getId());
+            observability.incrementStage("vector_store_write", "skipped", "reason", "disabled");
+            observability.success(scope, "reason", "disabled");
             return;
         }
         try {
@@ -145,9 +186,9 @@ public class SkateTricksService {
                     : entity.getPoseData();
 
             if (Objects.isNull(textToEmbed) || textToEmbed.isBlank()) {
-                log.info(
-                        "Skipping vector store write for attempt {} — no embedding or pose data available",
-                        entity.getId());
+                log.info("event=vector_store_skipped attemptId={} reason=no_embedding_source", entity.getId());
+                observability.incrementStage("vector_store_write", "skipped", "reason", "no_embedding_source");
+                observability.success(scope, "reason", "no_embedding_source");
                 return;
             }
 
@@ -156,7 +197,7 @@ public class SkateTricksService {
                     : entity.getTrickName();
 
             log.info(
-                    "Writing attempt {} ({}) to vector store bucket={}, index={}",
+                    "event=vector_store_write_started attemptId={} trick={} bucket={} index={}",
                     entity.getId(),
                     acceptedTrick,
                     vectorBucket,
@@ -175,7 +216,7 @@ public class SkateTricksService {
                             Document.fromString(Objects.nonNull(entity.getFeedback()) ? entity.getFeedback() : "")));
 
             final var vectorKey = "attempt-" + entity.getId();
-            log.info("Calling S3 Vectors putVectors with key={}", vectorKey);
+            log.info("event=vector_store_put_vectors attemptId={} key={}", entity.getId(), vectorKey);
 
             s3VectorsClient.putVectors(r -> r.vectorBucketName(vectorBucket)
                     .indexName(vectorIndex)
@@ -186,18 +227,22 @@ public class SkateTricksService {
                             .build())));
 
             log.info(
-                    "✅ Successfully stored attempt {} ({}) in vector store '{}'",
+                    "event=vector_store_write_completed attemptId={} trick={} index={}",
                     entity.getId(),
                     acceptedTrick,
                     vectorIndex);
+            observability.incrementStage("vector_store_write", "success");
+            observability.success(scope, "trick", acceptedTrick);
         } catch (Exception e) {
             log.error(
-                    "❌ Failed to write attempt {} to vector store: {} - {}",
+                    "event=vector_store_write_failed attemptId={} errorType={} errorMessage={}",
                     entity.getId(),
                     e.getClass().getSimpleName(),
                     e.getMessage(),
                     e);
-            // Re-throw so user sees the error
+            observability.incrementStage(
+                    "vector_store_write", "failure", "error", e.getClass().getSimpleName());
+            observability.failure(scope, e);
             throw new RuntimeException("Failed to write to vector store: " + e.getMessage(), e);
         }
     }
@@ -234,69 +279,95 @@ public class SkateTricksService {
     }
 
     public byte[] convertVideo(byte[] videoData, String originalFilename) {
-        log.info("Converting video: {} ({} bytes)", originalFilename, videoData.length);
+        final var scope = observability.start("service.convert_video");
+        log.info("event=convert_video_started filename={} bytes={}", originalFilename, videoData.length);
+        observability.recordPayloadSize("input_video", videoData.length, "source", "remote");
 
         try {
-            return videoTranscoder.convertToMp4(videoData, originalFilename).mp4Data();
+            final var transcodedVideo = videoTranscoder.convertToMp4(videoData, originalFilename);
+            observability.recordPayloadSize("converted_video", transcodedVideo.mp4Data().length, "source", "remote");
+            observability.success(scope, "source", "remote");
+            return transcodedVideo.mp4Data();
 
         } catch (VideoTranscodingException e) {
-            log.error("Failed to convert video: {}", originalFilename, e);
+            log.error("event=convert_video_failed filename={}", originalFilename, e);
+            observability.failure(scope, e, "source", "remote");
             throw new RuntimeException("Video conversion failed: " + e.getMessage(), e);
         }
     }
 
     public VideoTranscoder.TranscodedVideo transcodeVideo(byte[] videoData, String originalFilename) {
-        log.info("Transcoding video: {} ({} bytes)", originalFilename, videoData.length);
+        final var scope = observability.start("service.transcode_video");
+        log.info("event=transcode_video_started filename={} bytes={}", originalFilename, videoData.length);
+        observability.recordPayloadSize("input_video", videoData.length, "source", "remote");
 
         try {
-            return videoTranscoder.convertToMp4(videoData, originalFilename);
+            final var transcodedVideo = videoTranscoder.convertToMp4(videoData, originalFilename);
+            observability.recordPayloadSize("converted_video", transcodedVideo.mp4Data().length, "source", "remote");
+            observability.success(scope, "source", "remote");
+            return transcodedVideo;
         } catch (VideoTranscodingException e) {
-            log.error("Failed to transcode video: {}", originalFilename, e);
+            log.error("event=transcode_video_failed filename={}", originalFilename, e);
+            observability.failure(scope, e, "source", "remote");
             throw new RuntimeException("Video conversion failed: " + e.getMessage(), e);
         }
     }
 
     public VideoTranscoder.TranscodedVideo transcodeUploadedVideo(String inputKey, String originalFilename) {
-        log.info("Transcoding uploaded video from S3 key {} ({})", inputKey, originalFilename);
+        final var scope = observability.start("service.transcode_uploaded_video");
+        log.info("event=transcode_uploaded_video_started inputKey={} filename={}", inputKey, originalFilename);
 
         try {
-            return videoTranscoder.convertUploadedObjectToMp4(inputKey, originalFilename);
+            final var transcodedVideo = videoTranscoder.convertUploadedObjectToMp4(inputKey, originalFilename);
+            observability.recordPayloadSize("converted_video", transcodedVideo.mp4Data().length, "source", "upload");
+            observability.success(scope, "source", "upload");
+            return transcodedVideo;
         } catch (VideoTranscodingException e) {
-            log.error("Failed to transcode uploaded video: {} from {}", originalFilename, inputKey, e);
+            log.error("event=transcode_uploaded_video_failed inputKey={} filename={}", inputKey, originalFilename, e);
+            observability.failure(scope, e, "source", "upload");
             throw new RuntimeException("Video conversion failed: " + e.getMessage(), e);
         }
     }
 
     @Transactional
     public TrickAnalysisResult analyzeConvertedVideo(String sessionId, byte[] mp4Data) {
-        log.info("Analyzing converted video for session {} ({} bytes)", sessionId, mp4Data.length);
+        final var scope = observability.start("service.analyze_converted_video");
+        log.info("event=analyze_converted_video_started sessionId={} bytes={}", sessionId, mp4Data.length);
+        observability.recordPayloadSize("converted_video", mp4Data.length, "mode", "memory");
 
         try {
             TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
             Long id = saveResult(sessionId, result);
+            observability.success(scope, "trick", result.trick().name(), "mode", "memory");
             return result.withAttemptId(id);
 
         } catch (Exception e) {
-            log.error("Failed to analyze video for session {}", sessionId, e);
+            log.error("event=analyze_converted_video_failed sessionId={} mode=memory", sessionId, e);
+            observability.failure(scope, e, "mode", "memory");
             throw new RuntimeException("Video analysis failed: " + e.getMessage(), e);
         }
     }
 
     @Transactional
     public TrickAnalysisResult analyzeConvertedVideo(String sessionId, String outputKey) {
-        log.info("Analyzing converted video for session {} from output key {}", sessionId, outputKey);
+        final var scope = observability.start("service.analyze_cdn_video");
+        log.info("event=analyze_cdn_video_started sessionId={} outputKey={}", sessionId, outputKey);
 
         try {
             byte[] mp4Data = videoTranscoder.loadTranscodedVideo(outputKey);
+            observability.recordPayloadSize("converted_video", mp4Data.length, "mode", "cdn");
             TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
             Long id = saveResult(sessionId, result);
+            observability.success(scope, "trick", result.trick().name(), "mode", "cdn");
             return result.withAttemptId(id);
 
         } catch (VideoTranscodingException e) {
-            log.error("Failed to load transcoded video for session {} from {}", sessionId, outputKey, e);
+            log.error("event=analyze_cdn_video_load_failed sessionId={} outputKey={}", sessionId, outputKey, e);
+            observability.failure(scope, e, "mode", "cdn");
             throw new RuntimeException("Video analysis failed: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Failed to analyze video for session {}", sessionId, e);
+            log.error("event=analyze_cdn_video_failed sessionId={} outputKey={}", sessionId, outputKey, e);
+            observability.failure(scope, e, "mode", "cdn");
             throw new RuntimeException("Video analysis failed: " + e.getMessage(), e);
         }
     }

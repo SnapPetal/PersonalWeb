@@ -4,6 +4,7 @@ import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
 import biz.thonbecker.personal.skatetricks.platform.RemoteVideoImportService;
 import biz.thonbecker.personal.skatetricks.platform.SkateTricksService;
 import biz.thonbecker.personal.skatetricks.platform.SkateTricksUploadService;
+import biz.thonbecker.personal.skatetricks.platform.SkatetricksObservability;
 import jakarta.annotation.PreDestroy;
 import java.net.URI;
 import java.util.Map;
@@ -39,6 +40,7 @@ class SkateTricksController {
     private final SkateTricksUploadService uploadService;
     private final RemoteVideoImportService remoteVideoImportService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final SkatetricksObservability observability;
 
     @Value("${skatetricks.upload.max-file-size:500MB}")
     private DataSize maxUploadSize;
@@ -68,11 +70,13 @@ class SkateTricksController {
             SkateTricksService skateTricksService,
             SkateTricksUploadService uploadService,
             RemoteVideoImportService remoteVideoImportService,
-            SimpMessagingTemplate messagingTemplate) {
+            SimpMessagingTemplate messagingTemplate,
+            SkatetricksObservability observability) {
         this.skateTricksService = skateTricksService;
         this.uploadService = uploadService;
         this.remoteVideoImportService = remoteVideoImportService;
         this.messagingTemplate = messagingTemplate;
+        this.observability = observability;
     }
 
     @GetMapping("/skatetricks")
@@ -146,12 +150,18 @@ class SkateTricksController {
     }
 
     private void processVideoConversion(String videoId, String sessionId, String inputKey, String filename) {
+        final var scope = observability.start("controller.upload_conversion");
         try {
             updateConversionStatus(videoId, sessionId, "converting", 10, null, null, null);
 
-            log.info("Starting conversion for videoId={} from inputKey={}", videoId, inputKey);
+            log.info(
+                    "event=upload_conversion_started videoId={} sessionId={} inputKey={}",
+                    videoId,
+                    sessionId,
+                    inputKey);
             var transcodedVideo = skateTricksService.transcodeUploadedVideo(inputKey, filename);
             byte[] mp4Data = transcodedVideo.mp4Data();
+            observability.recordPayloadSize("converted_video", mp4Data.length, "source", "upload");
 
             convertedVideos.put(videoId, mp4Data);
             uploadReservations.remove(videoId);
@@ -173,24 +183,32 @@ class SkateTricksController {
                     (long) mp4Data.length,
                     transcodedVideo.videoUrl(),
                     transcodedVideo.outputKey());
+            observability.incrementStage("upload_conversion", "success");
+            observability.success(scope, "source", "upload");
         } catch (Exception e) {
-            log.error("Failed to convert video: {}", videoId, e);
+            log.error("event=upload_conversion_failed videoId={} sessionId={}", videoId, sessionId, e);
             String error = buildConversionErrorMessage(e);
             conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, error, null, null));
             updateConversionStatus(videoId, sessionId, "error", 0, null, null, null, error);
             scheduleConversionStatusCleanup(videoId);
+            observability.incrementStage("upload_conversion", "failure");
+            observability.failure(scope, e, "source", "upload");
         }
     }
 
     private void processRemoteVideoImport(String videoId, String sessionId, String sourceUrl) {
+        final var scope = observability.start("controller.remote_import_conversion");
         try {
             updateConversionStatus(videoId, sessionId, "converting", 5, null, null, null);
             var downloadedVideo = remoteVideoImportService.downloadVideo(sourceUrl, maxUploadSize.toBytes());
+            observability.recordPayloadSize("remote_source_video", downloadedVideo.bytes().length, "source", "remote");
 
-            updateConversionStatus(videoId, sessionId, "converting", 35, (long) downloadedVideo.bytes().length, null, null);
+            updateConversionStatus(
+                    videoId, sessionId, "converting", 35, (long) downloadedVideo.bytes().length, null, null);
             log.info(
-                    "Importing remote video for videoId={} from host={} filename={} contentType={} size={}",
+                    "event=remote_import_transcode_started videoId={} sessionId={} host={} filename={} contentType={} size={}",
                     videoId,
+                    sessionId,
                     URI.create(sourceUrl).getHost(),
                     downloadedVideo.filename(),
                     downloadedVideo.contentType(),
@@ -216,12 +234,21 @@ class SkateTricksController {
                     (long) transcodedVideo.mp4Data().length,
                     transcodedVideo.videoUrl(),
                     transcodedVideo.outputKey());
+            observability.incrementStage("remote_import_conversion", "success");
+            observability.success(scope, "source", "remote");
         } catch (Exception e) {
-            log.error("Failed to import remote video: {}", videoId, e);
+            log.error(
+                    "event=remote_import_transcode_failed videoId={} sessionId={} sourceUrl={}",
+                    videoId,
+                    sessionId,
+                    sourceUrl,
+                    e);
             String error = buildConversionErrorMessage(e);
             conversionStatuses.put(videoId, new ConversionStatus("error", 0, null, error, null, null));
             updateConversionStatus(videoId, sessionId, "error", 0, null, null, null, error);
             scheduleConversionStatusCleanup(videoId);
+            observability.incrementStage("remote_import_conversion", "failure");
+            observability.failure(scope, e, "source", "remote");
         }
     }
 
@@ -246,12 +273,25 @@ class SkateTricksController {
     }
 
     private void updateConversionStatus(
-            String videoId, String sessionId, String status, int progress, Long size, String videoUrl, String outputKey) {
+            String videoId,
+            String sessionId,
+            String status,
+            int progress,
+            Long size,
+            String videoUrl,
+            String outputKey) {
         updateConversionStatus(videoId, sessionId, status, progress, size, videoUrl, outputKey, null);
     }
 
     private void updateConversionStatus(
-            String videoId, String sessionId, String status, int progress, Long size, String videoUrl, String outputKey, String error) {
+            String videoId,
+            String sessionId,
+            String status,
+            int progress,
+            Long size,
+            String videoUrl,
+            String outputKey,
+            String error) {
         ConversionStatus convStatus = new ConversionStatus(status, progress, size, error, videoUrl, outputKey);
         conversionStatuses.put(videoId, convStatus);
 
@@ -267,7 +307,13 @@ class SkateTricksController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(new ConversionStatusUpdate(
-                videoId, status.status(), status.progress(), status.size(), status.videoUrl(), status.outputKey(), status.error()));
+                videoId,
+                status.status(),
+                status.progress(),
+                status.size(),
+                status.videoUrl(),
+                status.outputKey(),
+                status.error()));
     }
 
     @PostMapping("/skatetricks/analyze/{videoId}")
@@ -293,8 +339,8 @@ class SkateTricksController {
         analysisStatuses.put(analysisId, new AnalysisStatus("pending", null, null));
 
         try {
-            analysisExecutor.submit(
-                    () -> processAnalysis(analysisId, request.sessionId(), analysisSource.videoData(), analysisSource.outputKey()));
+            analysisExecutor.submit(() -> processAnalysis(
+                    analysisId, request.sessionId(), analysisSource.videoData(), analysisSource.outputKey()));
         } catch (RejectedExecutionException e) {
             analysisStatuses.remove(analysisId);
             return ResponseEntity.status(429).build();
@@ -304,12 +350,22 @@ class SkateTricksController {
     }
 
     private void processAnalysis(String analysisId, String sessionId, byte[] videoData, String outputKey) {
+        final var scope = observability.start("controller.analysis");
         try {
             analysisStatuses.put(analysisId, new AnalysisStatus("processing", null, null));
+            log.info(
+                    "event=analysis_started analysisId={} sessionId={} mode={} outputKey={}",
+                    analysisId,
+                    sessionId,
+                    videoData != null ? "memory" : "cdn",
+                    outputKey);
             TrickAnalysisResult result = videoData != null
                     ? skateTricksService.analyzeConvertedVideo(sessionId, videoData)
                     : skateTricksService.analyzeConvertedVideo(sessionId, outputKey);
             analysisStatuses.put(analysisId, new AnalysisStatus("complete", result, null));
+            observability.incrementStage(
+                    "analysis", "success", "trick", result.trick().name());
+            observability.success(scope, "mode", videoData != null ? "memory" : "cdn");
 
             cleanupExecutor.schedule(
                     () -> {
@@ -319,9 +375,16 @@ class SkateTricksController {
                     STATUS_TTL_MINUTES,
                     TimeUnit.MINUTES);
         } catch (Exception e) {
-            log.error("Failed to analyze video: {}", analysisId, e);
+            log.error(
+                    "event=analysis_failed analysisId={} sessionId={} outputKey={}",
+                    analysisId,
+                    sessionId,
+                    outputKey,
+                    e);
             analysisStatuses.put(analysisId, new AnalysisStatus("error", null, e.getMessage()));
             scheduleAnalysisStatusCleanup(analysisId);
+            observability.incrementStage("analysis", "failure");
+            observability.failure(scope, e, "mode", videoData != null ? "memory" : "cdn");
         }
     }
 
@@ -332,7 +395,8 @@ class SkateTricksController {
                 return null;
             }
             byte[] videoData = convertedVideos.get(request.videoId());
-            String outputKey = firstNonBlank(request.outputKey(), conversionStatus.outputKey(), deriveOutputKey(request.videoUrl()));
+            String outputKey = firstNonBlank(
+                    request.outputKey(), conversionStatus.outputKey(), deriveOutputKey(request.videoUrl()));
             if (videoData == null && isBlank(outputKey)) {
                 return null;
             }
@@ -442,7 +506,8 @@ class SkateTricksController {
 
     record ConversionStatus(String status, int progress, Long size, String error, String videoUrl, String outputKey) {}
 
-    record ConversionStatusUpdate(String videoId, String status, int progress, Long size, String videoUrl, String outputKey, String error) {}
+    record ConversionStatusUpdate(
+            String videoId, String status, int progress, Long size, String videoUrl, String outputKey, String error) {}
 
     record AnalysisResponse(String analysisId, String status) {}
 

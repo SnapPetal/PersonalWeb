@@ -31,8 +31,17 @@ class VideoFrameExtractor {
     @Value("${skatetricks.analysis.max-frames:24}")
     private int maxAnalysisFrames = DEFAULT_MAX_ANALYSIS_FRAMES;
 
+    private final SkatetricksObservability observability;
+
+    VideoFrameExtractor(SkatetricksObservability observability) {
+        this.observability = observability;
+    }
+
     List<String> extractBase64Frames(byte[] mp4VideoData) {
+        final var scope = observability.start("frame_extractor.extract");
         if (mp4VideoData == null || mp4VideoData.length == 0) {
+            observability.incrementStage("frame_extraction", "skipped", "reason", "empty_video");
+            observability.success(scope, "reason", "empty_video");
             return List.of();
         }
 
@@ -53,9 +62,19 @@ class VideoFrameExtractor {
                 }
                 frames.add(toBase64Jpeg(picture));
             }
+            log.info(
+                    "event=frame_extraction_completed inputBytes={} sampledFrames={} durationSeconds={}",
+                    mp4VideoData.length,
+                    frames.size(),
+                    durationSeconds);
+            observability.recordFrameCount(frames.size(), "mode", "video");
+            observability.incrementStage("frame_extraction", "success");
+            observability.success(scope);
             return frames;
         } catch (Exception e) {
-            log.warn("Failed to extract video frames for analysis", e);
+            log.warn("event=frame_extraction_failed inputBytes={}", mp4VideoData.length, e);
+            observability.incrementStage("frame_extraction", "failure");
+            observability.failure(scope, e);
             return List.of();
         }
     }

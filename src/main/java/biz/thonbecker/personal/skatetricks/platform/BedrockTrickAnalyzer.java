@@ -28,6 +28,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     private final VideoFrameExtractor videoFrameExtractor;
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
+    private final SkatetricksObservability observability;
 
     @Value("${skatetricks.vectorstore.bucket:}")
     private String vectorBucket;
@@ -41,47 +42,64 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             PoseEstimationService poseEstimationService,
             VideoFrameExtractor videoFrameExtractor,
             @org.springframework.lang.Nullable S3VectorsClient s3VectorsClient,
-            @org.springframework.lang.Nullable EmbeddingService embeddingService) {
+            @org.springframework.lang.Nullable EmbeddingService embeddingService,
+            SkatetricksObservability observability) {
         this.chatClient = chatModel != null ? ChatClient.create(chatModel) : null;
         this.poseEstimationService = poseEstimationService;
         this.videoFrameExtractor = videoFrameExtractor;
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
+        this.observability = observability;
     }
 
     @Override
     public TrickAnalysisResult analyze(List<String> base64Frames) {
+        final var scope = observability.start("analyzer.analyze_frames");
         if (chatClient == null) {
-            log.warn("ChatModel not configured, returning fallback result");
+            log.warn("event=analyzer_unavailable reason=chat_model_missing mode=frames");
+            observability.incrementStage("analyzer", "fallback", "reason", "chat_model_missing");
+            observability.success(scope, "reason", "chat_model_missing", "mode", "frames");
             return fallback();
         }
 
         try {
-            return analyzeFramesInternal(base64Frames);
+            final var result = analyzeFramesInternal(base64Frames);
+            observability.success(scope, "trick", result.trick().name(), "mode", "frames");
+            return result;
 
         } catch (Exception e) {
-            log.error("Error analyzing skateboard trick frames", e);
+            log.error("event=analyze_frames_failed frameCount={}", base64Frames.size(), e);
+            observability.failure(scope, e, "mode", "frames");
             return fallback();
         }
     }
 
     @Override
     public TrickAnalysisResult analyzeVideo(byte[] mp4VideoData) {
+        final var scope = observability.start("analyzer.analyze_video");
         if (chatClient == null) {
-            log.warn("ChatModel not configured, returning fallback result");
+            log.warn("event=analyzer_unavailable reason=chat_model_missing mode=video");
+            observability.incrementStage("analyzer", "fallback", "reason", "chat_model_missing");
+            observability.success(scope, "reason", "chat_model_missing", "mode", "video");
             return fallback();
         }
 
         try {
             List<String> extractedFrames = videoFrameExtractor.extractBase64Frames(mp4VideoData);
             if (extractedFrames.isEmpty()) {
-                log.warn("No frames could be extracted from video, returning fallback result");
+                log.warn("event=video_analysis_fallback reason=no_frames_extracted");
+                observability.incrementStage("analyzer", "fallback", "reason", "no_frames_extracted");
+                observability.success(scope, "reason", "no_frames_extracted", "mode", "video");
                 return fallback();
             }
-            return analyzeFramesInternal(extractedFrames);
+            observability.recordFrameCount(extractedFrames.size(), "mode", "video");
+            final var result = analyzeFramesInternal(extractedFrames);
+            observability.success(scope, "trick", result.trick().name(), "mode", "video");
+            return result;
 
         } catch (Exception e) {
-            log.error("Error analyzing skateboard trick video", e);
+            log.error("event=video_analysis_failed bytes={}", mp4VideoData.length, e);
+            observability.failure(scope, e, "mode", "video");
             return fallback();
         }
     }
@@ -96,6 +114,11 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
         final var poseTexts = buildPoseDataText(base64Frames);
         final var similarExamples = fetchSimilarExamples(poseTexts.embeddingText());
+        log.info(
+                "event=analyzer_prompt_context frameCount={} posePrompt={} similarExamples={}",
+                base64Frames.size(),
+                !poseTexts.promptText().isBlank(),
+                !similarExamples.isBlank());
 
         String systemPrompt =
                 """
@@ -133,10 +156,9 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                 BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
                 """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseTexts.promptText();
 
-        String userPrompt =
-                ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
-                                + "Frame 1 is earliest, frame %d is latest. Analyze the full progression of movement across all frames and identify all tricks performed in sequence.")
-                        .formatted(base64Frames.size(), base64Frames.size());
+        String userPrompt = ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
+                        + "Frame 1 is earliest, frame %d is latest. Analyze the full progression of movement across all frames and identify all tricks performed in sequence.")
+                .formatted(base64Frames.size(), base64Frames.size());
 
         final var schema = callAndExtract(systemPrompt, userPrompt, mediaList.toArray(new Media[0]));
 
@@ -146,8 +168,8 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
                 schema.formScore(),
                 schema.feedback(),
                 schema.trickSequence().stream()
-                        .map(e -> new TrickSequenceEntry(
-                                TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
+                        .map(e ->
+                                new TrickSequenceEntry(TrickCatalog.fromName(e.trick()), e.timeframe(), e.confidence()))
                         .toList(),
                 poseTexts.promptText().isBlank() ? null : poseTexts.promptText(),
                 poseTexts.embeddingText().isBlank() ? null : poseTexts.embeddingText());
@@ -206,7 +228,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             });
             return sb.toString();
         } catch (Exception e) {
-            log.warn("Could not fetch similar examples from vector store: {}", e.getMessage());
+            log.warn("event=similar_examples_fetch_failed errorMessage={}", e.getMessage());
             return "";
         }
     }
@@ -237,7 +259,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             final var embeddingText = poseData.toEmbeddingText();
             return new PoseTexts(promptText, embeddingText);
         } catch (Exception e) {
-            log.warn("Failed to generate pose data for prompt, continuing without it", e);
+            log.warn("event=pose_data_generation_failed fallback=empty", e);
             return PoseTexts.EMPTY;
         }
     }

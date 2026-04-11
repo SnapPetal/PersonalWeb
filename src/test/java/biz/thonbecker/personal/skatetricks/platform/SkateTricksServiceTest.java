@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import biz.thonbecker.personal.skatetricks.api.SupportedTrick;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,7 +32,8 @@ class SkateTricksServiceTest {
             }
 
             @Override
-            public VideoTranscoder.TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename) {
+            public VideoTranscoder.TranscodedVideo convertUploadedObjectToMp4(
+                    String inputKey, String originalFilename) {
                 throw new UnsupportedOperationException();
             }
 
@@ -42,12 +44,7 @@ class SkateTricksServiceTest {
         };
 
         SkateTricksService service = new SkateTricksService(
-                fallbackAnalyzer(),
-                repositoryStub(),
-                noOpPublisher(),
-                transcoder,
-                null,
-                null);
+                fallbackAnalyzer(), repositoryStub(), noOpPublisher(), transcoder, null, null, observability());
 
         byte[] result = service.convertVideo(input, "clip.mov");
 
@@ -76,8 +73,8 @@ class SkateTricksServiceTest {
             }
         };
 
-        SkateTricksService service =
-                new SkateTricksService(analyzer, repositoryStub(), noOpPublisher(), passthroughTranscoder(), null, null);
+        SkateTricksService service = new SkateTricksService(
+                analyzer, repositoryStub(), noOpPublisher(), passthroughTranscoder(), null, null, observability());
 
         TrickAnalysisResult result = service.analyzeConvertedVideo("session-1", video);
 
@@ -125,8 +122,8 @@ class SkateTricksServiceTest {
             }
         };
 
-        SkateTricksService service =
-                new SkateTricksService(analyzer, repositoryStub(), noOpPublisher(), transcoder, null, null);
+        SkateTricksService service = new SkateTricksService(
+                analyzer, repositoryStub(), noOpPublisher(), transcoder, null, null, observability());
 
         TrickAnalysisResult result = service.analyzeConvertedVideo("session-2", "skatetricks/output/test/video.mp4");
 
@@ -159,7 +156,8 @@ class SkateTricksServiceTest {
             }
 
             @Override
-            public VideoTranscoder.TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename) {
+            public VideoTranscoder.TranscodedVideo convertUploadedObjectToMp4(
+                    String inputKey, String originalFilename) {
                 throw new UnsupportedOperationException();
             }
 
@@ -178,6 +176,10 @@ class SkateTricksServiceTest {
             @Override
             public void publishEvent(Object event) {}
         };
+    }
+
+    private static SkatetricksObservability observability() {
+        return new SkatetricksObservability(new SimpleMeterRegistry());
     }
 
     private static TrickAttemptRepository repositoryStub() {

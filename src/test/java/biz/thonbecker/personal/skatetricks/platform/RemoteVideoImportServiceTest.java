@@ -3,13 +3,17 @@ package biz.thonbecker.personal.skatetricks.platform;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 
 class RemoteVideoImportServiceTest {
+
+    private final RemoteVideoImportService remoteVideoImportService =
+            new RemoteVideoImportService(new SkatetricksObservability(new SimpleMeterRegistry()));
 
     @Test
     void extractsInstagramPlayableUrlFromEmbeddedJson() {
@@ -29,9 +33,7 @@ class RemoteVideoImportServiceTest {
         String resolved = RemoteVideoImportService.extractVideoUrlFromHtml(
                 URI.create("https://www.instagram.com/reel/test/"), html);
 
-        assertEquals(
-                "https://scontent.cdninstagram.com/v/t50.2886-16/12345_n.mp4?_nc_cat=1&_nc_sid=8ae9d6",
-                resolved);
+        assertEquals("https://scontent.cdninstagram.com/v/t50.2886-16/12345_n.mp4?_nc_cat=1&_nc_sid=8ae9d6", resolved);
     }
 
     @Test
@@ -49,9 +51,7 @@ class RemoteVideoImportServiceTest {
         String resolved = RemoteVideoImportService.extractVideoUrlFromHtml(
                 URI.create("https://www.facebook.com/watch/?v=123"), html);
 
-        assertEquals(
-                "https://video.xx.fbcdn.net/v/t42.1790-2/98765.mp4?strext=1&efg=foo",
-                resolved);
+        assertEquals("https://video.xx.fbcdn.net/v/t42.1790-2/98765.mp4?strext=1&efg=foo", resolved);
     }
 
     @Test
@@ -70,8 +70,7 @@ class RemoteVideoImportServiceTest {
                 URI.create("https://www.youtube.com/watch?v=abc123"), html);
 
         assertEquals(
-                "https://rr1---sn-a5mekn7r.googlevideo.com/videoplayback?id=o-abc123&itag=18&source=youtube",
-                resolved);
+                "https://rr1---sn-a5mekn7r.googlevideo.com/videoplayback?id=o-abc123&itag=18&source=youtube", resolved);
     }
 
     @Test
@@ -84,8 +83,8 @@ class RemoteVideoImportServiceTest {
                 </html>
                 """;
 
-        String resolved = RemoteVideoImportService.extractVideoUrlFromHtml(
-                URI.create("https://example.com/watch/123"), html);
+        String resolved =
+                RemoteVideoImportService.extractVideoUrlFromHtml(URI.create("https://example.com/watch/123"), html);
 
         assertEquals("https://cdn.example.com/skate/session.mp4", resolved);
     }
@@ -107,23 +106,25 @@ class RemoteVideoImportServiceTest {
 
     @Test
     void doesNotTreatInstagramCdnMediaHostAsProviderPage() {
-        assertTrue(RemoteVideoImportService.requiresProviderResolution(URI.create("https://www.instagram.com/p/CMryoSqgKj6/")));
-        assertFalse(RemoteVideoImportService.requiresProviderResolution(URI.create(
-                "https://scontent-iad3-1.cdninstagram.com/o1/v/t16/f2/m84/video.mp4")));
+        assertTrue(RemoteVideoImportService.requiresProviderResolution(
+                URI.create("https://www.instagram.com/p/CMryoSqgKj6/")));
+        assertFalse(RemoteVideoImportService.requiresProviderResolution(
+                URI.create("https://scontent-iad3-1.cdninstagram.com/o1/v/t16/f2/m84/video.mp4")));
     }
 
     @Test
     void doesNotTreatFacebookCdnMediaHostAsProviderPage() {
-        assertTrue(RemoteVideoImportService.requiresProviderResolution(URI.create("https://www.facebook.com/watch/?v=123")));
-        assertFalse(RemoteVideoImportService.requiresProviderResolution(URI.create(
-                "https://video.xx.fbcdn.net/v/t42.1790-2/98765.mp4")));
+        assertTrue(RemoteVideoImportService.requiresProviderResolution(
+                URI.create("https://www.facebook.com/watch/?v=123")));
+        assertFalse(RemoteVideoImportService.requiresProviderResolution(
+                URI.create("https://video.xx.fbcdn.net/v/t42.1790-2/98765.mp4")));
     }
 
     @Test
     void validatesMissingUrlWithTypedError() {
         var exception = assertThrows(
                 RemoteVideoImportService.RemoteVideoImportException.class,
-                () -> new RemoteVideoImportService().downloadVideo(" ", 1024));
+                () -> remoteVideoImportService.downloadVideo(" ", 1024));
 
         assertEquals(RemoteVideoImportService.RemoteVideoImportErrorCode.MISSING_URL, exception.code());
         assertEquals("Video URL is required.", exception.getMessage());
@@ -133,7 +134,7 @@ class RemoteVideoImportServiceTest {
     void validatesUnsupportedSchemeWithTypedError() {
         var exception = assertThrows(
                 RemoteVideoImportService.RemoteVideoImportException.class,
-                () -> new RemoteVideoImportService().downloadVideo("ftp://example.com/video.mp4", 1024));
+                () -> remoteVideoImportService.downloadVideo("ftp://example.com/video.mp4", 1024));
 
         assertEquals(RemoteVideoImportService.RemoteVideoImportErrorCode.INVALID_URL, exception.code());
     }

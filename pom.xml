@@ -86,11 +86,6 @@
       <version>${caffeine.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.jcodec</groupId>
-      <artifactId>jcodec-javase</artifactId>
-      <version>0.2.5</version>
-    </dependency>
-    <dependency>
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-provider-jdbc-template</artifactId>
       <version>${shedlock.version}</version>
@@ -99,6 +94,11 @@
       <groupId>net.javacrumbs.shedlock</groupId>
       <artifactId>shedlock-spring</artifactId>
       <version>${shedlock.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jcodec</groupId>
+      <artifactId>jcodec-javase</artifactId>
+      <version>0.2.5</version>
     </dependency>
     <dependency>
       <groupId>org.jspecify</groupId>

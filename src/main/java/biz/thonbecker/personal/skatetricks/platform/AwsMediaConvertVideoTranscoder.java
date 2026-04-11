@@ -34,10 +34,10 @@ import software.amazon.awssdk.services.mediaconvert.model.VideoCodec;
 import software.amazon.awssdk.services.mediaconvert.model.VideoCodecSettings;
 import software.amazon.awssdk.services.mediaconvert.model.VideoDescription;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 
 @Component
 @Slf4j
@@ -48,6 +48,7 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
 
     private final S3Client s3Client;
     private final MediaConvertClient mediaConvertDiscoveryClient;
+    private final SkatetricksObservability observability;
 
     @Value("${skatetricks.transcoding.input-bucket:}")
     private String inputBucket;
@@ -78,13 +79,16 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
 
     private volatile MediaConvertClient mediaConvertExecutionClient;
 
-    AwsMediaConvertVideoTranscoder(S3Client s3Client, MediaConvertClient mediaConvertDiscoveryClient) {
+    AwsMediaConvertVideoTranscoder(
+            S3Client s3Client, MediaConvertClient mediaConvertDiscoveryClient, SkatetricksObservability observability) {
         this.s3Client = s3Client;
         this.mediaConvertDiscoveryClient = mediaConvertDiscoveryClient;
+        this.observability = observability;
     }
 
     @Override
     public TranscodedVideo convertToMp4(byte[] videoData, String originalFilename) throws VideoTranscodingException {
+        final var scope = observability.start("transcoder.convert_to_mp4");
         validateConfiguration();
 
         String sourceExtension = getFileExtension(originalFilename);
@@ -94,6 +98,11 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
         String outputKeyPrefix = normalizePrefix(outputPrefix) + jobId + "/";
 
         try {
+            log.info(
+                    "event=transcode_started filename={} inputKey={} outputPrefix={} source=bytes",
+                    originalFilename,
+                    inputKey,
+                    outputKeyPrefix);
             uploadInput(videoData, inputKey, originalFilename);
 
             String mediaConvertJobId = startMediaConvertJob(inputKey, outputKeyPrefix);
@@ -103,15 +112,24 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
             byte[] mp4Data = downloadOutput(outputKey);
 
             log.info(
-                    "Transcoded video via MediaConvert: {} -> {} ({} bytes)",
+                    "event=transcode_completed filename={} outputKey={} bytes={}",
                     originalFilename,
                     outputKey,
                     mp4Data.length);
+            observability.incrementStage("mediaconvert_transcode", "success", "source", "bytes");
+            observability.recordPayloadSize("converted_video", mp4Data.length, "source", "bytes");
+            observability.success(scope, "source", "bytes");
             return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey), outputKey);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            observability.incrementStage(
+                    "mediaconvert_transcode", "failure", "error", e.getClass().getSimpleName());
+            observability.failure(scope, e, "source", "bytes");
             throw new VideoTranscodingException("MediaConvert transcoding was interrupted", e);
         } catch (Exception e) {
+            observability.incrementStage(
+                    "mediaconvert_transcode", "failure", "error", e.getClass().getSimpleName());
+            observability.failure(scope, e, "source", "bytes");
             throw new VideoTranscodingException("MediaConvert transcoding failed: " + e.getMessage(), e);
         } finally {
             cleanupInputObject(inputKey);
@@ -119,7 +137,9 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
     }
 
     @Override
-    public TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename) throws VideoTranscodingException {
+    public TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename)
+            throws VideoTranscodingException {
+        final var scope = observability.start("transcoder.convert_uploaded_object");
         validateConfiguration();
 
         String jobId = UUID.randomUUID().toString();
@@ -128,6 +148,11 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
         try {
             if (isMp4(originalFilename)) {
                 String outputKey = outputKeyPrefix + sanitizeBaseName(originalFilename) + ".mp4";
+                log.info(
+                        "event=transcode_copy_passthrough inputKey={} outputKey={} filename={}",
+                        inputKey,
+                        outputKey,
+                        originalFilename);
                 s3Client.copyObject(CopyObjectRequest.builder()
                         .sourceBucket(inputBucket)
                         .sourceKey(inputKey)
@@ -137,6 +162,9 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
                         .metadataDirective("REPLACE")
                         .build());
                 byte[] mp4Data = downloadOutput(outputKey);
+                observability.incrementStage("mediaconvert_transcode", "success", "source", "uploaded_passthrough");
+                observability.recordPayloadSize("converted_video", mp4Data.length, "source", "uploaded_passthrough");
+                observability.success(scope, "source", "uploaded_passthrough");
                 return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey), outputKey);
             }
 
@@ -144,11 +172,26 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
             waitForCompletion(mediaConvertJobId);
             String outputKey = resolveOutputKey(outputKeyPrefix);
             byte[] mp4Data = downloadOutput(outputKey);
+            log.info(
+                    "event=transcode_completed filename={} inputKey={} outputKey={} bytes={}",
+                    originalFilename,
+                    inputKey,
+                    outputKey,
+                    mp4Data.length);
+            observability.incrementStage("mediaconvert_transcode", "success", "source", "uploaded_object");
+            observability.recordPayloadSize("converted_video", mp4Data.length, "source", "uploaded_object");
+            observability.success(scope, "source", "uploaded_object");
             return new TranscodedVideo(mp4Data, buildVideoUrl(outputKey), outputKey);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            observability.incrementStage(
+                    "mediaconvert_transcode", "failure", "error", e.getClass().getSimpleName());
+            observability.failure(scope, e, "source", "uploaded_object");
             throw new VideoTranscodingException("MediaConvert transcoding was interrupted", e);
         } catch (Exception e) {
+            observability.incrementStage(
+                    "mediaconvert_transcode", "failure", "error", e.getClass().getSimpleName());
+            observability.failure(scope, e, "source", "uploaded_object");
             throw new VideoTranscodingException("MediaConvert transcoding failed: " + e.getMessage(), e);
         } finally {
             cleanupInputObject(inputKey);
@@ -157,12 +200,22 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
 
     @Override
     public byte[] loadTranscodedVideo(String outputKey) throws VideoTranscodingException {
+        final var scope = observability.start("transcoder.load_transcoded_video");
         if (isBlank(outputKey)) {
+            observability.incrementStage("transcoded_video_load", "failure", "reason", "missing_output_key");
+            observability.failure(scope, null, "reason", "missing_output_key");
             throw new VideoTranscodingException("Missing transcoded video output key");
         }
         try {
-            return downloadOutput(outputKey);
+            final var bytes = downloadOutput(outputKey);
+            observability.recordPayloadSize("converted_video", bytes.length, "source", "cdn");
+            observability.incrementStage("transcoded_video_load", "success");
+            observability.success(scope, "source", "cdn");
+            return bytes;
         } catch (Exception e) {
+            observability.incrementStage(
+                    "transcoded_video_load", "failure", "error", e.getClass().getSimpleName());
+            observability.failure(scope, e, "source", "cdn");
             throw new VideoTranscodingException("Failed to load transcoded video: " + e.getMessage(), e);
         }
     }
@@ -179,7 +232,7 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
 
     private String startMediaConvertJob(String inputKey, String outputKeyPrefix) {
         String outputDestination = "s3://" + outputBucket + "/" + outputKeyPrefix;
-        return executionClient()
+        final var jobId = executionClient()
                 .createJob(r -> r.role(mediaConvertRoleArn)
                         .settings(JobSettings.builder()
                                 .inputs(Input.builder()
@@ -196,7 +249,8 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
                                         .outputs(Output.builder()
                                                 .containerSettings(ContainerSettings.builder()
                                                         .container(ContainerType.MP4)
-                                                        .mp4Settings(Mp4Settings.builder().build())
+                                                        .mp4Settings(Mp4Settings.builder()
+                                                                .build())
                                                         .build())
                                                 .videoDescription(VideoDescription.builder()
                                                         .codecSettings(VideoCodecSettings.builder()
@@ -210,6 +264,12 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
                                 .build()))
                 .job()
                 .id();
+        log.info(
+                "event=mediaconvert_job_created jobId={} inputKey={} outputPrefix={}",
+                jobId,
+                inputKey,
+                outputKeyPrefix);
+        return jobId;
     }
 
     static H264Settings buildH264Settings() {
@@ -229,6 +289,7 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
         while (Instant.now().isBefore(deadline)) {
             GetJobResponse response = executionClient().getJob(r -> r.id(jobId));
             JobStatus status = response.job().status();
+            log.debug("event=mediaconvert_job_polled jobId={} status={}", jobId, status);
 
             if (status == JobStatus.COMPLETE) {
                 return;
@@ -276,7 +337,7 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
         try {
             s3Client.deleteObject(r -> r.bucket(inputBucket).key(inputKey));
         } catch (Exception e) {
-            log.warn("Failed to clean up MediaConvert input object {}", inputKey, e);
+            log.warn("event=mediaconvert_input_cleanup_failed inputKey={}", inputKey, e);
         }
     }
 
@@ -296,7 +357,8 @@ class AwsMediaConvertVideoTranscoder implements VideoTranscoder {
 
         mediaConvertExecutionClient = MediaConvertClient.builder()
                 .region(mediaConvertDiscoveryClient.serviceClientConfiguration().region())
-                .credentialsProvider(mediaConvertDiscoveryClient.serviceClientConfiguration().credentialsProvider())
+                .credentialsProvider(
+                        mediaConvertDiscoveryClient.serviceClientConfiguration().credentialsProvider())
                 .endpointOverride(URI.create(endpoint))
                 .build();
         return mediaConvertExecutionClient;

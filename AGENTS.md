@@ -258,6 +258,7 @@ Always run `mvn spotless:apply` before committing Java, JS, or Markdown changes.
 - Use `var` for local variable type inference when the type is clear from context.
 - Declare local variables and parameters as `final` where they are not reassigned.
 - Use `Objects.isNull()` and `Objects.nonNull()` instead of `== null` / `!= null` checks.
+- Do not embed new helper, support, or utility classes inside other source files. Add new top-level classes in their own files, even when the class is small.
 
 ### AWS Bedrock Configuration
 

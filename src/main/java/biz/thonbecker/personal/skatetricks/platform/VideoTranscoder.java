@@ -4,7 +4,8 @@ public interface VideoTranscoder {
 
     TranscodedVideo convertToMp4(byte[] videoData, String originalFilename) throws VideoTranscodingException;
 
-    TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename) throws VideoTranscodingException;
+    TranscodedVideo convertUploadedObjectToMp4(String inputKey, String originalFilename)
+            throws VideoTranscodingException;
 
     byte[] loadTranscodedVideo(String outputKey) throws VideoTranscodingException;
 

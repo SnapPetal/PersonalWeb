@@ -22,36 +22,67 @@ public class RemoteVideoImportService {
     private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes(2);
     private static final int MAX_RESOLUTION_DEPTH = 2;
     private static final List<String> SUPPORTED_VIDEO_TYPES = List.of(
-            "video/mp4", "video/quicktime", "video/webm", "video/x-msvideo", "video/x-matroska", "application/octet-stream");
+            "video/mp4",
+            "video/quicktime",
+            "video/webm",
+            "video/x-msvideo",
+            "video/x-matroska",
+            "application/octet-stream");
     private static final Pattern YOUTUBE_MP4_URL_PATTERN = Pattern.compile(
             "\"url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+(?:googlevideo\\\\.com|videoplayback)[^\\\"]+)\"",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     private static final List<Pattern> SOCIAL_VIDEO_URL_PATTERNS = List.of(
-            Pattern.compile("\"playable_url_quality_hd\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile(
+                    "\"playable_url_quality_hd\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\"playable_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\"video_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
             Pattern.compile("\"contentUrl\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("(https?:\\\\?/\\\\?/[^\\\"'\\s>]+\\.(?:mp4|mov|webm)(?:[^\\\"'\\s<]*)?)", Pattern.CASE_INSENSITIVE));
+            Pattern.compile(
+                    "(https?:\\\\?/\\\\?/[^\\\"'\\s>]+\\.(?:mp4|mov|webm)(?:[^\\\"'\\s<]*)?)",
+                    Pattern.CASE_INSENSITIVE));
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .followRedirects(HttpClient.Redirect.NORMAL)
             .connectTimeout(Duration.ofSeconds(20))
             .build();
+    private final SkatetricksObservability observability;
+
+    RemoteVideoImportService(SkatetricksObservability observability) {
+        this.observability = observability;
+    }
 
     public DownloadedVideo downloadVideo(String sourceUrl, long maxBytes) throws RemoteVideoImportException {
-        URI uri = validateUrl(sourceUrl);
-        log.info("Resolving remote video source host={} path={}", uri.getHost(), uri.getPath());
-        ResolvedVideoSource resolvedSource = resolveVideoSource(uri, 0, null);
-        log.info(
-                "Resolved remote video source sourceHost={} mediaHost={} referer={}",
-                uri.getHost(),
-                resolvedSource.uri().getHost(),
-                resolvedSource.referer());
-        return downloadResolvedVideo(resolvedSource, maxBytes);
+        final var scope = observability.start("remote_import.download_video");
+        try {
+            URI uri = validateUrl(sourceUrl);
+            log.info(
+                    "event=remote_import_started sourceHost={} sourcePath={} maxBytes={}",
+                    uri.getHost(),
+                    uri.getPath(),
+                    maxBytes);
+            ResolvedVideoSource resolvedSource = resolveVideoSource(uri, 0, null);
+            log.info(
+                    "event=remote_import_resolved sourceHost={} mediaHost={} referer={}",
+                    uri.getHost(),
+                    resolvedSource.uri().getHost(),
+                    resolvedSource.referer());
+            DownloadedVideo downloadedVideo = downloadResolvedVideo(resolvedSource, maxBytes);
+            observability.recordPayloadSize(
+                    "remote_download", downloadedVideo.bytes().length, "source", classifyHost(uri));
+            observability.success(scope, "source", classifyHost(uri));
+            return downloadedVideo;
+        } catch (RemoteVideoImportException e) {
+            observability.failure(scope, e, "source", "validation");
+            throw e;
+        } catch (RuntimeException e) {
+            observability.failure(scope, e, "source", "runtime");
+            throw e;
+        }
     }
 
     private DownloadedVideo downloadResolvedVideo(ResolvedVideoSource resolvedSource, long maxBytes)
             throws RemoteVideoImportException {
+        final var scope = observability.start("remote_import.download_resolved_video");
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(resolvedSource.uri())
                 .timeout(REQUEST_TIMEOUT)
                 .header("User-Agent", "PersonalWeb-Skatetricks/1.0")
@@ -70,9 +101,7 @@ public class RemoteVideoImportService {
                         "The remote server returned HTTP " + status + " while downloading the video.");
             }
 
-            String contentType = response.headers()
-                    .firstValue("content-type")
-                    .orElse("application/octet-stream");
+            String contentType = response.headers().firstValue("content-type").orElse("application/octet-stream");
             String normalizedContentType = contentType.split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
 
             if (normalizedContentType.startsWith("text/html")) {
@@ -84,9 +113,8 @@ public class RemoteVideoImportService {
                         "The URL did not return a supported video file. Content type was " + contentType + ".");
             }
 
-            long declaredLength = response.headers()
-                    .firstValueAsLong("content-length")
-                    .orElse(-1L);
+            long declaredLength =
+                    response.headers().firstValueAsLong("content-length").orElse(-1L);
             if (declaredLength > maxBytes) {
                 throw new RemoteVideoImportException(
                         RemoteVideoImportErrorCode.VIDEO_TOO_LARGE,
@@ -99,31 +127,60 @@ public class RemoteVideoImportService {
                     normalizedContentType,
                     response.headers().firstValue("content-disposition").orElse(null),
                     resolvedSource.filenameHint());
+            observability.incrementStage("remote_download", "success", "contentType", normalizedContentType);
+            observability.success(scope, "contentType", normalizedContentType);
             return new DownloadedVideo(bytes, filename, normalizedContentType);
         } catch (RemoteVideoImportException e) {
+            observability.incrementStage(
+                    "remote_download", "failure", "errorCode", e.code().name());
+            observability.failure(scope, e, "errorCode", e.code().name());
             throw e;
         } catch (Exception e) {
+            observability.incrementStage(
+                    "remote_download", "failure", "errorCode", RemoteVideoImportErrorCode.DOWNLOAD_FAILED.name());
+            observability.failure(scope, e, "errorCode", RemoteVideoImportErrorCode.DOWNLOAD_FAILED.name());
             throw new RemoteVideoImportException(
-                    RemoteVideoImportErrorCode.DOWNLOAD_FAILED,
-                    "Failed to download the resolved video file.",
-                    e);
+                    RemoteVideoImportErrorCode.DOWNLOAD_FAILED, "Failed to download the resolved video file.", e);
         }
     }
 
-    private ResolvedVideoSource resolveVideoSource(URI sourceUri, int depth, URI referer) throws RemoteVideoImportException {
+    private ResolvedVideoSource resolveVideoSource(URI sourceUri, int depth, URI referer)
+            throws RemoteVideoImportException {
+        final var scope = observability.start("remote_import.resolve_video_source");
         if (depth > MAX_RESOLUTION_DEPTH) {
+            observability.incrementStage(
+                    "remote_resolution",
+                    "failure",
+                    "errorCode",
+                    RemoteVideoImportErrorCode.RESOLUTION_DEPTH_EXCEEDED.name());
+            observability.failure(
+                    scope, null, "errorCode", RemoteVideoImportErrorCode.RESOLUTION_DEPTH_EXCEEDED.name());
             throw new RemoteVideoImportException(
                     RemoteVideoImportErrorCode.RESOLUTION_DEPTH_EXCEEDED,
                     "Video URL resolution exceeded the maximum redirect depth.");
         }
         if (!requiresProviderResolution(sourceUri)) {
+            observability.incrementStage("remote_resolution", "success", "provider", classifyHost(sourceUri));
+            observability.success(scope, "provider", classifyHost(sourceUri));
             return new ResolvedVideoSource(sourceUri, referer != null ? referer.toString() : null, null, sourceUri);
         }
 
-        log.info("Resolving provider page host={} depth={}", sourceUri.getHost(), depth);
+        log.info("event=provider_resolution_started host={} depth={}", sourceUri.getHost(), depth);
         String html = fetchHtml(sourceUri);
         String resolvedUrl = extractVideoUrlFromHtml(sourceUri, html);
         if (resolvedUrl == null || resolvedUrl.isBlank()) {
+            observability.incrementStage(
+                    "remote_resolution",
+                    "failure",
+                    "errorCode",
+                    RemoteVideoImportErrorCode.SOCIAL_VIDEO_UNRESOLVED.name());
+            observability.failure(
+                    scope,
+                    null,
+                    "provider",
+                    classifyHost(sourceUri),
+                    "errorCode",
+                    RemoteVideoImportErrorCode.SOCIAL_VIDEO_UNRESOLVED.name());
             throw unresolvedSocialUrlException(sourceUri);
         }
 
@@ -131,14 +188,18 @@ public class RemoteVideoImportService {
         if (requiresProviderResolution(resolvedUri)) {
             return resolveVideoSource(resolvedUri, depth + 1, sourceUri);
         }
-        return new ResolvedVideoSource(
-                resolvedUri,
-                sourceUri.toString(),
-                extractOgTitle(html),
-                sourceUri);
+        log.info(
+                "event=provider_resolution_completed provider={} resolvedHost={} depth={}",
+                classifyHost(sourceUri),
+                resolvedUri.getHost(),
+                depth);
+        observability.incrementStage("remote_resolution", "success", "provider", classifyHost(sourceUri));
+        observability.success(scope, "provider", classifyHost(sourceUri));
+        return new ResolvedVideoSource(resolvedUri, sourceUri.toString(), extractOgTitle(html), sourceUri);
     }
 
     private String fetchHtml(URI uri) throws RemoteVideoImportException {
+        final var scope = observability.start("remote_import.fetch_provider_html");
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(REQUEST_TIMEOUT)
                 .header("User-Agent", "PersonalWeb-Skatetricks/1.0")
@@ -151,14 +212,25 @@ public class RemoteVideoImportService {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             int status = response.statusCode();
             if (status < 200 || status >= 300) {
+                observability.incrementStage("provider_html_fetch", "failure", "status", Integer.toString(status));
+                observability.failure(scope, null, "status", Integer.toString(status));
                 throw new RemoteVideoImportException(
                         RemoteVideoImportErrorCode.REMOTE_SERVER_ERROR,
                         "The provider page returned HTTP " + status + ".");
             }
+            observability.incrementStage("provider_html_fetch", "success", "provider", classifyHost(uri));
+            observability.success(scope, "provider", classifyHost(uri));
             return response.body();
         } catch (RemoteVideoImportException e) {
+            observability.failure(scope, e, "errorCode", e.code().name());
             throw e;
         } catch (Exception e) {
+            observability.incrementStage(
+                    "provider_html_fetch",
+                    "failure",
+                    "errorCode",
+                    RemoteVideoImportErrorCode.PROVIDER_PAGE_FETCH_FAILED.name());
+            observability.failure(scope, e, "errorCode", RemoteVideoImportErrorCode.PROVIDER_PAGE_FETCH_FAILED.name());
             throw new RemoteVideoImportException(
                     RemoteVideoImportErrorCode.PROVIDER_PAGE_FETCH_FAILED,
                     "Failed to load the provider page for video resolution.",
@@ -175,13 +247,11 @@ public class RemoteVideoImportService {
             String scheme = uri.getScheme();
             if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
                 throw new RemoteVideoImportException(
-                        RemoteVideoImportErrorCode.INVALID_URL,
-                        "Only http and https video URLs are supported.");
+                        RemoteVideoImportErrorCode.INVALID_URL, "Only http and https video URLs are supported.");
             }
             if (uri.getHost() == null || uri.getHost().isBlank()) {
                 throw new RemoteVideoImportException(
-                        RemoteVideoImportErrorCode.INVALID_URL,
-                        "Video URL must include a host.");
+                        RemoteVideoImportErrorCode.INVALID_URL, "Video URL must include a host.");
             }
             return uri;
         } catch (IllegalArgumentException e) {
@@ -190,7 +260,8 @@ public class RemoteVideoImportService {
     }
 
     private static byte[] readLimited(InputStream inputStream, long maxBytes) throws Exception {
-        try (inputStream; ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        try (inputStream;
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[8192];
             long total = 0;
             int read;
@@ -248,7 +319,8 @@ public class RemoteVideoImportService {
         return null;
     }
 
-    private static String determineFilename(URI uri, String contentType, String contentDisposition, String filenameHint) {
+    private static String determineFilename(
+            URI uri, String contentType, String contentDisposition, String filenameHint) {
         if (filenameHint != null && !filenameHint.isBlank()) {
             return ensureExtension(sanitizeFilename(filenameHint), contentType);
         }
@@ -274,7 +346,9 @@ public class RemoteVideoImportService {
         for (String part : contentDisposition.split(";")) {
             String trimmed = part.trim();
             if (trimmed.startsWith("filename=")) {
-                String raw = trimmed.substring("filename=".length()).replace("\"", "").trim();
+                String raw = trimmed.substring("filename=".length())
+                        .replace("\"", "")
+                        .trim();
                 return raw.isBlank() ? null : raw;
             }
         }
@@ -362,18 +436,14 @@ public class RemoteVideoImportService {
             return false;
         }
         String lower = normalized.toLowerCase(Locale.ROOT);
-        return lower.startsWith("http://")
-                || lower.startsWith("https://")
-                || lower.startsWith("//");
+        return lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("//");
     }
 
     private static String normalizeExtractedUrl(URI pageUri, String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
-        String normalized = value.trim()
-                .replace("&amp;", "&")
-                .replace("\\/", "/");
+        String normalized = value.trim().replace("&amp;", "&").replace("\\/", "/");
         normalized = decodeUnicodeEscapes(normalized);
         if (normalized.startsWith("//")) {
             String scheme = pageUri != null && pageUri.getScheme() != null ? pageUri.getScheme() : "https";
@@ -385,9 +455,7 @@ public class RemoteVideoImportService {
     private static String decodeUnicodeEscapes(String value) {
         StringBuilder result = new StringBuilder(value.length());
         for (int i = 0; i < value.length(); i++) {
-            if (i + 5 < value.length()
-                    && value.charAt(i) == '\\'
-                    && value.charAt(i + 1) == 'u') {
+            if (i + 5 < value.length() && value.charAt(i) == '\\' && value.charAt(i + 1) == 'u') {
                 String hex = value.substring(i + 2, i + 6);
                 if (hex.chars().allMatch(ch -> Character.digit(ch, 16) != -1)) {
                     result.append((char) Integer.parseInt(hex, 16));
@@ -407,6 +475,20 @@ public class RemoteVideoImportService {
             }
         }
         return null;
+    }
+
+    private static String classifyHost(URI uri) {
+        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
+        if (isInstagramHost(host)) {
+            return "instagram";
+        }
+        if (isFacebookHost(host)) {
+            return "facebook";
+        }
+        if (isYouTubeHost(host)) {
+            return "youtube";
+        }
+        return host.isBlank() ? "unknown" : "direct";
     }
 
     private static RemoteVideoImportException socialUrlException(URI uri) {
