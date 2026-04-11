@@ -117,6 +117,9 @@ skatetricks:
   upload:
     max-file-size: ${SKATETRICKS_UPLOAD_MAX_FILE_SIZE:500MB}
     presign-duration: ${SKATETRICKS_UPLOAD_PRESIGN_DURATION:15m}
+  knowledge:
+    enabled: ${SKATETRICKS_KNOWLEDGE_ENABLED:true}
+    catalog-resource: ${SKATETRICKS_KNOWLEDGE_CATALOG_RESOURCE:classpath:skatetricks/trick-catalog.yml}
   analysis:
     max-frames: ${SKATETRICKS_ANALYSIS_MAX_FRAMES:24}
   transcoding:

@@ -1,0 +1,227 @@
+tricks:
+  - trick: OLLIE
+    category: foundational
+    aliases:
+      - ollie
+    keyCues:
+      - Tail pops and the full board leaves the ground.
+      - Front foot slides up and the board levels in the air.
+      - Rider lands back on all four wheels.
+    disqualifiers:
+      - Board never fully leaves the ground.
+      - Board rotates or flips into another trick family.
+    commonConfusions:
+      - FRONTSIDE_180
+      - BACKSIDE_180
+
+  - trick: KICKFLIP
+    category: flip
+    aliases:
+      - kickflip
+      - kick flip
+    keyCues:
+      - Ollie motion followed by a longitudinal board flip.
+      - Grip tape disappears then returns before landing.
+      - Front foot flicks off the heelside edge.
+    disqualifiers:
+      - No board flip is visible.
+      - Board spins horizontally more than it flips.
+    commonConfusions:
+      - HEELFLIP
+      - TREFLIP
+
+  - trick: HEELFLIP
+    category: flip
+    aliases:
+      - heelflip
+      - heel flip
+    keyCues:
+      - Ollie motion followed by a longitudinal board flip opposite a kickflip.
+      - Front foot flicks off the toeside edge.
+      - Flip completes before landing.
+    disqualifiers:
+      - Board flips in the kickflip direction.
+      - Board only shuvits without flipping.
+    commonConfusions:
+      - KICKFLIP
+      - TREFLIP
+
+  - trick: POP_SHUVIT
+    category: spin
+    aliases:
+      - pop shuvit
+      - pop shove-it
+      - shuvit
+    keyCues:
+      - Board spins 180 degrees horizontally beneath the rider.
+      - No clear longitudinal flip occurs.
+      - Rider stays above the board through the spin.
+    disqualifiers:
+      - Board visibly flips like a kickflip or heelflip.
+      - Body and board rotate together like a 180.
+    commonConfusions:
+      - TREFLIP
+      - BACKSIDE_180
+
+  - trick: TREFLIP
+    category: flip
+    aliases:
+      - treflip
+      - tre flip
+      - 360 flip
+    keyCues:
+      - Board combines a 360 shuvit with a kickflip.
+      - Both horizontal spin and flip are visible.
+      - Trick has more rotation than a pop shuvit.
+    disqualifiers:
+      - Only a flip or only a shuvit is visible.
+      - Rotation stops near 180 degrees.
+    commonConfusions:
+      - KICKFLIP
+      - POP_SHUVIT
+
+  - trick: FRONTSIDE_180
+    category: spin
+    aliases:
+      - frontside 180
+      - fs 180
+    keyCues:
+      - Rider and board rotate 180 degrees together frontside.
+      - Trick still has ollie-style pop and airtime.
+      - Board does not flip separately from the body.
+    disqualifiers:
+      - Board flips independently.
+      - Rotation direction is backside.
+    commonConfusions:
+      - BACKSIDE_180
+      - OLLIE
+
+  - trick: BACKSIDE_180
+    category: spin
+    aliases:
+      - backside 180
+      - bs 180
+    keyCues:
+      - Rider and board rotate 180 degrees together backside.
+      - Trick still has ollie-style pop and airtime.
+      - Board does not flip separately from the body.
+    disqualifiers:
+      - Board flips independently.
+      - Rotation direction is frontside.
+    commonConfusions:
+      - FRONTSIDE_180
+      - POP_SHUVIT
+
+  - trick: BOARDSLIDE
+    category: slide
+    aliases:
+      - boardslide
+      - board slide
+    keyCues:
+      - Board is perpendicular to the rail or ledge while sliding.
+      - Deck contacts the obstacle between the trucks.
+      - Approach and exit include a clear slide segment on the obstacle.
+    disqualifiers:
+      - Both trucks are locked on the obstacle.
+      - Only one truck is engaged like a 5-0 or nosegrind.
+    commonConfusions:
+      - FIFTY_FIFTY
+      - FIVE_O
+      - NOSEGRIND
+
+  - trick: FIFTY_FIFTY
+    category: grind
+    aliases:
+      - 50-50
+      - fifty fifty
+      - 50-50 grind
+    keyCues:
+      - Both trucks are on the obstacle at the same time.
+      - Board stays roughly parallel to the obstacle.
+      - Rider grinds through the obstacle rather than sliding the deck.
+    disqualifiers:
+      - Board is perpendicular across the obstacle.
+      - Only one truck is visibly engaged.
+    commonConfusions:
+      - BOARDSLIDE
+      - FIVE_O
+      - NOSEGRIND
+
+  - trick: FIVE_O
+    category: grind
+    aliases:
+      - 5-0
+      - five-o
+      - 5-0 grind
+    keyCues:
+      - Back truck is the only truck engaged on the obstacle.
+      - Nose is lifted during the grind.
+      - Board stays roughly aligned with the obstacle.
+    disqualifiers:
+      - Front truck is also engaged.
+      - Board is centered across the obstacle like a boardslide.
+    commonConfusions:
+      - FIFTY_FIFTY
+      - NOSEGRIND
+
+  - trick: NOSEGRIND
+    category: grind
+    aliases:
+      - nosegrind
+      - nose grind
+    keyCues:
+      - Front truck is the only truck engaged on the obstacle.
+      - Tail is lifted during the grind.
+      - Board stays roughly aligned with the obstacle.
+    disqualifiers:
+      - Back truck is the engaged truck.
+      - Both trucks are on the obstacle.
+    commonConfusions:
+      - FIVE_O
+      - FIFTY_FIFTY
+
+  - trick: MANUAL
+    category: balance
+    aliases:
+      - manual
+    keyCues:
+      - Back wheels stay on the ground while the nose is lifted.
+      - Board does not clearly leave the ground.
+      - Motion is balance-focused rather than pop-focused.
+    disqualifiers:
+      - Full airborne phase occurs.
+      - A rail or ledge grind segment occurs.
+    commonConfusions:
+      - OLLIE
+      - CRUISING
+
+  - trick: CRUISING
+    category: baseline
+    aliases:
+      - cruising
+      - riding
+    keyCues:
+      - All four wheels remain on the ground.
+      - No pop, flip, spin, or obstacle interaction occurs.
+      - Rider is simply rolling or carving.
+    disqualifiers:
+      - Any airborne phase is visible.
+      - Any clear grind, slide, or flip happens.
+    commonConfusions:
+      - MANUAL
+      - DROP_IN
+
+  - trick: DROP_IN
+    category: transition
+    aliases:
+      - drop in
+      - drop-in
+    keyCues:
+      - Rider starts at coping or deck edge of a ramp or bowl.
+      - Front wheels tip in first as the rider commits downhill.
+      - Motion is ramp entry rather than flatground trick execution.
+    disqualifiers:
+      - Clip is clearly flatground.
+      - Trick includes pop and airborne phase as the main action.
+    commonConfusions:
+      - CRUISING

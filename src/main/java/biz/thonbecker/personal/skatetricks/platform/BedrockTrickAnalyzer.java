@@ -29,6 +29,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
     private final SkatetricksObservability observability;
+    private final TrickKnowledgeService trickKnowledgeService;
 
     @Value("${skatetricks.vectorstore.bucket:}")
     private String vectorBucket;
@@ -43,13 +44,15 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
             VideoFrameExtractor videoFrameExtractor,
             @org.springframework.lang.Nullable S3VectorsClient s3VectorsClient,
             @org.springframework.lang.Nullable EmbeddingService embeddingService,
-            SkatetricksObservability observability) {
+            SkatetricksObservability observability,
+            TrickKnowledgeService trickKnowledgeService) {
         this.chatClient = chatModel != null ? ChatClient.create(chatModel) : null;
         this.poseEstimationService = poseEstimationService;
         this.videoFrameExtractor = videoFrameExtractor;
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
         this.observability = observability;
+        this.trickKnowledgeService = trickKnowledgeService;
     }
 
     @Override
@@ -114,14 +117,15 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
         final var poseTexts = buildPoseDataText(base64Frames);
         final var similarExamples = fetchSimilarExamples(poseTexts.embeddingText());
+        final var curatedKnowledge = trickKnowledgeService.buildPromptSection();
         log.info(
-                "event=analyzer_prompt_context frameCount={} posePrompt={} similarExamples={}",
+                "event=analyzer_prompt_context frameCount={} posePrompt={} similarExamples={} curatedKnowledge={}",
                 base64Frames.size(),
                 !poseTexts.promptText().isBlank(),
-                !similarExamples.isBlank());
+                !similarExamples.isBlank(),
+                !curatedKnowledge.isBlank());
 
-        String systemPrompt =
-                """
+        String systemPrompt = """
                 You are an expert skateboarding trick judge. Your output MUST be ONLY a valid JSON object. \
                 Do NOT include any text, reasoning, frame-by-frame analysis, markdown, or explanation — \
                 only the JSON object itself.
@@ -154,7 +158,10 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
 
                 Use ENUM_NAME exactly (e.g., OLLIE, KICKFLIP, POP_SHUVIT, TREFLIP, FRONTSIDE_180, \
                 BACKSIDE_180, FIVE_O, NOSEGRIND, CRUISING, DROP_IN). Use UNKNOWN only if unidentifiable.
-                """.formatted(TrickCatalog.buildTrickDescriptions()) + similarExamples + poseTexts.promptText();
+                """.formatted(TrickCatalog.buildTrickDescriptions())
+                + curatedKnowledge
+                + similarExamples
+                + poseTexts.promptText();
 
         String userPrompt = ("These %d images are sequential frames from a skateboarding video, evenly spaced in time. "
                         + "Frame 1 is earliest, frame %d is latest. Analyze the full progression of movement across all frames and identify all tricks performed in sequence.")
