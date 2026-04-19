@@ -30,16 +30,15 @@ public class RemoteVideoImportService {
             "video/x-matroska",
             "application/octet-stream");
     private static final Pattern YOUTUBE_MP4_URL_PATTERN = Pattern.compile(
-            "\"url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+(?:googlevideo\\\\.com|videoplayback)[^\\\"]+)\"",
+            "\"url\"\\s*:\\s*\"([^\\\"]*(?:googlevideo(?:\\\\u002E|\\.)com|videoplayback)[^\\\"]*)\"",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     private static final List<Pattern> SOCIAL_VIDEO_URL_PATTERNS = List.of(
-            Pattern.compile(
-                    "\"playable_url_quality_hd\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("\"playable_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("\"browser_native_sd_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("\"browser_native_hd_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("\"video_url\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("\"contentUrl\"\\s*:\\s*\"(https?:\\\\?/\\\\?/[^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"playable_url_quality_hd\"\\s*:\\s*\"([^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"playable_url\"\\s*:\\s*\"([^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"browser_native_sd_url\"\\s*:\\s*\"([^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"browser_native_hd_url\"\\s*:\\s*\"([^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"video_url\"\\s*:\\s*\"([^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("\"contentUrl\"\\s*:\\s*\"([^\\\"]+)\"", Pattern.CASE_INSENSITIVE),
             Pattern.compile(
                     "(https?:\\\\?/\\\\?/[^\\\"'\\s>]+\\.(?:mp4|mov|webm)(?:[^\\\"'\\s<]*)?)",
                     Pattern.CASE_INSENSITIVE));
@@ -465,8 +464,10 @@ public class RemoteVideoImportService {
         if (value == null || value.isBlank()) {
             return null;
         }
-        String normalized = value.trim().replace("&amp;", "&").replace("\\/", "/");
+        String normalized = value.trim().replace("&amp;", "&");
         normalized = decodeUnicodeEscapes(normalized);
+        normalized = normalized.replace("\\/", "/");
+        normalized = normalized.replace("\\&", "&");
         if (normalized.startsWith("//")) {
             String scheme = pageUri != null && pageUri.getScheme() != null ? pageUri.getScheme() : "https";
             return scheme + ":" + normalized;

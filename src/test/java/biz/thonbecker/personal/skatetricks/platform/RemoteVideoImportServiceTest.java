@@ -73,6 +73,42 @@ class RemoteVideoImportServiceTest {
     }
 
     @Test
+    void extractsFacebookReelUrlFromUnicodeEscapedPlayableField() {
+        String html = """
+                <html>
+                  <body>
+                    <script>
+                      {"playable_url":"https:\\u002F\\u002Fvideo.xx.fbcdn.net\\u002Fv\\u002Ft42.1790-2\\u002F1340544710861934.mp4?strext=1\\u0026efg=foo"}
+                    </script>
+                  </body>
+                </html>
+                """;
+
+        String resolved = RemoteVideoImportService.extractVideoUrlFromHtml(
+                URI.create("https://www.facebook.com/reel/1340544710861934"), html);
+
+        assertEquals("https://video.xx.fbcdn.net/v/t42.1790-2/1340544710861934.mp4?strext=1&efg=foo", resolved);
+    }
+
+    @Test
+    void extractsFacebookReelUrlFromDoublyEscapedUnicodeUrl() {
+        String html = """
+                <html>
+                  <body>
+                    <script>
+                      {"browser_native_sd_url":"https:\\\\u002F\\\\u002Fvideo.xx.fbcdn.net\\\\u002Fv\\\\u002Ft42.1790-2\\\\u002F3444193269214142.mp4?strext=1\\\\u0026efg=bar"}
+                    </script>
+                  </body>
+                </html>
+                """;
+
+        String resolved = RemoteVideoImportService.extractVideoUrlFromHtml(
+                URI.create("https://www.facebook.com/reel/3444193269214142"), html);
+
+        assertEquals("https://video.xx.fbcdn.net/v/t42.1790-2/3444193269214142.mp4?strext=1&efg=bar", resolved);
+    }
+
+    @Test
     void extractsYouTubeMp4StreamFromPlayerResponse() {
         String html = """
                 <html>
