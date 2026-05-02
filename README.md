@@ -23,7 +23,7 @@ A modular monolith personal portfolio and interactive applications platform buil
 |-----------------------|---------------------------------------------------------------------------|
 | **Foosball**          | Table soccer game tracking with ELO ratings and tournaments               |
 | **FPU Trivia**        | AI-powered Financial Peace University trivia with real-time multiplayer   |
-| **Skatetricks AI**    | YOLO pose estimation + Bedrock AI trick detection with RAG learning       |
+| **Skatetricks AI**    | YOLO pose estimation + OpenAI vision trick detection with RAG learning    |
 | **Landscape Planner** | AI-powered landscape design with USDA plant database and Fabric.js canvas |
 | **Booking System**    | Appointment scheduling with auto-availability and calendar integration    |
 | **Tank Game**         | WebSocket-based multiplayer tank game with player progression             |
@@ -35,7 +35,7 @@ A modular monolith personal portfolio and interactive applications platform buil
 - Java 25+
 - Maven 3.6+
 - Docker (Spring Boot auto-starts PostgreSQL via Docker Compose)
-- AWS credentials (Bedrock, Polly, S3, S3 Vectors, Cognito)
+- OpenAI API key and AWS credentials (Polly, S3, S3 Vectors, Cognito)
 
 ### Setup
 
@@ -51,20 +51,20 @@ For Skatetricks transcoding, set `SKATETRICKS_MEDIACONVERT_ROLE_ARN` from the Ho
 
 Skatetricks remote import supports direct downloadable video URLs and now attempts provider-specific resolution for public Instagram, Facebook, and YouTube page URLs before transcoding. Private, auth-gated, or stream-protected videos can still fail.
 
-Skatetricks video analysis extracts duration-aware sequential frames from uploaded/imported MP4s before calling Bedrock. Tune `SKATETRICKS_ANALYSIS_MAX_FRAMES` if production needs more or fewer images per analysis; the default is `24`.
+Skatetricks video analysis extracts duration-aware sequential frames from uploaded/imported MP4s before calling OpenAI vision. Tune `SKATETRICKS_ANALYSIS_MAX_FRAMES` if production needs more or fewer images per analysis; the default is `24`.
 
 ## Architecture
 
 ### Stack
 
-|     Layer     |                                    Technologies                                     |
-|---------------|-------------------------------------------------------------------------------------|
-| **Backend**   | Spring Boot 4, Spring Modulith, Spring AI, Spring Security + Cognito OAuth2         |
-| **AI/ML**     | AWS Bedrock (Claude Sonnet 4.6, Titan Embeddings V2, Nova Canvas), DJL PyTorch YOLO |
-| **Database**  | PostgreSQL 18, Liquibase migrations, Caffeine cache                                 |
-| **Frontend**  | Thymeleaf, HTMX, Alpine.js, Bootstrap 5, Fabric.js, WebJars                         |
-| **Real-time** | STOMP over SockJS (trivia, tank game)                                               |
-| **AWS**       | Bedrock, S3, S3 Vectors, SES, CloudFront, Polly, Cognito, Lightsail                 |
+|     Layer     |                                    Technologies                                    |
+|---------------|------------------------------------------------------------------------------------|
+| **Backend**   | Spring Boot 4, Spring Modulith, Spring AI, Spring Security + Cognito OAuth2        |
+| **AI/ML**     | Spring AI with OpenAI chat, vision, embeddings, image generation; DJL PyTorch YOLO |
+| **Database**  | PostgreSQL 18, Liquibase migrations, Caffeine cache                                |
+| **Frontend**  | Thymeleaf, HTMX, Alpine.js, Bootstrap 5, Fabric.js, WebJars                        |
+| **Real-time** | STOMP over SockJS (trivia, tank game)                                              |
+| **AWS**       | S3, S3 Vectors, SES, CloudFront, Polly, Cognito, Lightsail                         |
 
 ### Modules
 
@@ -72,7 +72,7 @@ Skatetricks video analysis extracts duration-aware sequential frames from upload
 src/main/java/biz/thonbecker/personal/
 ├── foosball/       # Game tracking, stats, tournaments, ELO rating
 ├── trivia/         # AI-powered FPU trivia, WebSocket multiplayer
-├── skatetricks/    # YOLO pose estimation + Bedrock AI trick detection
+├── skatetricks/    # YOLO pose estimation + OpenAI vision trick detection
 ├── landscape/      # AI-powered landscape planning with USDA plant data
 ├── booking/        # Appointment scheduling with auto-availability
 ├── tankgame/       # WebSocket tank game with player progression

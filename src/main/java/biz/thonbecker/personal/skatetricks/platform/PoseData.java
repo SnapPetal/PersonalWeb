@@ -99,7 +99,7 @@ final class PoseData {
 
         /**
          * Produces a compact, semantically rich summary optimized for text embedding.
-         * Unlike toPromptText() which dumps raw per-frame data for Claude's visual analysis,
+         * Unlike toPromptText() which dumps raw per-frame data for visual analysis,
          * this captures the motion signature in a format that produces meaningful vector
          * similarity — similar tricks will have similar embedding text.
          */

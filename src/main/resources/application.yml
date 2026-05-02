@@ -53,26 +53,28 @@ spring:
         jdbc:
           time_zone: UTC
 
-  # Spring AI Bedrock Configuration
+  # Spring AI OpenAI Configuration
   ai:
-    bedrock:
-      converse:
-        chat:
-          enabled: true
-          options:
-            model: us.anthropic.claude-sonnet-4-6
-            max-tokens: 4096
-            temperature: 0.3
-      titan:
-        embedding:
-          model: amazon.titan-embed-text-v2:0
-          input-type: TEXT
-      aws:
-        region: ${PERSONAL_AWS_REGION:us-east-1}
-        access-key: ${PERSONAL_AWS_ACCESS_KEY_ID}
-        secret-key: ${PERSONAL_AWS_SECRET_ACCESS_KEY}
+    openai:
+      api-key: ${PERSONAL_OPENAI_API_KEY:${OPENAI_API_KEY:}}
+      chat:
+        options:
+          model: ${PERSONAL_OPENAI_CHAT_MODEL:gpt-4o}
+          max-tokens: 4096
+      embedding:
+        options:
+          model: ${PERSONAL_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+          dimensions: ${PERSONAL_OPENAI_EMBEDDING_DIMENSIONS:1024}
+      image:
+        options:
+          model: ${PERSONAL_OPENAI_IMAGE_MODEL:dall-e-3}
+          n: 1
+          response-format: b64_json
+          size: 1024x1024
     model:
-      embedding: bedrock-titan
+      chat: openai
+      embedding: openai
+      image: openai
 
   # Task Execution (for WebSocket async operations)
   task:
@@ -136,7 +138,7 @@ skatetricks:
     bucket: thonbecker-vectors
     index: skatetricks-tricks
     dimension: 1024
-    recreate: false
+    recreate: true
 
 # Landscape Planning Configuration
 landscape:

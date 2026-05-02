@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 
 /**
- * Service for AI-powered plant recommendations using AWS Bedrock (Claude).
+ * Service for AI-powered plant recommendations using OpenAI.
  *
  * <p>Analyzes landscape images to suggest appropriate plants based on visible conditions,
  * hardiness zone, and landscaping principles.
@@ -36,7 +36,7 @@ public class LandscapeAiService {
     /**
      * Analyzes a landscape image and generates plant recommendations.
      *
-     * <p>Uses Claude's vision capabilities to identify sunny/shady areas, soil conditions, and
+     * <p>Uses OpenAI vision capabilities to identify sunny/shady areas, soil conditions, and
      * spatial constraints, then recommends 5-8 suitable plants.
      *
      * @param imageData Raw image bytes
@@ -51,7 +51,7 @@ public class LandscapeAiService {
             final byte[] imageData, final HardinessZone zone, final String userDescription) {
 
         try {
-            log.info("Analyzing landscape image for zone {} with Claude AI", zone);
+            log.info("Analyzing landscape image for zone {} with OpenAI", zone);
 
             final var base64Image = Base64.getEncoder().encodeToString(imageData);
             final var description = nonNull(userDescription) ? userDescription : "No description provided";

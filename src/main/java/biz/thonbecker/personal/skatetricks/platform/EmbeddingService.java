@@ -6,7 +6,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Component;
 
 /**
- * Generates vector embeddings via Spring AI's EmbeddingModel (backed by AWS Bedrock Titan Text Embeddings V2).
+ * Generates vector embeddings via Spring AI's EmbeddingModel.
  * Used by the skatetricks module to embed pose data for storage and retrieval
  * in the S3 Vectors store.
  */

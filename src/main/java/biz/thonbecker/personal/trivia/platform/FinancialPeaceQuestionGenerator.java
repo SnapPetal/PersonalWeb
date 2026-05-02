@@ -7,9 +7,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -24,19 +24,15 @@ import org.springframework.stereotype.Component;
 class FinancialPeaceQuestionGenerator implements QuestionGenerator {
 
     private final ChatClient chatClient;
-    private final BedrockChatOptions haikuOptions;
+    private final String model;
     private final AtomicLong questionIdGenerator = new AtomicLong(1);
 
     @Autowired(required = false)
     public FinancialPeaceQuestionGenerator(
             ChatModel chatModel,
-            @Value("${trivia.ai.model:us.anthropic.claude-haiku-4-5-20251001-v1:0}") String model) {
+            @Value("${trivia.ai.model:${PERSONAL_OPENAI_TRIVIA_MODEL:gpt-4o-mini}}") String model) {
         this.chatClient = chatModel != null ? ChatClient.create(chatModel) : null;
-        this.haikuOptions = BedrockChatOptions.builder()
-                .model(model)
-                .maxTokens(2048)
-                .temperature(0.3)
-                .build();
+        this.model = model;
     }
 
     public List<Question> generateQuestions(int count, QuizDifficulty difficulty) {
@@ -50,7 +46,7 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
 
             final var responses = chatClient
                     .prompt()
-                    .options(haikuOptions)
+                    .options(OpenAiChatOptions.builder().model(model).maxTokens(2048))
                     .user(u -> u.text("""
                             You are a financial literacy expert specializing in Dave Ramsey's Financial Peace principles.
                             Generate {count} multiple-choice trivia questions about Dave Ramsey's Financial Peace teachings.

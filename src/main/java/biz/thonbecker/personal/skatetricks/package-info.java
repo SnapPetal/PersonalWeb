@@ -2,7 +2,7 @@
  * Skateboard Trick Analyzer Module
  *
  * This module provides real-time skateboard trick identification and form evaluation
- * using browser-captured video frames and AWS Bedrock (Claude) multimodal vision.
+ * using browser-captured video frames and OpenAI multimodal vision.
  *
  * <h2>Public API</h2>
  * The exported cross-module contract is the {@code api} named interface. Other modules should
