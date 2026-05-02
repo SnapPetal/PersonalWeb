@@ -3,11 +3,12 @@ spring:
     compose:
       enabled: false
   ai:
-    bedrock:
-      aws:
-        region: us-east-1
-        access-key: test
-        secret-key: test
+    openai:
+      api-key: test
+    model:
+      chat: none
+      embedding: none
+      image: none
 
 notification:
   email:

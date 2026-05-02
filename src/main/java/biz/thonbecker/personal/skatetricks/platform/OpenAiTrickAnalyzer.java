@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.s3vectors.model.VectorData;
 
 @Component
 @Slf4j
-class BedrockTrickAnalyzer implements TrickAnalyzer {
+class OpenAiTrickAnalyzer implements TrickAnalyzer {
 
     private final ChatClient chatClient;
     private final PoseEstimationService poseEstimationService;
@@ -38,7 +38,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     private String vectorIndex;
 
     @Autowired(required = false)
-    BedrockTrickAnalyzer(
+    OpenAiTrickAnalyzer(
             ChatModel chatModel,
             PoseEstimationService poseEstimationService,
             VideoFrameExtractor videoFrameExtractor,
@@ -184,7 +184,7 @@ class BedrockTrickAnalyzer implements TrickAnalyzer {
     }
 
     /**
-     * Calls the AI model with native structured output via Bedrock's outputSchema.
+     * Calls the AI model with native structured output.
      */
     private TrickAnalysisResponseSchema callAndExtract(
             final String systemPrompt, final String userPrompt, final Media... media) throws Exception {

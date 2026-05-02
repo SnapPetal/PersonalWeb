@@ -21,7 +21,7 @@
  * <h2>Features</h2>
  * <ul>
  *   <li>Image upload to S3 with CloudFront CDN delivery</li>
- *   <li>AI-powered plant recommendations using AWS Bedrock (Claude)</li>
+ *   <li>AI-powered plant recommendations using OpenAI vision</li>
  *   <li>USDA Plants Database integration for authoritative plant data</li>
  *   <li>Hardiness zone-based plant filtering</li>
  *   <li>Interactive plan creation with plant placement annotation</li>

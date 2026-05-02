@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.mediaconvert.MediaConvertClient;
 import software.amazon.awssdk.services.polly.PollyClient;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -22,13 +21,13 @@ import tools.jackson.databind.ObjectMapper;
 @Configuration
 public class AwsConfig {
 
-    @Value("${spring.ai.bedrock.aws.region:us-east-1}")
+    @Value("${PERSONAL_AWS_REGION:us-east-1}")
     private String awsRegion;
 
-    @Value("${spring.ai.bedrock.aws.access-key}")
+    @Value("${PERSONAL_AWS_ACCESS_KEY_ID:test}")
     private String accessKey;
 
-    @Value("${spring.ai.bedrock.aws.secret-key}")
+    @Value("${PERSONAL_AWS_SECRET_ACCESS_KEY:test}")
     private String secretKey;
 
     /**
@@ -86,22 +85,6 @@ public class AwsConfig {
     }
 
     /**
-     * Creates a configured BedrockRuntimeClient bean for image generation.
-     *
-     * @return Configured BedrockRuntimeClient
-     */
-    @Bean
-    public BedrockRuntimeClient bedrockRuntimeClient() {
-        final var credentials = AwsBasicCredentials.create(accessKey, secretKey);
-        final var credentialsProvider = StaticCredentialsProvider.create(credentials);
-
-        return BedrockRuntimeClient.builder()
-                .region(Region.of(awsRegion))
-                .credentialsProvider(credentialsProvider)
-                .build();
-    }
-
-    /**
      * Creates a configured SesClient bean for sending emails.
      *
      * @return Configured SesClient
@@ -118,9 +101,7 @@ public class AwsConfig {
     }
 
     /**
-     * Provides a Jackson 2.x ObjectMapper bean required by Spring AI's Bedrock Titan
-     * embedding auto-configuration. Spring Boot 4 migrated to Jackson 3, so the
-     * Jackson 2.x ObjectMapper is no longer auto-configured as a bean.
+     * Provides a Jackson ObjectMapper bean for components that need direct JSON parsing.
      */
     @Bean
     public ObjectMapper objectMapper() {

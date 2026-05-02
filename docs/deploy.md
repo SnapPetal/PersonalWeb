@@ -99,9 +99,24 @@ For the default compose mode, keep a compose file on the Lightsail host that ref
 services:
   personalweb:
     image: ${PERSONALWEB_IMAGE:-public.ecr.aws/p0w8z2j2/personal:latest}
+    env_file:
+      - .env.personalweb
 ```
 
 That keeps the server-side deployment stable while allowing the image tag to be overridden from the script.
+
+The PersonalWeb container must receive these runtime AI variables:
+
+```bash
+PERSONAL_OPENAI_API_KEY=
+PERSONAL_OPENAI_CHAT_MODEL=gpt-4o
+PERSONAL_OPENAI_TRIVIA_MODEL=gpt-4o-mini
+PERSONAL_OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+PERSONAL_OPENAI_EMBEDDING_DIMENSIONS=1024
+PERSONAL_OPENAI_IMAGE_MODEL=dall-e-3
+```
+
+For production, store the OpenAI key in Secrets Manager as `personalweb/openai-api-key` from the HomeWeb CDK stack, then copy it into the private server-side env file used by compose. The Spring app still reads `PERSONAL_OPENAI_API_KEY`; Secrets Manager is the source of truth for the secret value.
 
 The current production compose file in `nextcloud-aws` does not use an image variable for the personal site. It currently references:
 

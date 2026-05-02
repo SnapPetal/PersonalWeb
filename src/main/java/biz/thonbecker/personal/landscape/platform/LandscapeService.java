@@ -202,11 +202,11 @@ public class LandscapeService {
         try (final ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(getRequest)) {
             final var imageData = s3Object.readAllBytes();
 
-            // Get text descriptions from Claude
+            // Get text descriptions from OpenAI
             final var textAnalysis = aiService.analyzeSeasons(
                     imageData, HardinessZone.valueOf(plan.getHardinessZone()), plantDescriptions);
 
-            // Generate seasonal images with Nova Canvas
+            // Generate seasonal images with OpenAI
             final var springImage = imageGenerationService.generateSeasonalImage(imageData, "spring", plantNames);
             final var summerImage = imageGenerationService.generateSeasonalImage(imageData, "summer", plantNames);
             final var fallImage = imageGenerationService.generateSeasonalImage(imageData, "fall", plantNames);
