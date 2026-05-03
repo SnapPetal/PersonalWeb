@@ -150,6 +150,8 @@ landscape:
     bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq
     cdn-domain: https://cdn.thonbecker.com
     folder-prefix: landscape-plans/
+  image-generation:
+    responses-model: ${PERSONAL_OPENAI_IMAGE_RESPONSES_MODEL:gpt-4.1-mini}
 
 # Notification Configuration (email only)
 notification:

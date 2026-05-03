@@ -178,7 +178,97 @@
 }
 
 /* Seasonal Preview Images */
+.seasonal-plan-image {
+    position: relative;
+    overflow: hidden;
+    background: #111;
+}
+
 .seasonal-image {
+    display: block;
+    width: 100%;
     max-height: 300px;
     object-fit: cover;
+}
+
+.seasonal-plan-image .seasonal-image {
+    max-height: 320px;
+}
+
+.seasonal-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.seasonal-spring .seasonal-image {
+    filter: saturate(1.12) brightness(1.04);
+}
+
+.seasonal-spring .seasonal-overlay {
+    background: linear-gradient(rgba(205, 239, 205, 0.08), rgba(255, 255, 255, 0));
+}
+
+.seasonal-summer .seasonal-image {
+    filter: saturate(1.18) contrast(1.04);
+}
+
+.seasonal-fall .seasonal-image {
+    filter: sepia(0.18) saturate(1.18) brightness(0.98);
+}
+
+.seasonal-fall .seasonal-overlay {
+    background: linear-gradient(rgba(185, 108, 36, 0.16), rgba(255, 215, 140, 0.04));
+}
+
+.seasonal-winter .seasonal-image {
+    filter: saturate(0.72) brightness(1.08) contrast(0.94);
+}
+
+.seasonal-winter .seasonal-overlay {
+    background:
+        linear-gradient(rgba(235, 244, 255, 0.2), rgba(246, 250, 255, 0.1)),
+        repeating-linear-gradient(
+            165deg,
+            rgba(255, 255, 255, 0.18) 0,
+            rgba(255, 255, 255, 0.18) 2px,
+            transparent 2px,
+            transparent 22px
+        );
+}
+
+.seasonal-plant-marker {
+    --marker-size: 34px;
+    position: absolute;
+    width: var(--marker-size);
+    height: var(--marker-size);
+    transform: translate(-50%, -65%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--plant-color, #198754);
+    color: #fff;
+    font-size: 1.15rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    z-index: 2;
+}
+
+.seasonal-plant-tree {
+    --marker-size: 42px;
+    border-radius: 45% 45% 50% 50%;
+    font-size: 1.45rem;
+}
+
+.seasonal-winter .seasonal-plant-tree,
+.seasonal-winter .seasonal-plant-shrub,
+.seasonal-winter .seasonal-plant-flower {
+    background: #8d806e;
+    color: #f6f8fb;
+}
+
+.seasonal-fall .seasonal-plant-tree,
+.seasonal-fall .seasonal-plant-shrub {
+    background: #c36a2d;
 }

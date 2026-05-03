@@ -10,6 +10,7 @@
   let selectedPlant = null;
   let placedMarkers = [];
   let keydownHandler = null;
+  let currentPlanImageUrl = null;
 
   // Plant type keywords for icon selection
   const PLANT_TYPES = {
@@ -328,6 +329,7 @@
 
     const workspace = document.getElementById("planWorkspace");
     placedMarkers = [];
+    currentPlanImageUrl = plan.imageCdnUrl;
 
     const html = `
             <div class="text-center mb-2">
@@ -423,7 +425,9 @@
           placement.commonName || placement.plantName,
           placement.usdaSymbol,
           true,
-          placement.id
+          placement.id,
+          placement.xCoord,
+          placement.yCoord
         );
       });
     }
@@ -452,7 +456,10 @@
         pointer.y,
         selectedPlant.commonName || selectedPlant.scientificName,
         selectedPlant.usdaSymbol,
-        false
+        false,
+        null,
+        xPercent,
+        yPercent
       );
 
       const newEntry = placedMarkers[placedMarkers.length - 1];
@@ -504,7 +511,16 @@
     updateLegend();
   }
 
-  function addMarkerToCanvas(x, y, name, usdaSymbol, isExisting, placementId) {
+  function addMarkerToCanvas(
+    x,
+    y,
+    name,
+    usdaSymbol,
+    isExisting,
+    placementId,
+    xPercent,
+    yPercent
+  ) {
     const markerColor = getPlantColor(usdaSymbol);
     const plantType = detectPlantType(name);
 
@@ -539,6 +555,10 @@
       usdaSymbol: usdaSymbol,
       isExisting: isExisting,
       placementId: placementId || null,
+      xPercent: xPercent,
+      yPercent: yPercent,
+      plantType: plantType,
+      usesPlantImage: false,
     };
     placedMarkers.push(markerEntry);
 
@@ -569,8 +589,15 @@
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = function () {
-          // Create circular clipped plant image
-          const size = 40;
+          const plantType = markerEntry.plantType || detectPlantType(name);
+          const size =
+            {
+              tree: 88,
+              shrub: 62,
+              flower: 48,
+              grass: 52,
+              default: 48,
+            }[plantType] || 48;
           const fabricImg = new fabric.Image(img, {
             left: x - size / 2,
             top: y - size / 2,
@@ -582,11 +609,6 @@
             lockMovementX: true,
             lockMovementY: true,
             hoverCursor: "pointer",
-            clipPath: new fabric.Circle({
-              radius: size / 2,
-              originX: "center",
-              originY: "center",
-            }),
             stroke: borderColor,
             strokeWidth: 3,
             shadow: new fabric.Shadow({
@@ -606,6 +628,7 @@
           canvas.remove(markerEntry.marker);
           canvas.add(fabricImg);
           markerEntry.marker = fabricImg;
+          markerEntry.usesPlantImage = true;
 
           setupMarkerEvents(fabricImg, name);
 
@@ -890,6 +913,8 @@
       if (season.data.imageBase64) {
         imageHtml = `<img src="data:image/png;base64,${season.data.imageBase64}"
                           class="card-img-top seasonal-image" alt="${season.label} landscape">`;
+      } else {
+        imageHtml = renderSeasonalPlanImage(season);
       }
 
       html += `
@@ -916,6 +941,83 @@
 
     html += "</div>";
     container.innerHTML = html;
+  }
+
+  function renderSeasonalPlanImage(season) {
+    if (!currentPlanImageUrl) return "";
+
+    const planImageSrc = getPlanCanvasImageSource();
+    const markerHtml = planImageSrc
+      ? ""
+      : placedMarkers
+          .map(function (marker) {
+            if (
+              marker.xPercent === undefined ||
+              marker.yPercent === undefined ||
+              marker.xPercent === null ||
+              marker.yPercent === null
+            ) {
+              return "";
+            }
+
+            const type = detectPlantType(marker.name);
+            const color = getPlantColor(marker.usdaSymbol);
+            const iconClass =
+              {
+                tree: "bi-tree-fill",
+                shrub: "bi-flower2",
+                flower: "bi-flower1",
+                grass: "bi-moisture",
+                default: "bi-flower3",
+              }[type] || "bi-flower3";
+
+            return `<span class="seasonal-plant-marker seasonal-plant-${type}"
+                    style="left: ${
+                      marker.xPercent
+                    }%; top: ${marker.yPercent}%; --plant-color: ${color};"
+                    title="${escapeHtml(marker.name)}">
+                  <i class="bi ${iconClass}"></i>
+                </span>`;
+          })
+          .join("");
+    const imageSrc = planImageSrc || escapeHtml(currentPlanImageUrl);
+
+    return `<div class="seasonal-plan-image seasonal-${season.key}">
+              <img src="${imageSrc}" class="seasonal-image" alt="${season.label} landscape">
+              <div class="seasonal-overlay"></div>
+              ${markerHtml}
+            </div>`;
+  }
+
+  function getPlanCanvasImageSource() {
+    if (!canvas) return null;
+
+    const labels = placedMarkers
+      .map(function (marker) {
+        return marker.label;
+      })
+      .filter(Boolean);
+
+    try {
+      labels.forEach(function (label) {
+        label.visible = false;
+      });
+      canvas.discardActiveObject();
+      canvas.renderAll();
+
+      return canvas.toDataURL({
+        format: "png",
+        multiplier: 2,
+      });
+    } catch (error) {
+      console.warn("Unable to render seasonal plan from canvas:", error);
+      return null;
+    } finally {
+      labels.forEach(function (label) {
+        label.visible = true;
+      });
+      canvas.renderAll();
+    }
   }
 
   async function loadRecommendations(planId) {

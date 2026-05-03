@@ -6,7 +6,6 @@ import biz.thonbecker.personal.landscape.api.HardinessZone;
 import biz.thonbecker.personal.landscape.api.LightRequirement;
 import biz.thonbecker.personal.landscape.api.SeasonalAnalysis;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
-import java.util.Base64;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -53,12 +52,11 @@ public class LandscapeAiService {
         try {
             log.info("Analyzing landscape image for zone {} with OpenAI", zone);
 
-            final var base64Image = Base64.getEncoder().encodeToString(imageData);
             final var description = nonNull(userDescription) ? userDescription : "No description provided";
 
             final var imageMedia = Media.builder()
-                    .mimeType(MimeTypeUtils.IMAGE_JPEG)
-                    .data(base64Image)
+                    .mimeType(detectImageMimeType(imageData))
+                    .data(imageData)
                     .build();
 
             final var recommendations = chatClient
@@ -157,12 +155,11 @@ public class LandscapeAiService {
 
         log.info("Generating seasonal analysis for zone {} with {} plants", zone, plantDescriptions.size());
 
-        final var base64Image = Base64.getEncoder().encodeToString(imageData);
         final var plantList = String.join("\n- ", plantDescriptions);
 
         final var imageMedia = Media.builder()
-                .mimeType(MimeTypeUtils.IMAGE_JPEG)
-                .data(base64Image)
+                .mimeType(detectImageMimeType(imageData))
+                .data(imageData)
                 .build();
 
         return chatClient
@@ -194,6 +191,21 @@ public class LandscapeAiService {
                         .media(imageMedia))
                 .call()
                 .entity(SeasonalAnalysis.class);
+    }
+
+    private static org.springframework.util.MimeType detectImageMimeType(final byte[] imageData) {
+        if (imageData.length >= 8
+                && imageData[0] == (byte) 0x89
+                && imageData[1] == 0x50
+                && imageData[2] == 0x4E
+                && imageData[3] == 0x47
+                && imageData[4] == 0x0D
+                && imageData[5] == 0x0A
+                && imageData[6] == 0x1A
+                && imageData[7] == 0x0A) {
+            return MimeTypeUtils.IMAGE_PNG;
+        }
+        return MimeTypeUtils.IMAGE_JPEG;
     }
 
     /**

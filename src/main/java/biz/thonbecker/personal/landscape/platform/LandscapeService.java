@@ -189,8 +189,15 @@ public class LandscapeService {
                 })
                 .toList();
 
-        final var plantNames = plan.getPlacements().stream()
-                .map(p -> Objects.nonNull(p.getCommonName()) ? p.getCommonName() : p.getPlantName())
+        final var plantPlacementPrompts = plan.getPlacements().stream()
+                .map(p -> {
+                    final var name = Objects.nonNull(p.getCommonName()) ? p.getCommonName() : p.getPlantName();
+                    return new LandscapeImageGenerationService.PlantPlacementPrompt(
+                            p.getUsdaSymbol(),
+                            name,
+                            p.getXCoord().doubleValue(),
+                            p.getYCoord().doubleValue());
+                })
                 .toList();
 
         // Fetch the original image from S3
@@ -206,13 +213,15 @@ public class LandscapeService {
             final var textAnalysis = aiService.analyzeSeasons(
                     imageData, HardinessZone.valueOf(plan.getHardinessZone()), plantDescriptions);
 
-            // Generate seasonal images with OpenAI
-            final var springImage = imageGenerationService.generateSeasonalImage(imageData, "spring", plantNames);
-            final var summerImage = imageGenerationService.generateSeasonalImage(imageData, "summer", plantNames);
-            final var fallImage = imageGenerationService.generateSeasonalImage(imageData, "fall", plantNames);
-            final var winterImage = imageGenerationService.generateSeasonalImage(imageData, "winter", plantNames);
+            final var springImage =
+                    imageGenerationService.generateSeasonalImage(imageData, "spring", plantPlacementPrompts);
+            final var summerImage =
+                    imageGenerationService.generateSeasonalImage(imageData, "summer", plantPlacementPrompts);
+            final var fallImage =
+                    imageGenerationService.generateSeasonalImage(imageData, "fall", plantPlacementPrompts);
+            final var winterImage =
+                    imageGenerationService.generateSeasonalImage(imageData, "winter", plantPlacementPrompts);
 
-            // Merge text descriptions with generated images
             return new SeasonalAnalysis(
                     mergeWithImage(textAnalysis.spring(), springImage),
                     mergeWithImage(textAnalysis.summer(), summerImage),
@@ -231,7 +240,7 @@ public class LandscapeService {
 
     private SeasonalAnalysis.SeasonalDescription mergeWithImage(
             final SeasonalAnalysis.SeasonalDescription description, final String imageBase64) {
-        if (description == null) {
+        if (Objects.isNull(description)) {
             return null;
         }
         return new SeasonalAnalysis.SeasonalDescription(description.description(), description.careTips(), imageBase64);
