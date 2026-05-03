@@ -116,7 +116,7 @@ PERSONAL_OPENAI_EMBEDDING_DIMENSIONS=1024
 PERSONAL_OPENAI_IMAGE_MODEL=dall-e-3
 ```
 
-For production, store the OpenAI key in Secrets Manager as `personalweb/openai-api-key` from the HomeWeb CDK stack, then copy it into the private server-side env file used by compose. The Spring app still reads `PERSONAL_OPENAI_API_KEY`; Secrets Manager is the source of truth for the secret value.
+For production, store the OpenAI key in Secrets Manager as `personalweb/openai-api-key` from the HomeWeb CDK stack. The `nextcloud-aws` deployment runs `scripts/sync-personalweb-openai-secret.sh` before restarting containers, which writes `PERSONAL_OPENAI_API_KEY` and the default model variables into the private server-side `.env` consumed by compose. The Spring app still reads `PERSONAL_OPENAI_API_KEY`; Secrets Manager is the source of truth for the secret value.
 
 The current production compose file in `nextcloud-aws` does not use an image variable for the personal site. It currently references:
 
