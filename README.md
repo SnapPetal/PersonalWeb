@@ -33,7 +33,7 @@ A modular monolith personal portfolio and interactive applications platform buil
 ### Prerequisites
 
 - Java 25+
-- Maven 3.6+
+- Maven 3.9.16+
 - Docker (Spring Boot auto-starts PostgreSQL via Docker Compose)
 - OpenAI API key and AWS credentials (Polly, S3, S3 Vectors, Cognito)
 
