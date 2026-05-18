@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'corretto'
+          java-version: '25'
+          cache: 'maven'
+
+      - name: Run verification build
+        run: mvn -B verify
