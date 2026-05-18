@@ -5,8 +5,40 @@ The published image is:
 
 - `public.ecr.aws/p0w8z2j2/personal:latest`
 
-The GitHub Actions workflow in `.github/workflows/aws-deploy.yml` currently handles image build and push.
-It does **not** SSH into the Lightsail Linux instance. The instance rollout is handled separately with the helper script below.
+The GitHub Actions workflow in `.github/workflows/aws-deploy.yml` handles image build and push.
+It authenticates to AWS with GitHub OIDC and does **not** SSH into the Lightsail Linux instance. The instance rollout is handled separately with the helper script below.
+
+## GitHub Actions OIDC
+
+The deploy workflow expects a GitHub secret named `AWS_ROLE_TO_ASSUME` that contains the IAM role ARN to assume through OIDC.
+
+AWS trust policy for the role should restrict access to this repository and branch:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::664759038511:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:SnapPetal/PersonalWeb:ref:refs/heads/main"
+        }
+      }
+    }
+  ]
+}
+```
+
+The role also needs permissions to authenticate to ECR Public and push the image used by the deploy workflow.
+At minimum, AWS requires `ecr-public:GetAuthorizationToken` and `sts:GetServiceBearerToken` for the login step, plus push permissions on the public repository.
 
 ## Lightsail Linux Instance
 
