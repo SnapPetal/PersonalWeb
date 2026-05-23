@@ -71,10 +71,10 @@ spring:
           n: 1
           response-format: b64_json
           size: 1024x1024
-    model:
-      chat: openai
-      embedding: openai
-      image: openai
+  model:
+    chat: openai
+    embedding: openai
+    image: openai
 
   # Task Execution (for WebSocket async operations)
   task:
@@ -99,6 +99,11 @@ spring:
         provider:
           cognito:
             issuer-uri: https://cognito-idp.${PERSONAL_AWS_REGION:us-east-1}.amazonaws.com/${PERSONAL_COGNITO_USER_POOL_ID}
+
+posthog:
+  enabled: ${PERSONAL_POSTHOG_ENABLED:false}
+  api-key: ${PERSONAL_POSTHOG_API_KEY:}
+  api-host: ${PERSONAL_POSTHOG_API_HOST:https://us.i.posthog.com}
 
 # Bible Verse API Configuration
 bible:

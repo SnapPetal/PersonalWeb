@@ -35,3 +35,6 @@ calendar:
 skatetricks:
   vectorstore:
     enabled: false
+
+posthog:
+  enabled: false
