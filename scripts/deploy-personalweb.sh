@@ -3,6 +3,7 @@ set -euo pipefail
 
 DEPLOY_HOST="${DEPLOY_HOST:-}"
 DEPLOY_USER="${DEPLOY_USER:-}"
+SSH_KEY_PATH="${SSH_KEY_PATH:-}"
 IMAGE_REF="${IMAGE_REF:-public.ecr.aws/p0w8z2j2/personal:latest}"
 REMOTE_APP_DIR="${REMOTE_APP_DIR:-~/nextcloud-aws}"
 REMOTE_COMPOSE_FILE="${REMOTE_COMPOSE_FILE:-docker-compose.yml}"
@@ -19,6 +20,12 @@ if [[ -n "${DEPLOY_USER}" ]]; then
   SSH_TARGET="${DEPLOY_USER}@${DEPLOY_HOST}"
 fi
 
+SSH_COMMAND=(ssh -o BatchMode=yes)
+if [[ -n "${SSH_KEY_PATH}" ]]; then
+  SSH_COMMAND+=(-i "${SSH_KEY_PATH}")
+fi
+SSH_COMMAND+=("${SSH_TARGET}")
+
 if [[ -n "${REMOTE_DEPLOY_COMMAND}" ]]; then
   REMOTE_COMMAND="${REMOTE_DEPLOY_COMMAND}"
 else
@@ -33,4 +40,4 @@ EOF
 fi
 
 echo "Deploying ${IMAGE_REF} to ${SSH_TARGET}"
-ssh "${SSH_TARGET}" "${REMOTE_COMMAND}"
+"${SSH_COMMAND[@]}" "${REMOTE_COMMAND}"

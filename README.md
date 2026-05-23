@@ -100,7 +100,7 @@ mvn clean package           # Build production jar
 
 Pushes to `main` trigger GitHub Actions, which builds a Docker image via Spring Boot Buildpacks (Paketo, Java 25) and publishes it for deployment.
 
-For Lightsail Linux instance rollouts over SSH, use [`docs/deploy.md`](docs/deploy.md) and [`scripts/deploy-personalweb.sh`](scripts/deploy-personalweb.sh).
+For Lightsail Linux instance rollouts over SSH, use [`docs/deploy.md`](docs/deploy.md) and [`scripts/deploy-lightsail-personalweb.sh`](scripts/deploy-lightsail-personalweb.sh).
 
 ## License
 

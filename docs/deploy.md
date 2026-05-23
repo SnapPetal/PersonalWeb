@@ -42,7 +42,9 @@ At minimum, AWS requires `ecr-public:GetAuthorizationToken` and `sts:GetServiceB
 
 ## Lightsail Linux Instance
 
-Use [`scripts/deploy-personalweb.sh`](../scripts/deploy-personalweb.sh) to deploy the latest published image to the Lightsail host over SSH.
+Use [`scripts/deploy-lightsail-personalweb.sh`](../scripts/deploy-lightsail-personalweb.sh) to deploy the latest published image to the Lightsail host over SSH.
+
+Use [`scripts/deploy-personalweb.sh`](../scripts/deploy-personalweb.sh) for custom hosts, alternate compose paths, or other SSH targets.
 
 Known production target from `nextcloud-aws`:
 
@@ -93,18 +95,17 @@ This matches the current `nextcloud-aws` production setup, where the `personal-w
 
 ## Examples
 
-Deploy the latest image with the default compose flow:
+Deploy the latest image to the current Lightsail host:
 
 ```bash
-DEPLOY_HOST=personal-lightsail ./scripts/deploy-personalweb.sh
+./scripts/deploy-lightsail-personalweb.sh
 ```
 
 Deploy a specific image tag:
 
 ```bash
-DEPLOY_HOST=personal-lightsail \
 IMAGE_REF=public.ecr.aws/p0w8z2j2/personal:d052ba2 \
-./scripts/deploy-personalweb.sh
+./scripts/deploy-lightsail-personalweb.sh
 ```
 
 Deploy to the current production IP directly:
@@ -112,7 +113,7 @@ Deploy to the current production IP directly:
 ```bash
 DEPLOY_HOST=18.213.161.133 \
 DEPLOY_USER=ubuntu \
-./scripts/deploy-personalweb.sh
+./scripts/deploy-lightsail-personalweb.sh
 ```
 
 Use an explicit remote command instead of compose:
