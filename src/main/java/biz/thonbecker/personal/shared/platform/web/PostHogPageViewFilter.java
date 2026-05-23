@@ -1,15 +1,19 @@
 package biz.thonbecker.personal.shared.platform.web;
 
+import static java.util.Objects.nonNull;
+
 import biz.thonbecker.personal.shared.platform.configuration.PostHogProperties;
 import biz.thonbecker.personal.shared.platform.service.PostHogAnalyticsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.LinkedHashMap;
 import java.util.Objects;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -22,6 +26,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 class PostHogPageViewFilter extends OncePerRequestFilter {
 
+    private static final String DISTINCT_ID_COOKIE_NAME = "posthog_distinct_id";
+
     private final PostHogAnalyticsService postHogAnalyticsService;
     private final PostHogProperties postHogProperties;
 
@@ -29,13 +35,14 @@ class PostHogPageViewFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain)
             throws ServletException, IOException {
+        final var distinctId = resolveDistinctId(request, response);
         filterChain.doFilter(request, response);
 
         if (!shouldCapture(request, response)) {
             return;
         }
 
-        postHogAnalyticsService.capture(resolveDistinctId(request), "$pageview", pageViewProperties(request, response));
+        postHogAnalyticsService.capture(distinctId, "$pageview", pageViewProperties(request, response));
     }
 
     private boolean shouldCapture(final HttpServletRequest request, final HttpServletResponse response) {
@@ -65,21 +72,47 @@ class PostHogPageViewFilter extends OncePerRequestFilter {
             return false;
         }
 
-        if (Objects.nonNull(request.getHeader("HX-Request"))) {
+        if (nonNull(request.getHeader("HX-Request"))) {
             return false;
         }
 
         final var contentType = response.getContentType();
-        return Objects.nonNull(contentType) && contentType.startsWith(MediaType.TEXT_HTML_VALUE);
+        return nonNull(contentType) && contentType.startsWith(MediaType.TEXT_HTML_VALUE);
     }
 
-    private String resolveDistinctId(final HttpServletRequest request) {
+    private String resolveDistinctId(final HttpServletRequest request, final HttpServletResponse response) {
         final Principal principal = request.getUserPrincipal();
-        if (Objects.nonNull(principal)) {
+        if (nonNull(principal)) {
             return principal.getName();
         }
 
-        return request.getSession(true).getId();
+        final var cookie = findCookie(request, DISTINCT_ID_COOKIE_NAME);
+        if (nonNull(cookie) && nonNull(cookie.getValue()) && !cookie.getValue().isBlank()) {
+            return cookie.getValue();
+        }
+
+        final var anonymousId = UUID.randomUUID().toString();
+        final var distinctIdCookie = new Cookie(DISTINCT_ID_COOKIE_NAME, anonymousId);
+        distinctIdCookie.setHttpOnly(true);
+        distinctIdCookie.setPath("/");
+        distinctIdCookie.setMaxAge(60 * 60 * 24 * 365);
+        response.addCookie(distinctIdCookie);
+        return anonymousId;
+    }
+
+    private Cookie findCookie(final HttpServletRequest request, final String cookieName) {
+        final var cookies = request.getCookies();
+        if (Objects.isNull(cookies)) {
+            return null;
+        }
+
+        for (final var cookie : cookies) {
+            if (nonNull(cookie) && cookieName.equals(cookie.getName())) {
+                return cookie;
+            }
+        }
+
+        return null;
     }
 
     private LinkedHashMap<String, Object> pageViewProperties(
