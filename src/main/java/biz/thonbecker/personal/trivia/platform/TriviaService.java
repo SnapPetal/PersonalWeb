@@ -1,7 +1,11 @@
 package biz.thonbecker.personal.trivia.platform;
 
-import biz.thonbecker.personal.trivia.api.*;
+import biz.thonbecker.personal.trivia.api.PlayerJoinedQuizEvent;
+import biz.thonbecker.personal.trivia.api.QuizCompletedEvent;
+import biz.thonbecker.personal.trivia.api.QuizPlayerState;
+import biz.thonbecker.personal.trivia.api.QuizQuestionState;
 import biz.thonbecker.personal.trivia.api.QuizResult;
+import biz.thonbecker.personal.trivia.api.QuizStartedEvent;
 import biz.thonbecker.personal.trivia.api.QuizState;
 import biz.thonbecker.personal.trivia.domain.*;
 import java.time.Instant;
@@ -23,7 +27,6 @@ public class TriviaService {
 
     private static final int POINTS_PER_CORRECT_ANSWER = 100;
     private static final int DEFAULT_TIME_PER_QUESTION_SECONDS = 60;
-    private static final int ANSWER_HIDDEN = -1;
 
     private final Map<Long, Quiz> quizzes = new ConcurrentHashMap<>();
     private final AtomicLong quizIdGenerator = new AtomicLong(System.currentTimeMillis());
@@ -140,7 +143,7 @@ public class TriviaService {
         eventPublisher.publishEvent(new QuizStartedEvent(
                 quizId,
                 quiz.getTitle(),
-                quiz.getDifficulty(),
+                quiz.getDifficulty().name(),
                 quiz.getQuestions().size(),
                 quiz.getPlayers().stream().map(Player::getId).toList(),
                 Instant.now()));
@@ -238,23 +241,25 @@ public class TriviaService {
     }
 
     private QuizState buildQuizState(Quiz quiz) {
-        Question currentQuestion = quiz.getCurrentQuestion();
+        final var currentQuestion = quiz.getCurrentQuestion();
 
-        // Don't send the correct answer to clients
-        Question sanitizedQuestion = null;
+        final QuizQuestionState sanitizedQuestion;
         if (currentQuestion != null) {
-            sanitizedQuestion = new Question(
-                    currentQuestion.getId(),
-                    currentQuestion.getQuestionText(),
-                    currentQuestion.getOptions(),
-                    ANSWER_HIDDEN);
+            sanitizedQuestion = new QuizQuestionState(
+                    currentQuestion.getId(), currentQuestion.getQuestionText(), currentQuestion.getOptions());
+        } else {
+            sanitizedQuestion = null;
         }
+
+        final var players = quiz.getPlayers().stream()
+                .map(player -> new QuizPlayerState(player.getId(), player.getName(), player.getScore()))
+                .toList();
 
         return new QuizState(
                 quiz.getId(),
-                quiz.getStatus(),
+                quiz.getStatus().name(),
                 sanitizedQuestion,
-                quiz.getPlayers(),
+                players,
                 quiz.getCurrentQuestionIndex(),
                 quiz.getQuestions().size());
     }

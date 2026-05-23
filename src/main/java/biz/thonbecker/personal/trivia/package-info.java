@@ -7,8 +7,8 @@
  * Other modules should interact with this module ONLY through:
  * <ul>
  *   <li>{@link biz.thonbecker.personal.trivia.platform.TriviaService} - Main service implementation</li>
- *   <li>{@link solutions.thonbecker.personal.trivia.domain} - Domain model types (Quiz, Question, Player, etc.)</li>
- *   <li>{@link solutions.thonbecker.personal.trivia.api} - API types (QuizState, QuizResult, etc.)</li>
+ *   <li>{@link biz.thonbecker.personal.trivia.domain} - Internal domain model types used by the module</li>
+ *   <li>{@link biz.thonbecker.personal.trivia.api} - Public DTOs and events (QuizState, QuizResult, etc.)</li>
  * </ul>
  *
  * <h2>Internal Implementation</h2>

@@ -49,5 +49,5 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Shared Infrastructure",
-        allowedDependencies = {"booking :: api", "user :: api"})
+        allowedDependencies = {"booking :: api", "foosball :: api", "trivia :: api", "user :: api"})
 package biz.thonbecker.personal.shared;

@@ -198,8 +198,9 @@ function triviaGame() {
         "/app/quiz/join",
         {},
         JSON.stringify({
-          player: { id: this.playerId, name: this.playerName.trim() },
           quizId: quizId,
+          playerId: this.playerId,
+          playerName: this.playerName.trim(),
         })
       );
       this.log(`Joining quiz ${quizId} as ${this.playerName.trim()}`, "info");

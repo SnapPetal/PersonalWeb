@@ -114,7 +114,7 @@ public class FoosballService {
                 gameDomain.getBlackTeam().getPlayer1() + " & "
                         + gameDomain.getBlackTeam().getPlayer2(),
                 0, // Scores not tracked anymore
-                gameDomain.getResult(),
+                gameDomain.getResult().name(),
                 winnerTeamName,
                 Instant.now()));
 

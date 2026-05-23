@@ -1,6 +1,5 @@
 package biz.thonbecker.personal.foosball.api;
 
-import biz.thonbecker.personal.foosball.domain.GameResult;
 import java.time.Instant;
 
 /**
@@ -14,6 +13,6 @@ public record GameRecordedEvent(
         int team1Score,
         String team2Name,
         int team2Score,
-        GameResult result,
+        String result,
         String winnerTeamName,
         Instant recordedAt) {}
