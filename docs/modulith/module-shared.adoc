@@ -8,4 +8,5 @@
 * `b.t.p.u.api.UserLoginEvent` (async) 
 * `b.t.p.u.api.UserProfileUpdatedEvent` (async) 
 * `b.t.p.u.api.UserRegisteredEvent` (async) 
+* `org.springframework.boot.context.event.ApplicationReadyEvent` 
 |===

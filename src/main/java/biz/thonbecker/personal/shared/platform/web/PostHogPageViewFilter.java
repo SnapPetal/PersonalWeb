@@ -27,9 +27,7 @@ class PostHogPageViewFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(
-            final HttpServletRequest request,
-            final HttpServletResponse response,
-            final FilterChain filterChain)
+            final HttpServletRequest request, final HttpServletResponse response, final FilterChain filterChain)
             throws ServletException, IOException {
         filterChain.doFilter(request, response);
 
@@ -37,10 +35,7 @@ class PostHogPageViewFilter extends OncePerRequestFilter {
             return;
         }
 
-        postHogAnalyticsService.capture(
-                resolveDistinctId(request),
-                "$pageview",
-                pageViewProperties(request, response));
+        postHogAnalyticsService.capture(resolveDistinctId(request), "$pageview", pageViewProperties(request, response));
     }
 
     private boolean shouldCapture(final HttpServletRequest request, final HttpServletResponse response) {
