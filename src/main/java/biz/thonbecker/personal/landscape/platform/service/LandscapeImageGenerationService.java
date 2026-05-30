@@ -126,10 +126,14 @@ public class LandscapeImageGenerationService {
         final var imageTool = new LinkedHashMap<String, Object>();
         imageTool.put("type", "image_generation");
 
+        final var toolChoice = new LinkedHashMap<String, Object>();
+        toolChoice.put("type", "image_generation");
+
         final var body = new LinkedHashMap<String, Object>();
         body.put("model", imageResponsesModelName);
         body.put("input", List.of(inputMessage));
         body.put("tools", List.of(imageTool));
+        body.put("tool_choice", toolChoice);
         return body;
     }
 

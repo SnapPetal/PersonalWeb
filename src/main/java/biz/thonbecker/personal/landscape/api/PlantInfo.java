@@ -17,6 +17,7 @@ import java.util.List;
  * @param matureHeight Expected height at maturity (inches), nullable
  * @param matureWidth Expected width at maturity (inches), nullable
  * @param imageUrl Thumbnail image URL from the plant data provider, nullable
+ * @param recommendationReason AI-generated reason this plant fits the plan, nullable
  */
 public record PlantInfo(
         String usdaSymbol,
@@ -30,4 +31,5 @@ public record PlantInfo(
         String nativeStatus,
         Integer matureHeight,
         Integer matureWidth,
-        String imageUrl) {}
+        String imageUrl,
+        String recommendationReason) {}

@@ -8,9 +8,9 @@ import biz.thonbecker.personal.landscape.api.SeasonalAnalysis;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.content.Media;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -61,9 +61,11 @@ public class LandscapeAiService {
 
             final var recommendations = chatClient
                     .prompt()
+                    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
                     .user(u -> u.text("""
                             You are an expert landscape designer and horticulturist. Analyze this landscape image
-                            and recommend 5-8 suitable plants based on the visible conditions.
+                            and recommend 5-8 suitable plants based on the visible conditions. Return the plants
+                            in the recommendations field.
 
                             Context:
                             - USDA Hardiness Zone: {zone}
@@ -90,7 +92,8 @@ public class LandscapeAiService {
                             .param("description", description)
                             .media(imageMedia))
                     .call()
-                    .entity(new ParameterizedTypeReference<List<PlantRecommendation>>() {});
+                    .entity(PlantRecommendationBatch.class)
+                    .recommendations();
 
             log.info("Successfully generated {} plant recommendations", recommendations.size());
             return recommendations;
@@ -162,8 +165,9 @@ public class LandscapeAiService {
                 .data(imageData)
                 .build();
 
-        return chatClient
+        final var analysis = chatClient
                 .prompt()
+                .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
                 .user(u -> u.text("""
                         You are an expert landscape designer. Look at this landscape image. The following plants \
                         have been placed in this yard:
@@ -177,20 +181,26 @@ public class LandscapeAiService {
                         in that season. Describe colors, textures, blooms, foliage changes, and overall feel. \
                         Be specific to the actual plants listed.
                         2. A list of 2-3 care tips specific to that season for these plants.
-
-                        Return your response as JSON with this structure:
-                        {{
-                          "spring": {{ "description": "...", "careTips": ["tip1", "tip2"] }},
-                          "summer": {{ "description": "...", "careTips": ["tip1", "tip2"] }},
-                          "fall": {{ "description": "...", "careTips": ["tip1", "tip2"] }},
-                          "winter": {{ "description": "...", "careTips": ["tip1", "tip2"] }}
-                        }}
                         """)
                         .param("plantList", plantList)
                         .param("zone", zone.name())
                         .media(imageMedia))
                 .call()
-                .entity(SeasonalAnalysis.class);
+                .entity(SeasonalTextAnalysis.class);
+
+        return new SeasonalAnalysis(
+                toSeasonalDescription(analysis.spring()),
+                toSeasonalDescription(analysis.summer()),
+                toSeasonalDescription(analysis.fall()),
+                toSeasonalDescription(analysis.winter()));
+    }
+
+    private static SeasonalAnalysis.SeasonalDescription toSeasonalDescription(
+            final SeasonalDescriptionText description) {
+        if (description == null) {
+            return null;
+        }
+        return new SeasonalAnalysis.SeasonalDescription(description.description(), description.careTips(), null);
     }
 
     private static org.springframework.util.MimeType detectImageMimeType(final byte[] imageData) {
@@ -227,4 +237,14 @@ public class LandscapeAiService {
             int confidenceScore,
             LightRequirement lightRequirement,
             WaterRequirement waterRequirement) {}
+
+    private record PlantRecommendationBatch(List<PlantRecommendation> recommendations) {}
+
+    private record SeasonalTextAnalysis(
+            SeasonalDescriptionText spring,
+            SeasonalDescriptionText summer,
+            SeasonalDescriptionText fall,
+            SeasonalDescriptionText winter) {}
+
+    private record SeasonalDescriptionText(String description, List<String> careTips) {}
 }

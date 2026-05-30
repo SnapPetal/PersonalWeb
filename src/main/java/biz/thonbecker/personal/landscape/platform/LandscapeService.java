@@ -49,7 +49,7 @@ public class LandscapeService {
         log.info("Creating landscape plan for user {} with zone {}", userId, zone);
 
         // Step 1: Upload image to S3
-        final var uploadResult = imageStorageService.store(imageData, "image/jpeg", userId);
+        final var uploadResult = imageStorageService.store(imageData, detectImageContentType(imageData), userId);
 
         // Step 2: Save plan entity
         final var planEntity = new LandscapePlanEntity();
@@ -62,6 +62,7 @@ public class LandscapeService {
         planEntity.setZipCode(zipCode);
 
         final var savedPlan = planRepository.save(planEntity);
+        addAiRecommendations(savedPlan, imageData, zone, description);
 
         log.info("Successfully created landscape plan {}", savedPlan.getId());
 
@@ -79,14 +80,31 @@ public class LandscapeService {
         return plantApiService.searchPlants(query, zone, lightRequirement, waterRequirement);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PlantInfo> getRecommendations(final Long planId) {
         log.debug("Fetching plant recommendations for plan {}", planId);
 
         final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
-        final var zone = HardinessZone.valueOf(plan.getHardinessZone());
+        if (!plan.getRecommendations().isEmpty()) {
+            return plan.getRecommendations().stream()
+                    .map(this::convertRecommendation)
+                    .toList();
+        }
 
-        return plantApiService.getPlantsByZone(zone);
+        try {
+            final var imageData = fetchPlanImage(plan);
+            addAiRecommendations(
+                    plan, imageData, HardinessZone.valueOf(plan.getHardinessZone()), plan.getDescription());
+            if (!plan.getRecommendations().isEmpty()) {
+                return plan.getRecommendations().stream()
+                        .map(this::convertRecommendation)
+                        .toList();
+            }
+        } catch (final Exception e) {
+            log.warn("Failed to generate AI recommendations for plan {}, falling back to zone plants", planId, e);
+        }
+
+        return plantApiService.getPlantsByZone(HardinessZone.valueOf(plan.getHardinessZone()));
     }
 
     @Transactional
@@ -200,14 +218,8 @@ public class LandscapeService {
                 })
                 .toList();
 
-        // Fetch the original image from S3
-        final var getRequest = GetObjectRequest.builder()
-                .bucket(imageStorageService.getBucketName())
-                .key(plan.getImageS3Key())
-                .build();
-
-        try (final ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(getRequest)) {
-            final var imageData = s3Object.readAllBytes();
+        try {
+            final var imageData = fetchPlanImage(plan);
 
             // Get text descriptions from OpenAI
             final var textAnalysis = aiService.analyzeSeasons(
@@ -234,6 +246,77 @@ public class LandscapeService {
         }
     }
 
+    private void addAiRecommendations(
+            final LandscapePlanEntity plan,
+            final byte[] imageData,
+            final HardinessZone zone,
+            final String description) {
+        final var recommendations = aiService.analyzeImageAndRecommendPlants(imageData, zone, description);
+        plan.getRecommendations().clear();
+        recommendations.stream()
+                .map(recommendation -> toRecommendedPlantEntity(plan, recommendation))
+                .forEach(plan.getRecommendations()::add);
+        log.info("Stored {} AI plant recommendations for plan {}", recommendations.size(), plan.getId());
+    }
+
+    private static RecommendedPlantEntity toRecommendedPlantEntity(
+            final LandscapePlanEntity plan, final LandscapeAiService.PlantRecommendation recommendation) {
+        final var entity = new RecommendedPlantEntity();
+        entity.setPlan(plan);
+        entity.setUsdaSymbol(firstNonBlank(recommendation.usdaSymbol(), recommendation.scientificName(), "UNKNOWN"));
+        entity.setPlantName(
+                firstNonBlank(recommendation.scientificName(), recommendation.commonName(), "Unknown plant"));
+        entity.setCommonName(
+                firstNonBlank(recommendation.commonName(), recommendation.scientificName(), "Unknown plant"));
+        entity.setRecommendationReason(firstNonBlank(
+                recommendation.recommendationReason(), "Recommended based on the visible landscape conditions."));
+        entity.setConfidenceScore(Math.max(0, Math.min(100, recommendation.confidenceScore())));
+        entity.setLightRequirement(
+                Objects.nonNull(recommendation.lightRequirement())
+                        ? recommendation.lightRequirement().name()
+                        : null);
+        entity.setWaterRequirement(
+                Objects.nonNull(recommendation.waterRequirement())
+                        ? recommendation.waterRequirement().name()
+                        : null);
+        return entity;
+    }
+
+    private static String firstNonBlank(final String... values) {
+        for (final var value : values) {
+            if (Objects.nonNull(value) && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    private byte[] fetchPlanImage(final LandscapePlanEntity plan) throws java.io.IOException {
+        final var getRequest = GetObjectRequest.builder()
+                .bucket(imageStorageService.getBucketName())
+                .key(plan.getImageS3Key())
+                .build();
+
+        try (final ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(getRequest)) {
+            return s3Object.readAllBytes();
+        }
+    }
+
+    private static String detectImageContentType(final byte[] imageData) {
+        if (imageData.length >= 8
+                && imageData[0] == (byte) 0x89
+                && imageData[1] == 0x50
+                && imageData[2] == 0x4E
+                && imageData[3] == 0x47
+                && imageData[4] == 0x0D
+                && imageData[5] == 0x0A
+                && imageData[6] == 0x1A
+                && imageData[7] == 0x0A) {
+            return "image/png";
+        }
+        return "image/jpeg";
+    }
+
     public String getPlantImageUrl(final String usdaSymbol) {
         return plantImageService.getPlantImageUrl(usdaSymbol);
     }
@@ -246,7 +329,10 @@ public class LandscapeService {
         return new SeasonalAnalysis.SeasonalDescription(description.description(), description.careTips(), imageBase64);
     }
 
-    private static PlantInfo convertRecommendation(final RecommendedPlantEntity rec) {
+    private PlantInfo convertRecommendation(final RecommendedPlantEntity rec) {
+        final var imageUrl = plantImageService.getPlantImageUrl(
+                firstNonBlank(rec.getCommonName(), rec.getPlantName(), rec.getUsdaSymbol()));
+
         return new PlantInfo(
                 rec.getUsdaSymbol(),
                 rec.getPlantName(),
@@ -259,7 +345,8 @@ public class LandscapeService {
                 null,
                 null,
                 null,
-                null);
+                imageUrl,
+                rec.getRecommendationReason());
     }
 
     private LandscapePlan convertToDomain(final LandscapePlanEntity entity) {
@@ -277,7 +364,7 @@ public class LandscapeService {
                 .toList();
 
         final var recommendations = entity.getRecommendations().stream()
-                .map(LandscapeService::convertRecommendation)
+                .map(this::convertRecommendation)
                 .toList();
 
         return new LandscapePlan(

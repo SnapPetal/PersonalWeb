@@ -837,24 +837,62 @@
     btn.disabled = true;
     btn.innerHTML =
       '<span class="spinner-border spinner-border-sm"></span> Generating seasonal images...';
-    container.style.display = "none";
+    container.style.display = "block";
+    renderSeasonalPreview(buildLocalSeasonalPreview());
 
     try {
       const response = await fetch(`/landscape/plans/${planId}/seasons`);
       if (!response.ok) throw new Error("Failed to load seasonal analysis");
 
       const analysis = await response.json();
-      container.style.display = "block";
       renderSeasonalPreview(analysis);
     } catch (error) {
       console.error("Error loading seasonal preview:", error);
-      container.style.display = "block";
-      container.innerHTML =
-        '<div class="alert alert-danger">Failed to generate seasonal preview. Make sure you have plants placed on your plan.</div>';
+      container.insertAdjacentHTML(
+        "afterbegin",
+        '<div class="alert alert-warning">AI seasonal images are still unavailable. Showing the local plan preview.</div>'
+      );
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-calendar4-range"></i> Seasonal Preview';
     }
+  }
+
+  function buildLocalSeasonalPreview() {
+    return {
+      spring: {
+        description:
+          "Fresh spring growth, early color, and newly placed plants beginning to fill the plan.",
+        careTips: [
+          "Check soil moisture.",
+          "Refresh mulch around new plantings.",
+        ],
+      },
+      summer: {
+        description:
+          "Full summer foliage, stronger contrast, and the planted areas at their most dense.",
+        careTips: [
+          "Water deeply during heat.",
+          "Monitor new plants for stress.",
+        ],
+      },
+      fall: {
+        description:
+          "Warmer fall color, softer light, and seasonal texture across the planted areas.",
+        careTips: [
+          "Clear heavy leaf buildup.",
+          "Reduce watering as growth slows.",
+        ],
+      },
+      winter: {
+        description:
+          "A quieter winter view with plant structure, evergreens, and bed layout more visible.",
+        careTips: [
+          "Protect young roots from freeze cycles.",
+          "Avoid heavy pruning until late winter.",
+        ],
+      },
+    };
   }
 
   function renderSeasonalPreview(analysis) {
@@ -1110,36 +1148,54 @@
     });
   }
 
-  /**
-   * Shows a plant image on demand when the user clicks the "Show Image" button.
-   * The image URL is stored in the parent placeholder's data-image-url attribute.
-   */
   window.showPlantImage = function (button) {
     const container = button.closest(".plant-image-container");
-    const externalUrl = container.dataset.imageUrl;
-    if (!externalUrl) return;
+    if (!container || container.dataset.loading === "true") return;
 
+    const symbol = container.dataset.usdaSymbol;
+    const name =
+      container.dataset.commonName || container.dataset.scientificName;
+    if (!symbol && !name) return;
+
+    container.dataset.loading = "true";
     button.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
     button.disabled = true;
 
-    const proxyUrl =
-      "/landscape/plants/image/proxy?url=" + encodeURIComponent(externalUrl);
+    const params = new URLSearchParams({ symbol: symbol || name });
+    if (name) params.append("name", name);
 
+    fetch(`/landscape/plants/image?${params}`)
+      .then(function (response) {
+        if (!response.ok) throw new Error("Image unavailable");
+        return response.json();
+      })
+      .then(function (data) {
+        if (!data || !data.imageUrl) throw new Error("Image unavailable");
+        renderRecommendationImage(container, data.imageUrl, name || symbol);
+      })
+      .catch(function () {
+        button.innerHTML = '<i class="bi bi-image"></i> Unavailable';
+        button.disabled = true;
+      })
+      .finally(function () {
+        container.dataset.loading = "false";
+      });
+  };
+
+  function renderRecommendationImage(container, imageUrl, altText) {
     const img = new Image();
+    img.className = "plant-card-image";
+    img.alt = altText || "Plant image";
     img.onload = function () {
       container.innerHTML = "";
-      container.style.minHeight = "auto";
-      img.style.width = "100%";
-      img.style.display = "block";
-      img.style.borderRadius = "0.375rem 0.375rem 0 0";
       container.appendChild(img);
+      container.dataset.imageUrl = imageUrl;
     };
     img.onerror = function () {
-      button.innerHTML = '<i class="bi bi-image"></i> Unavailable';
-      button.disabled = true;
+      // Keep the fallback icon.
     };
-    img.src = proxyUrl;
-  };
+    img.src = imageUrl;
+  }
 
   function initializeLoadPlanLinks() {
     document.querySelectorAll(".load-plan-link").forEach(function (link) {

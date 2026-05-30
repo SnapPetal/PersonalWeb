@@ -7,12 +7,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,10 +46,12 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
 
             final var responses = chatClient
                     .prompt()
+                    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
                     .options(OpenAiChatOptions.builder().model(model).maxTokens(2048))
                     .user(u -> u.text("""
                             You are a financial literacy expert specializing in Dave Ramsey's Financial Peace principles.
                             Generate {count} multiple-choice trivia questions about Dave Ramsey's Financial Peace teachings.
+                            Return the questions in the questions field.
 
                             Difficulty level: {difficulty}
 
@@ -74,7 +76,8 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
                             - HARD: Detailed scenarios and edge cases
                             """).param("count", String.valueOf(count)).param("difficulty", difficulty.name()))
                     .call()
-                    .entity(new ParameterizedTypeReference<List<QuestionResponse>>() {});
+                    .entity(QuestionBatch.class)
+                    .questions();
 
             final var questions = responses.stream()
                     .map(q -> new Question(
@@ -94,6 +97,8 @@ class FinancialPeaceQuestionGenerator implements QuestionGenerator {
     }
 
     private record QuestionResponse(String questionText, List<String> options, int correctAnswerIndex) {}
+
+    private record QuestionBatch(List<QuestionResponse> questions) {}
 
     private List<Question> generateFallbackQuestions(int count) {
         log.info("Using fallback Financial Peace questions");

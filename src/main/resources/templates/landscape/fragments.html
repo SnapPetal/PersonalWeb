@@ -40,7 +40,7 @@
 
     <div th:if="${recommendations != null and !recommendations.isEmpty()}">
         <p class="text-muted mb-3">
-            <small>Plants suitable for your hardiness zone:</small>
+            <small>Plants recommended for your landscape:</small>
         </p>
         <div class="row row-cols-1 g-3">
             <div class="col" th:each="rec : ${recommendations}">
@@ -48,16 +48,20 @@
                      th:data-usda-symbol="${rec.usdaSymbol()}"
                      th:data-scientific-name="${rec.scientificName()}"
                      th:data-common-name="${rec.commonName()}">
-                    <div class="plant-image-container" th:data-image-url="${rec.imageUrl()}">
-                        <button th:if="${rec.imageUrl()}" class="btn btn-sm btn-outline-secondary show-image-btn"
+                    <div class="plant-image-container"
+                         th:data-image-url="${rec.imageUrl()}"
+                         th:data-usda-symbol="${rec.usdaSymbol()}"
+                         th:data-common-name="${rec.commonName()}"
+                         th:data-scientific-name="${rec.scientificName()}">
+                        <button class="btn btn-sm btn-outline-secondary show-image-btn"
                                 onclick="showPlantImage(this)" type="button">
                             <i class="bi bi-image"></i> Show Image
                         </button>
-                        <i th:unless="${rec.imageUrl()}" class="bi bi-flower3 plant-icon-fallback"></i>
                     </div>
                     <div class="card-body">
                         <h6 class="card-title" th:text="${rec.commonName()} ?: ${rec.scientificName()}"></h6>
                         <p class="card-text small text-muted mb-2" th:text="${rec.scientificName()}"></p>
+                        <p class="card-text small" th:if="${rec.recommendationReason()}" th:text="${rec.recommendationReason()}"></p>
                         <div class="d-flex gap-2 mb-2">
                             <span class="badge bg-warning text-dark"
                                   th:if="${rec.lightRequirement()}"

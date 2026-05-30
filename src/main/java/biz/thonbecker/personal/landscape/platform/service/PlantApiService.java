@@ -201,7 +201,8 @@ public class PlantApiService {
                 null,
                 null,
                 null,
-                extractImageUrl(data));
+                extractImageUrl(data),
+                null);
     }
 
     private String extractImageUrl(final PerenualPlant plant) {
@@ -257,7 +258,8 @@ public class PlantApiService {
                 null,
                 null,
                 null,
-                extractDetailImageUrl(detail));
+                extractDetailImageUrl(detail),
+                null);
     }
 
     /**
