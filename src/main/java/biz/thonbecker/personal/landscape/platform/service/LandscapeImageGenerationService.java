@@ -11,7 +11,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,11 +19,10 @@ import org.springframework.stereotype.Service;
  * Service for generating landscape images using OpenAI image editing.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class LandscapeImageGenerationService {
 
-    private static final URI RESPONSES_URI = URI.create("https://api.openai.com/v1/responses");
+    private static final URI DEFAULT_RESPONSES_URI = URI.create("https://api.openai.com/v1/responses");
 
     @Value("${landscape.image-generation.responses-model:${PERSONAL_OPENAI_IMAGE_RESPONSES_MODEL:gpt-4.1-mini}}")
     private String imageResponsesModelName;
@@ -32,10 +30,24 @@ public class LandscapeImageGenerationService {
     @Value("${spring.ai.openai.api-key:}")
     private String openAiApiKey;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final HttpClient httpClient =
-            HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build();
+    private final URI responsesUri;
+    private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
     private volatile boolean imageGenerationAccessDenied;
+
+    public LandscapeImageGenerationService() {
+        this(
+                DEFAULT_RESPONSES_URI,
+                new ObjectMapper(),
+                HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build());
+    }
+
+    LandscapeImageGenerationService(
+            final URI responsesUri, final ObjectMapper objectMapper, final HttpClient httpClient) {
+        this.responsesUri = responsesUri;
+        this.objectMapper = objectMapper;
+        this.httpClient = httpClient;
+    }
 
     /**
      * Generates a seasonal variation by editing the original landscape image.
@@ -65,7 +77,7 @@ public class LandscapeImageGenerationService {
                     buildImageGenerationRequestBody(landscapeImageData, buildSeasonalEditPrompt(season, placements)));
 
             final var request = HttpRequest.newBuilder()
-                    .uri(RESPONSES_URI)
+                    .uri(responsesUri)
                     .timeout(Duration.ofSeconds(120))
                     .header("Authorization", "Bearer " + openAiApiKey)
                     .header("Content-Type", "application/json")
