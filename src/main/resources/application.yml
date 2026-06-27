@@ -58,19 +58,16 @@ spring:
     openai:
       api-key: ${PERSONAL_OPENAI_API_KEY:${OPENAI_API_KEY:}}
       chat:
-        options:
-          model: ${PERSONAL_OPENAI_CHAT_MODEL:gpt-4o}
-          max-tokens: 4096
+        model: ${PERSONAL_OPENAI_CHAT_MODEL:gpt-4o}
+        max-tokens: 4096
       embedding:
-        options:
-          model: ${PERSONAL_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
-          dimensions: ${PERSONAL_OPENAI_EMBEDDING_DIMENSIONS:1024}
+        model: ${PERSONAL_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+        dimensions: ${PERSONAL_OPENAI_EMBEDDING_DIMENSIONS:1024}
       image:
-        options:
-          model: ${PERSONAL_OPENAI_IMAGE_MODEL:dall-e-3}
-          n: 1
-          response-format: b64_json
-          size: 1024x1024
+        model: ${PERSONAL_OPENAI_IMAGE_MODEL:dall-e-3}
+        n: 1
+        response_format: b64_json
+        size: 1024x1024
     model:
       chat: openai
       embedding: openai
