@@ -7,15 +7,14 @@ import biz.thonbecker.personal.calendar.platform.persistence.CalendarEventMappin
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Listens for booking events and manages corresponding Nextcloud calendar entries.
  *
- * <p>Uses {@link Async} so CalDAV calls to Nextcloud don't block the booking HTTP response.
+ * <p>Uses {@link ApplicationModuleListener} so Spring Modulith persists the event publication,
+ * invokes the listener after commit, and retries it if the integration work fails.
  */
 @Component
 @Slf4j
@@ -34,51 +33,36 @@ class CalendarEventListener {
         this.properties = properties;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
+    @ApplicationModuleListener
     void onBookingCreated(final BookingCreatedEvent event) {
         if (!properties.enabled() || Objects.isNull(calDavService)) {
             log.debug("Nextcloud integration disabled, skipping calendar event creation");
             return;
         }
 
-        try {
-            final var calendarUid = calDavService.createEvent(event);
+        final var calendarUid = calDavService.createEvent(event);
 
-            final var mapping = new CalendarEventMappingEntity();
-            mapping.setBookingId(event.bookingId());
-            mapping.setCalendarUid(calendarUid);
-            mapping.setCalendarHref(calendarUid + ".ics");
-            mappingRepository.save(mapping);
+        final var mapping =
+                mappingRepository.findByBookingId(event.bookingId()).orElseGet(CalendarEventMappingEntity::new);
+        mapping.setBookingId(event.bookingId());
+        mapping.setCalendarUid(calendarUid);
+        mapping.setCalendarHref(calendarUid + ".ics");
+        mappingRepository.save(mapping);
 
-            log.info("Created Nextcloud calendar event {} for booking {}", calendarUid, event.confirmationCode());
-        } catch (final Exception e) {
-            log.error(
-                    "Failed to create Nextcloud calendar event for booking {}: {}",
-                    event.confirmationCode(),
-                    e.getMessage(),
-                    e);
-        }
+        log.info("Created Nextcloud calendar event {} for booking {}", calendarUid, event.confirmationCode());
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
+    @ApplicationModuleListener
     void onBookingCancelled(final BookingCancelledEvent event) {
         if (!properties.enabled() || Objects.isNull(calDavService)) {
             return;
         }
 
         final var mapping = mappingRepository.findByBookingId(event.bookingId());
-        if (mapping.isEmpty()) {
-            log.debug("No calendar mapping found for booking {}, skipping CalDAV deletion", event.bookingId());
-            return;
-        }
+        final var calendarUid =
+                mapping.map(CalendarEventMappingEntity::getCalendarUid).orElse("booking-" + event.confirmationCode());
 
-        try {
-            calDavService.deleteEvent(mapping.get().getCalendarUid());
-        } catch (final Exception e) {
-            log.warn("Failed to delete Nextcloud calendar event for booking {}: {}", event.bookingId(), e.getMessage());
-        }
-        mappingRepository.delete(mapping.get());
+        calDavService.deleteEvent(calendarUid);
+        mapping.ifPresent(mappingRepository::delete);
     }
 }

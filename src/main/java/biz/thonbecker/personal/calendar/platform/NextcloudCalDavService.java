@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 
@@ -114,15 +115,23 @@ class NextcloudCalDavService {
         final var icsContent = icsGenerator.generate(event, properties.organizerEmail(), calendarUid);
         final var eventHref = calendarPath + calendarUid + ".ics";
 
-        webClient
-                .put()
-                .uri(eventHref)
-                .header("Content-Type", "text/calendar; charset=utf-8")
-                .header("If-None-Match", "*")
-                .bodyValue(icsContent.getBytes(java.nio.charset.StandardCharsets.UTF_8))
-                .retrieve()
-                .toBodilessEntity()
-                .block();
+        try {
+            webClient
+                    .put()
+                    .uri(eventHref)
+                    .header("Content-Type", "text/calendar; charset=utf-8")
+                    .header("If-None-Match", "*")
+                    .bodyValue(icsContent.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                    .retrieve()
+                    .toBodilessEntity()
+                    .block();
+        } catch (final WebClientResponseException e) {
+            if (e.getStatusCode().value() == 412) {
+                log.info("CalDAV event {} already exists, reusing deterministic UID", calendarUid);
+                return calendarUid;
+            }
+            throw e;
+        }
 
         log.info("Created CalDAV event {} for booking {}", calendarUid, event.confirmationCode());
         return calendarUid;
@@ -135,8 +144,12 @@ class NextcloudCalDavService {
         try {
             webClient.delete().uri(eventHref).retrieve().toBodilessEntity().block();
             log.info("Deleted CalDAV event {}", calendarUid);
-        } catch (final Exception e) {
-            log.warn("Failed to delete CalDAV event {} (may already be deleted): {}", calendarUid, e.getMessage());
+        } catch (final WebClientResponseException e) {
+            if (e.getStatusCode().value() == 404) {
+                log.info("CalDAV event {} already deleted", calendarUid);
+                return;
+            }
+            throw e;
         }
     }
 
