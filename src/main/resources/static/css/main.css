@@ -429,9 +429,23 @@ a:focus, button:focus {
 }
 
 .freedom-emblem-text {
-    color: #495057;
-    font-weight: 600;
+    color: #1f3f77;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    font-weight: 800;
+    gap: 0.5rem;
+    justify-content: center;
+    letter-spacing: 0;
     margin: 1.5rem 0 0;
+    text-transform: uppercase;
+}
+
+.freedom-emblem-text span {
+    background-color: rgba(13, 110, 253, 0.08);
+    border: 1px solid rgba(13, 110, 253, 0.18);
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
 }
 
 .freedom-timeline {
@@ -496,6 +510,44 @@ a:focus, button:focus {
     font-weight: 600;
 }
 
+.scripture-section {
+    background-color: #f6f8fb;
+}
+
+.scripture-quote {
+    border-bottom: 1px solid rgba(178, 31, 45, 0.18);
+    border-top: 1px solid rgba(178, 31, 45, 0.18);
+    margin: 0;
+    padding: 2.5rem 0;
+    text-align: center;
+}
+
+.scripture-quote p {
+    color: #1f3f77;
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.scripture-quote footer {
+    color: #b21f2d;
+    font-weight: 700;
+}
+
+.freedom-prayer {
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.88)),
+        linear-gradient(135deg, #1f3f77, #b21f2d);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 2rem;
+}
+
+.freedom-prayer p:not(.text-primary) {
+    color: #495057;
+    font-size: 1.05rem;
+}
+
 .lifepoint-callout {
     align-items: center;
     background-color: #ffffff;
@@ -516,16 +568,35 @@ a:focus, button:focus {
 [data-bs-theme="dark"] .freedom-emblem,
 [data-bs-theme="dark"] .freedom-timeline-item,
 [data-bs-theme="dark"] .freedom-quote,
-[data-bs-theme="dark"] .lifepoint-callout {
+[data-bs-theme="dark"] .lifepoint-callout,
+[data-bs-theme="dark"] .freedom-prayer {
     background-color: var(--dark-section-bg);
     border-color: var(--dark-border);
+}
+
+[data-bs-theme="dark"] .scripture-section {
+    background-color: #252a2f;
 }
 
 [data-bs-theme="dark"] .freedom-emblem-text,
 [data-bs-theme="dark"] .freedom-timeline-item p,
 [data-bs-theme="dark"] .freedom-principle p,
-[data-bs-theme="dark"] .freedom-quote footer {
+[data-bs-theme="dark"] .freedom-quote footer,
+[data-bs-theme="dark"] .lifepoint-callout p,
+[data-bs-theme="dark"] .freedom-prayer p:not(.text-primary) {
     color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .freedom-quote p,
+[data-bs-theme="dark"] .lifepoint-callout h2,
+[data-bs-theme="dark"] .freedom-prayer h2,
+[data-bs-theme="dark"] .scripture-quote p {
+    color: var(--dark-body-color);
+}
+
+[data-bs-theme="dark"] .freedom-emblem-text span {
+    background-color: rgba(139, 185, 254, 0.1);
+    border-color: rgba(139, 185, 254, 0.22);
 }
 
 @media (max-width: 992px) {
