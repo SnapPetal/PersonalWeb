@@ -1,0 +1,25 @@
+/* -----------------------------
+   Booking Pages
+----------------------------- */
+.booking-page main {
+    min-height: calc(100vh - 72px);
+}
+
+.booking-page .card {
+    border-color: var(--app-border-color);
+}
+
+.booking-page .form-control,
+.booking-page .list-group-item,
+.booking-page .table {
+    color: var(--app-body-color);
+}
+
+.booking-page .alert-info {
+    border-color: var(--app-chip-border);
+}
+
+[data-bs-theme="dark"] .booking-page .alert-info {
+    background-color: var(--app-chip-bg);
+    color: var(--app-body-color);
+}

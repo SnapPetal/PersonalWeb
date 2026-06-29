@@ -1,0 +1,222 @@
+/* -----------------------------
+   Religious Freedom Page
+----------------------------- */
+.religious-freedom-hero {
+    background:
+        linear-gradient(90deg, rgba(248, 249, 250, 0.96), rgba(248, 249, 250, 0.82)),
+        repeating-linear-gradient(135deg, #b21f2d 0 16px, #ffffff 16px 32px, #1f3f77 32px 48px);
+    padding: 5rem 0;
+}
+
+.freedom-emblem {
+    align-items: center;
+    aspect-ratio: 1;
+    background-color: var(--app-surface-bg);
+    border: 1px solid var(--app-border-color);
+    border-radius: 8px;
+    box-shadow: 0 1rem 3rem var(--app-shadow-color);
+    color: var(--app-brand-blue);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 0 auto;
+    max-width: 360px;
+    padding: 2rem;
+    position: relative;
+    text-align: center;
+}
+
+.freedom-emblem-stars {
+    color: var(--app-accent-red);
+    display: flex;
+    font-size: 1.2rem;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.freedom-emblem-book {
+    font-size: 5rem;
+    line-height: 1;
+}
+
+.freedom-emblem-cross {
+    color: var(--app-accent-red);
+    font-size: 2.25rem;
+    margin-top: -0.9rem;
+}
+
+.freedom-emblem-text {
+    color: var(--app-brand-blue);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    font-weight: 800;
+    gap: 0.5rem;
+    justify-content: center;
+    letter-spacing: 0;
+    margin: 1.5rem 0 0;
+    text-transform: uppercase;
+}
+
+.freedom-emblem-text span {
+    background-color: var(--app-chip-bg);
+    border: 1px solid var(--app-chip-border);
+    border-radius: 999px;
+    padding: 0.35rem 0.7rem;
+}
+
+.freedom-timeline {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.freedom-timeline-item {
+    background-color: var(--app-surface-bg);
+    border: 1px solid var(--app-border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.freedom-timeline-year {
+    color: var(--app-link-color);
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.freedom-timeline-item h3,
+.freedom-principle h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.freedom-timeline-item p,
+.freedom-principle p {
+    color: var(--app-muted-color);
+    margin-bottom: 0;
+}
+
+.freedom-principle {
+    border-left: 4px solid var(--app-link-color);
+    padding: 1rem 1.25rem;
+}
+
+.freedom-principle i {
+    color: var(--app-accent-red);
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.freedom-quote {
+    background-color: var(--app-surface-bg);
+    border-left: 5px solid var(--app-accent-red);
+    border-radius: 8px;
+    margin: 0;
+    padding: 2rem;
+}
+
+.freedom-quote p {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+}
+
+.freedom-quote footer {
+    color: var(--app-muted-color);
+    font-weight: 600;
+}
+
+.scripture-section {
+    background-color: var(--app-section-bg);
+}
+
+.scripture-quote {
+    border-bottom: 1px solid var(--app-brand-red-soft);
+    border-top: 1px solid var(--app-brand-red-soft);
+    margin: 0;
+    padding: 2.5rem 0;
+    text-align: center;
+}
+
+.scripture-quote p {
+    color: var(--app-brand-blue);
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.scripture-quote footer {
+    color: var(--app-accent-red);
+    font-weight: 700;
+}
+
+.freedom-prayer {
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.88)),
+        linear-gradient(135deg, var(--app-brand-blue), var(--app-accent-red));
+    border: 1px solid var(--app-border-color);
+    border-radius: 8px;
+    padding: 2rem;
+}
+
+.freedom-prayer p:not(.text-primary) {
+    color: var(--app-muted-color);
+    font-size: 1.05rem;
+}
+
+.lifepoint-callout {
+    align-items: center;
+    background-color: var(--app-surface-bg);
+    border: 1px solid var(--app-border-color);
+    border-radius: 8px;
+    display: flex;
+    gap: 2rem;
+    justify-content: space-between;
+    padding: 2rem;
+}
+
+[data-bs-theme="dark"] .religious-freedom-hero {
+    background:
+        linear-gradient(90deg, rgba(33, 37, 41, 0.96), rgba(33, 37, 41, 0.86)),
+        repeating-linear-gradient(135deg, #6f1720 0 16px, #2b3035 16px 32px, #1f3f77 32px 48px);
+}
+
+[data-bs-theme="dark"] .freedom-prayer {
+    background: var(--app-surface-bg);
+}
+
+[data-bs-theme="dark"] .religious-freedom-page,
+[data-bs-theme="dark"] .religious-freedom-page p,
+[data-bs-theme="dark"] .religious-freedom-page .lead {
+    color: var(--app-body-color) !important;
+}
+
+[data-bs-theme="dark"] .religious-freedom-page .text-primary {
+    color: var(--app-link-color) !important;
+}
+
+@media (max-width: 992px) {
+    .freedom-timeline {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 576px) {
+    .religious-freedom-hero {
+        padding: 3.5rem 0;
+    }
+
+    .freedom-timeline {
+        grid-template-columns: 1fr;
+    }
+
+    .freedom-emblem {
+        max-width: 280px;
+    }
+
+    .lifepoint-callout {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

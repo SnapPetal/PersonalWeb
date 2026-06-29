@@ -1,0 +1,186 @@
+/* -----------------------------
+   Theme Tokens
+----------------------------- */
+:root {
+    --primary: #0d6efd;
+    --secondary: #6c757d;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --app-body-color: #212529;
+    --app-body-bg: #ffffff;
+    --app-surface-bg: #ffffff;
+    --app-section-bg: #f8f9fa;
+    --app-muted-color: #6c757d;
+    --app-border-color: #dee2e6;
+    --app-link-color: #0d6efd;
+    --app-link-hover-color: #0a58ca;
+    --app-brand-blue: #1f3f77;
+    --app-brand-red: #b21f2d;
+    --app-brand-red-soft: rgba(178, 31, 45, 0.18);
+    --app-accent-red: #b21f2d;
+    --app-chip-bg: rgba(13, 110, 253, 0.08);
+    --app-chip-border: rgba(13, 110, 253, 0.18);
+    --app-shadow-color: rgba(33, 37, 41, 0.12);
+    --base-font-size: 1rem;
+    --icon-font-size: 1.5rem;
+    --button-icon-size: 1.2rem;
+    --disabled-opacity: 0.6;
+}
+
+[data-bs-theme="dark"] {
+    --app-body-color: #e9ecef;
+    --app-body-bg: #212529;
+    --app-surface-bg: #2b3035;
+    --app-section-bg: #2b3035;
+    --app-muted-color: #adb5bd;
+    --app-border-color: #373b3e;
+    --app-link-color: #8bb9fe;
+    --app-link-hover-color: #0d6efd;
+    --app-brand-blue: #8bb9fe;
+    --app-brand-red: #ff8a95;
+    --app-brand-red-soft: rgba(255, 138, 149, 0.24);
+    --app-accent-red: #ff8a95;
+    --app-chip-bg: rgba(139, 185, 254, 0.1);
+    --app-chip-border: rgba(139, 185, 254, 0.22);
+    --app-shadow-color: rgba(0, 0, 0, 0.24);
+    background-color: var(--app-body-bg);
+    color: var(--app-body-color);
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    color: var(--app-body-color);
+    background-color: var(--app-body-bg);
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* -----------------------------
+   Bootstrap Theme Overrides
+----------------------------- */
+[data-bs-theme="dark"] .navbar {
+    background-color: var(--app-section-bg) !important;
+    border-color: var(--app-border-color);
+}
+
+[data-bs-theme="dark"] .navbar-light .navbar-brand,
+[data-bs-theme="dark"] .navbar-light .nav-link,
+[data-bs-theme="dark"] .nav-link {
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] .navbar-light .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .section-bg {
+    background-color: var(--app-surface-bg);
+    border-color: var(--app-border-color);
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--app-section-bg) !important;
+}
+
+[data-bs-theme="dark"] h1,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3,
+[data-bs-theme="dark"] h4,
+[data-bs-theme="dark"] h5,
+[data-bs-theme="dark"] h6 {
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] .text-muted {
+    color: var(--app-muted-color) !important;
+}
+
+[data-bs-theme="dark"] a:not(.btn),
+[data-bs-theme="dark"] .nav-link {
+    color: var(--app-link-color);
+}
+
+[data-bs-theme="dark"] a:hover:not(.btn),
+[data-bs-theme="dark"] .nav-link:hover {
+    color: var(--app-link-hover-color);
+}
+
+[data-bs-theme="dark"] .social-icon {
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] .social-icon:hover {
+    color: var(--primary);
+}
+
+[data-bs-theme="dark"] .btn-outline-dark {
+    color: var(--app-body-color);
+    border-color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] .btn-outline-dark:hover {
+    background-color: var(--app-body-color);
+    color: var(--app-body-bg);
+}
+
+[data-bs-theme="dark"] .form-control {
+    background-color: var(--app-surface-bg);
+    border-color: var(--app-border-color);
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+    background-color: var(--app-surface-bg);
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] #bible-verse {
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] .bible-verse-section .card {
+    background-color: var(--app-section-bg);
+}
+
+[data-bs-theme="dark"] .verse-text,
+[data-bs-theme="dark"] .verse-translation {
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] footer {
+    background-color: var(--app-section-bg);
+    color: var(--app-body-color);
+    border-top: 1px solid var(--app-border-color);
+}
+
+[data-bs-theme="dark"] table {
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-color: var(--app-body-color);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--app-border-color);
+}
+
+[data-bs-theme="dark"] .list-group-item {
+    background-color: var(--app-section-bg);
+    color: var(--app-body-color);
+    border-color: var(--app-border-color);
+}
+
+[data-bs-theme="dark"] label {
+    color: var(--app-body-color);
+}
+
+[data-bs-theme="dark"] #about,
+[data-bs-theme="dark"] #about p,
+[data-bs-theme="dark"] #about div,
+[data-bs-theme="dark"] .about-content p,
+[data-bs-theme="dark"] .about-content div {
+    color: var(--app-body-color) !important;
+}

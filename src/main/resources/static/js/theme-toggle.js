@@ -1,7 +1,13 @@
 // theme-toggle.js — Alpine.js component
+const savedDarkMode = localStorage.getItem("darkMode") === "enabled";
+
+if (savedDarkMode) {
+  document.documentElement.setAttribute("data-bs-theme", "dark");
+}
+
 document.addEventListener("alpine:init", () => {
   Alpine.data("themeToggle", () => ({
-    isDark: localStorage.getItem("darkMode") === "enabled",
+    isDark: savedDarkMode,
 
     init() {
       if (this.isDark) {
