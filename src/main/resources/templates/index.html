@@ -19,7 +19,7 @@
 
     <title>Thon Becker - Software Engineer | Web Development Expert</title>
 
-    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/svg+xml">
 
     <!-- Canonical URL -->
     <link href="https://www.thonbecker.biz" rel="canonical">
@@ -75,6 +75,9 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#projects">Projects</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/religious-freedom">Religious Freedom</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#contact">Contact</a>
@@ -163,7 +166,7 @@
                         <img alt="Profile Photo"
                              class="profile-image img-fluid rounded-circle shadow-sm"
                              loading="lazy"
-                             src="/images/profile.png">
+                             th:src="@{/images/profile.png}">
                     </div>
 
                 </div>
@@ -323,6 +326,27 @@
             <h2 class="text-center mb-4">💻 Featured Projects</h2>
             <p class="text-center text-muted mb-5">Open-source projects and technical work</p>
             <div class="row g-4 justify-content-center">
+                <!-- Religious Freedom feature -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Religious Freedom Reflection</h5>
+                            <p class="card-text">A personal America 250 page honoring religious freedom, conscience, and the First Amendment as the United States marks 250 years in 2026.</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="badge bg-primary">America 250</span>
+                                <span class="badge bg-secondary">Faith</span>
+                                <span class="badge bg-info">History</span>
+                                <span class="badge bg-success">Reflection</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                            <a class="btn btn-outline-primary" href="/religious-freedom">
+                                <i class="bi bi-book"></i> Read Reflection
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Bible Verse Project -->
                 <div class="col-md-6 col-lg-4">
                     <div class="card h-100">
