@@ -1,7 +1,16 @@
 package biz.thonbecker.personal.modulith;
 
 import biz.thonbecker.personal.PersonalApplication;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.springframework.modulith.core.ApplicationModule;
+import org.springframework.modulith.core.ApplicationModuleDependency;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.modulith.docs.Documenter;
 import org.springframework.modulith.docs.Documenter.DiagramOptions;
@@ -49,6 +58,25 @@ class ModuleStructureTest {
     }
 
     /**
+     * Generates a concrete class-level report for cross-module connections.
+     * Spring Modulith diagrams intentionally stay at module level, so this report complements
+     * the generated diagrams with the specific source and target classes behind each dependency.
+     */
+    @Test
+    void createsCrossModuleClassDependencyDocumentation() throws IOException {
+        final var output = new StringBuilder();
+
+        output.append("= Cross-Module Class Dependencies\n\n");
+        output.append("This report is generated from Spring Modulith and ArchUnit metadata. ");
+        output.append("It lists concrete classes that connect one application module to another.\n\n");
+
+        modules.forEach(module -> appendModuleDependencies(output, module));
+
+        Files.createDirectories(Path.of("docs"));
+        Files.writeString(Path.of("docs/modulith-class-dependencies.adoc"), output.toString());
+    }
+
+    /**
      * Prints module structure to console for quick inspection.
      */
     @Test
@@ -69,5 +97,81 @@ class ModuleStructureTest {
 
             System.out.println();
         });
+    }
+
+    private static void appendModuleDependencies(final StringBuilder output, final ApplicationModule module) {
+        final var dependencies = module.getDirectDependencies(modules).stream()
+                .collect(Collectors.groupingBy(
+                        ClassDependencyKey::from,
+                        Collectors.mapping(
+                                dependency -> dependency.getDependencyType().name(),
+                                Collectors.toCollection(TreeSet::new))))
+                .entrySet()
+                .stream()
+                .map(entry -> ClassDependencyRow.from(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(ClassDependencyRow::targetModule)
+                        .thenComparing(ClassDependencyRow::sourceType)
+                        .thenComparing(ClassDependencyRow::targetType)
+                        .thenComparing(ClassDependencyRow::dependencyTypes))
+                .toList();
+
+        output.append("== ").append(module.getDisplayName()).append("\n\n");
+
+        if (dependencies.isEmpty()) {
+            output.append("No direct cross-module class dependencies.\n\n");
+            return;
+        }
+
+        output.append("[%autowidth.stretch, cols=\"1,2,1,1,2,1\"]\n");
+        output.append("|===\n");
+        output.append(
+                "|Source class |Source package |Target module |Target class |Target package |Dependency types\n\n");
+
+        dependencies.forEach(dependency -> {
+            output.append("|`").append(dependency.sourceType()).append("`\n");
+            output.append("|`").append(dependency.sourcePackage()).append("`\n");
+            output.append("|").append(dependency.targetModule()).append("\n");
+            output.append("|`").append(dependency.targetType()).append("`\n");
+            output.append("|`").append(dependency.targetPackage()).append("`\n");
+            output.append("|`").append(dependency.dependencyTypes()).append("`\n\n");
+        });
+
+        output.append("|===\n\n");
+    }
+
+    private record ClassDependencyKey(
+            String sourceType, String sourcePackage, String targetModule, String targetType, String targetPackage) {
+
+        private static ClassDependencyKey from(final ApplicationModuleDependency dependency) {
+            final var source = dependency.getSourceType();
+            final var target = dependency.getTargetType();
+
+            return new ClassDependencyKey(
+                    source.getSimpleName(),
+                    source.getPackageName(),
+                    dependency.getTargetModule().getDisplayName(),
+                    target.getSimpleName(),
+                    target.getPackageName());
+        }
+    }
+
+    private record ClassDependencyRow(
+            String sourceType,
+            String sourcePackage,
+            String targetModule,
+            String targetType,
+            String targetPackage,
+            String dependencyTypes) {
+
+        private static ClassDependencyRow from(
+                final ClassDependencyKey dependency, final Collection<String> dependencyTypes) {
+            return new ClassDependencyRow(
+                    dependency.sourceType(),
+                    dependency.sourcePackage(),
+                    dependency.targetModule(),
+                    dependency.targetType(),
+                    dependency.targetPackage(),
+                    String.join(", ", dependencyTypes));
+        }
     }
 }

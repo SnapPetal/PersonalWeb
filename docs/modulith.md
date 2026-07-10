@@ -8,6 +8,7 @@ Generated artifacts include:
 - `docs/modulith/module-*.puml` - individual module dependency diagrams
 - `docs/modulith/module-*.adoc` - application module canvases
 - `docs/modulith/all-docs.adoc` - aggregate Asciidoc entry point
+- `docs/modulith-class-dependencies.adoc` - concrete cross-module class dependency table
 
 Regenerate the docs with the repository toolchain:
 
@@ -16,4 +17,4 @@ mise exec -- mvn test -Dtest=ModuleStructureTest
 ```
 
 The generator is defined in `src/test/java/biz/thonbecker/personal/modulith/ModuleStructureTest.java`.
-It writes directly to `docs/modulith`, so avoid hand-editing files in that folder.
+It writes Spring Modulith output directly to `docs/modulith`, so avoid hand-editing files in that folder.
