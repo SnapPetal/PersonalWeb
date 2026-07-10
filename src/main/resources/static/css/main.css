@@ -3,6 +3,138 @@
 @import url("./pages/religious-freedom.css");
 
 /* -----------------------------
+   Home & Booking Shared Theme
+----------------------------- */
+.site-page,
+.booking-page {
+    min-height: 100vh;
+    background: var(--app-body-bg);
+}
+
+.site-page .navbar,
+.booking-page .navbar {
+    border-bottom: 1px solid var(--app-border-color);
+}
+
+.site-hero,
+.booking-hero {
+    background:
+        linear-gradient(180deg, var(--app-section-bg) 0%, var(--app-body-bg) 100%);
+    border-bottom: 1px solid var(--app-border-color);
+}
+
+.site-section {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+}
+
+.site-section-muted {
+    background-color: var(--app-section-bg);
+    border-top: 1px solid var(--app-border-color);
+    border-bottom: 1px solid var(--app-border-color);
+}
+
+.section-kicker {
+    color: var(--app-muted-color);
+    font-size: 0.95rem;
+    margin-bottom: 2.5rem;
+}
+
+.app-card {
+    border: 1px solid var(--app-border-color);
+    border-radius: var(--app-radius);
+    background-color: var(--app-surface-bg);
+    box-shadow: var(--app-shadow-sm);
+}
+
+.app-card,
+.app-card .card-header,
+.app-card .card-footer {
+    color: var(--app-body-color);
+}
+
+.app-card .card-header {
+    background-color: transparent;
+    border-bottom-color: var(--app-border-color);
+}
+
+.app-card .card-footer {
+    background-color: transparent;
+    border-top-color: var(--app-border-color);
+}
+
+.feature-card {
+    height: 100%;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--app-chip-border);
+    box-shadow: var(--app-shadow-md);
+}
+
+.feature-icon,
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background-color: var(--app-chip-bg);
+    color: var(--app-brand-blue);
+    font-size: 1.35rem;
+}
+
+.status-icon {
+    width: 4.5rem;
+    height: 4.5rem;
+    font-size: 2.25rem;
+}
+
+.status-icon-success {
+    background-color: var(--app-success-soft);
+    color: var(--app-success);
+}
+
+.status-icon-danger {
+    background-color: var(--app-danger-soft);
+    color: var(--app-danger);
+}
+
+.booking-type-card .card-header,
+.booking-form-card .card-header,
+.booking-details-card .card-header {
+    border-bottom: 1px solid var(--app-border-color);
+}
+
+.booking-page .page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.booking-empty-state {
+    padding: 3rem 1rem;
+}
+
+@media (max-width: 576px) {
+    .site-section {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+
+    .booking-page .page-actions .btn {
+        width: 100%;
+    }
+}
+
+/* -----------------------------
    Profile & About Section Base Styles
 ----------------------------- */
 

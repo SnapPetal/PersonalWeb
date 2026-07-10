@@ -36,20 +36,20 @@
 </nav>
 
 <!-- Main Content -->
-<main class="py-5">
+<main>
     <div class="container" x-data="bookingForm()">
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <!-- Header -->
-                <div class="text-center mb-5">
+                <div class="booking-hero text-center py-5 mb-5">
                     <h1 class="display-5 fw-bold">Book a Meeting</h1>
-                    <p class="lead text-muted">Schedule a consultation to discuss your project or technical challenges</p>
+                    <p class="lead text-muted mb-0">Schedule a consultation to discuss your project or technical challenges</p>
                 </div>
 
                 <!-- Booking Types -->
                 <div class="row g-4 mb-5">
                     <div th:each="type : ${bookingTypes}" class="col-md-4">
-                        <div class="card h-100 border-primary">
+                        <div class="card app-card feature-card booking-type-card">
                             <div class="card-header text-white" th:style="'background-color: ' + ${type.color}">
                                 <h5 class="card-title mb-0" th:text="${type.name}">Meeting Type</h5>
                             </div>
@@ -70,7 +70,7 @@
 
                 <!-- Booking Form (Initially Hidden) -->
                 <div x-show="showBookingForm" x-cloak x-ref="bookingForm">
-                    <div class="card">
+                    <div class="card app-card booking-form-card">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">
                                 <i class="bi bi-calendar-check"></i>
