@@ -1,0 +1,58 @@
+# Cross-Module Event Flow
+
+Generated from Spring Modulith and ArchUnit event listener metadata.
+
+```mermaid
+flowchart LR
+  subgraph Booking_events["Booking Events"]
+    biz_thonbecker_personal_booking_api_BookingCancelledEvent["BookingCancelledEvent"]
+    biz_thonbecker_personal_booking_api_BookingCreatedEvent["BookingCreatedEvent"]
+  end
+  subgraph Foosball_events["Foosball Events"]
+    biz_thonbecker_personal_foosball_api_GameRecordedEvent["GameRecordedEvent"]
+    biz_thonbecker_personal_foosball_api_PlayerCreatedEvent["PlayerCreatedEvent"]
+  end
+  subgraph Trivia_Quiz_events["Trivia Quiz Events"]
+    biz_thonbecker_personal_trivia_api_PlayerJoinedQuizEvent["PlayerJoinedQuizEvent"]
+    biz_thonbecker_personal_trivia_api_QuizCompletedEvent["QuizCompletedEvent"]
+    biz_thonbecker_personal_trivia_api_QuizStartedEvent["QuizStartedEvent"]
+  end
+  subgraph User_Management_events["User Management Events"]
+    biz_thonbecker_personal_user_api_UserLoginEvent["UserLoginEvent"]
+    biz_thonbecker_personal_user_api_UserProfileUpdatedEvent["UserProfileUpdatedEvent"]
+    biz_thonbecker_personal_user_api_UserRegisteredEvent["UserRegisteredEvent"]
+  end
+  subgraph Calendar_Integration_listeners["Calendar Integration Listeners"]
+    biz_thonbecker_personal_calendar_platform_CalendarEventListener["CalendarEventListener"]
+  end
+  subgraph Notification_Services_listeners["Notification Services Listeners"]
+    biz_thonbecker_personal_notification_api_EventLoggingListener["EventLoggingListener"]
+    biz_thonbecker_personal_notification_api_NotificationEventListener["NotificationEventListener"]
+  end
+  subgraph Shared_Infrastructure_listeners["Shared Infrastructure Listeners"]
+    biz_thonbecker_personal_shared_platform_service_PostHogEventListener["PostHogEventListener"]
+  end
+  biz_thonbecker_personal_booking_api_BookingCancelledEvent --> biz_thonbecker_personal_calendar_platform_CalendarEventListener
+  biz_thonbecker_personal_booking_api_BookingCreatedEvent --> biz_thonbecker_personal_calendar_platform_CalendarEventListener
+  biz_thonbecker_personal_booking_api_BookingCancelledEvent --> biz_thonbecker_personal_notification_api_NotificationEventListener
+  biz_thonbecker_personal_booking_api_BookingCreatedEvent --> biz_thonbecker_personal_notification_api_NotificationEventListener
+  biz_thonbecker_personal_foosball_api_GameRecordedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_foosball_api_PlayerCreatedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_trivia_api_PlayerJoinedQuizEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_trivia_api_QuizCompletedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_trivia_api_QuizStartedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_user_api_UserLoginEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_user_api_UserProfileUpdatedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_user_api_UserRegisteredEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_booking_api_BookingCancelledEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_booking_api_BookingCreatedEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_foosball_api_GameRecordedEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_foosball_api_PlayerCreatedEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_trivia_api_PlayerJoinedQuizEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_trivia_api_QuizCompletedEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_trivia_api_QuizStartedEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_user_api_UserLoginEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_user_api_UserProfileUpdatedEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+  biz_thonbecker_personal_user_api_UserRegisteredEvent --> biz_thonbecker_personal_shared_platform_service_PostHogEventListener
+```
+

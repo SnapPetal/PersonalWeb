@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -77,6 +79,21 @@ class ModuleStructureTest {
     }
 
     /**
+     * Generates GitHub-renderable Mermaid graphs for concrete class connections.
+     * These are more useful for browsing than the default module-only PlantUML diagrams.
+     */
+    @Test
+    void createsCrossModuleClassDependencyGraphs() throws IOException {
+        final var dependencies = modules.stream()
+                .flatMap(module -> getModuleDependencies(module).stream())
+                .toList();
+
+        Files.createDirectories(Path.of("docs"));
+        Files.writeString(Path.of("docs/modulith-class-dependencies.md"), createClassDependencyMermaid(dependencies));
+        Files.writeString(Path.of("docs/modulith-event-flow.md"), createEventFlowMermaid(dependencies));
+    }
+
+    /**
      * Prints module structure to console for quick inspection.
      */
     @Test
@@ -100,20 +117,7 @@ class ModuleStructureTest {
     }
 
     private static void appendModuleDependencies(final StringBuilder output, final ApplicationModule module) {
-        final var dependencies = module.getDirectDependencies(modules).stream()
-                .collect(Collectors.groupingBy(
-                        ClassDependencyKey::from,
-                        Collectors.mapping(
-                                dependency -> dependency.getDependencyType().name(),
-                                Collectors.toCollection(TreeSet::new))))
-                .entrySet()
-                .stream()
-                .map(entry -> ClassDependencyRow.from(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparing(ClassDependencyRow::targetModule)
-                        .thenComparing(ClassDependencyRow::sourceType)
-                        .thenComparing(ClassDependencyRow::targetType)
-                        .thenComparing(ClassDependencyRow::dependencyTypes))
-                .toList();
+        final var dependencies = getModuleDependencies(module);
 
         output.append("== ").append(module.getDisplayName()).append("\n\n");
 
@@ -139,14 +143,168 @@ class ModuleStructureTest {
         output.append("|===\n\n");
     }
 
-    private record ClassDependencyKey(
-            String sourceType, String sourcePackage, String targetModule, String targetType, String targetPackage) {
+    private static List<ClassDependencyRow> getModuleDependencies(final ApplicationModule module) {
+        return module.getDirectDependencies(modules).stream()
+                .collect(Collectors.groupingBy(
+                        dependency -> ClassDependencyKey.from(module.getDisplayName(), dependency),
+                        Collectors.mapping(
+                                dependency -> dependency.getDependencyType().name(),
+                                Collectors.toCollection(TreeSet::new))))
+                .entrySet()
+                .stream()
+                .map(entry -> ClassDependencyRow.from(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(ClassDependencyRow::targetModule)
+                        .thenComparing(ClassDependencyRow::sourceModule)
+                        .thenComparing(ClassDependencyRow::sourceType)
+                        .thenComparing(ClassDependencyRow::targetType)
+                        .thenComparing(ClassDependencyRow::dependencyTypes))
+                .toList();
+    }
 
-        private static ClassDependencyKey from(final ApplicationModuleDependency dependency) {
+    private static String createClassDependencyMermaid(final List<ClassDependencyRow> dependencies) {
+        final var output = new StringBuilder();
+
+        output.append("# Cross-Module Class Dependency Graph\n\n");
+        output.append("Generated from Spring Modulith and ArchUnit metadata.\n\n");
+        output.append("```mermaid\n");
+        output.append("flowchart LR\n");
+
+        dependencies.stream()
+                .flatMap(dependency -> List.of(
+                        new MermaidNode(
+                                dependency.sourceModule(),
+                                dependency.sourceNodeId(),
+                                dependency.sourceType(),
+                                dependency.sourcePackage()),
+                        new MermaidNode(
+                                dependency.targetModule(),
+                                dependency.targetNodeId(),
+                                dependency.targetType(),
+                                dependency.targetPackage()))
+                        .stream())
+                .distinct()
+                .collect(
+                        Collectors.groupingBy(MermaidNode::module, TreeMap::new, Collectors.toCollection(TreeSet::new)))
+                .forEach((module, nodes) -> {
+                    output.append("  subgraph ")
+                            .append(mermaidId(module))
+                            .append("[\"")
+                            .append(module)
+                            .append("\"]\n");
+                    nodes.forEach(node -> output.append("    ")
+                            .append(node.id())
+                            .append("[\"")
+                            .append(node.type())
+                            .append("<br/>")
+                            .append(shortPackage(node.packageName()))
+                            .append("\"]\n"));
+                    output.append("  end\n");
+                });
+
+        dependencies.forEach(dependency -> output.append("  ")
+                .append(dependency.sourceNodeId())
+                .append(" -->|\"")
+                .append(dependency.dependencyTypes())
+                .append("\"| ")
+                .append(dependency.targetNodeId())
+                .append("\n"));
+
+        output.append("```\n\n");
+
+        return output.toString();
+    }
+
+    private static String createEventFlowMermaid(final List<ClassDependencyRow> dependencies) {
+        final var eventDependencies = dependencies.stream()
+                .filter(dependency -> dependency.dependencyTypes().contains("EVENT_LISTENER"))
+                .toList();
+        final var output = new StringBuilder();
+
+        output.append("# Cross-Module Event Flow\n\n");
+        output.append("Generated from Spring Modulith and ArchUnit event listener metadata.\n\n");
+        output.append("```mermaid\n");
+        output.append("flowchart LR\n");
+
+        eventDependencies.stream()
+                .map(dependency -> new MermaidNode(
+                        dependency.targetModule(),
+                        dependency.targetNodeId(),
+                        dependency.targetType(),
+                        dependency.targetPackage()))
+                .distinct()
+                .collect(
+                        Collectors.groupingBy(MermaidNode::module, TreeMap::new, Collectors.toCollection(TreeSet::new)))
+                .forEach((module, nodes) -> {
+                    output.append("  subgraph ")
+                            .append(mermaidId(module))
+                            .append("_events[\"")
+                            .append(module)
+                            .append(" Events\"]\n");
+                    nodes.forEach(node -> output.append("    ")
+                            .append(node.id())
+                            .append("[\"")
+                            .append(node.type())
+                            .append("\"]\n"));
+                    output.append("  end\n");
+                });
+
+        eventDependencies.stream()
+                .map(dependency -> new MermaidNode(
+                        dependency.sourceModule(),
+                        dependency.sourceNodeId(),
+                        dependency.sourceType(),
+                        dependency.sourcePackage()))
+                .distinct()
+                .collect(
+                        Collectors.groupingBy(MermaidNode::module, TreeMap::new, Collectors.toCollection(TreeSet::new)))
+                .forEach((module, nodes) -> {
+                    output.append("  subgraph ")
+                            .append(mermaidId(module))
+                            .append("_listeners[\"")
+                            .append(module)
+                            .append(" Listeners\"]\n");
+                    nodes.forEach(node -> output.append("    ")
+                            .append(node.id())
+                            .append("[\"")
+                            .append(node.type())
+                            .append("\"]\n"));
+                    output.append("  end\n");
+                });
+
+        eventDependencies.forEach(dependency -> output.append("  ")
+                .append(dependency.targetNodeId())
+                .append(" --> ")
+                .append(dependency.sourceNodeId())
+                .append("\n"));
+
+        output.append("```\n\n");
+
+        return output.toString();
+    }
+
+    private static String mermaidId(final String value) {
+        return value.replaceAll("[^A-Za-z0-9]+", "_");
+    }
+
+    private static String shortPackage(final String packageName) {
+        return packageName.replace("biz.thonbecker.personal.", "");
+    }
+
+    private record ClassDependencyKey(
+            String sourceModule,
+            String sourceType,
+            String sourcePackage,
+            String targetModule,
+            String targetType,
+            String targetPackage) {
+
+        private static ClassDependencyKey from(
+                final String sourceModule, final ApplicationModuleDependency dependency) {
             final var source = dependency.getSourceType();
             final var target = dependency.getTargetType();
 
             return new ClassDependencyKey(
+                    sourceModule,
                     source.getSimpleName(),
                     source.getPackageName(),
                     dependency.getTargetModule().getDisplayName(),
@@ -156,6 +314,7 @@ class ModuleStructureTest {
     }
 
     private record ClassDependencyRow(
+            String sourceModule,
             String sourceType,
             String sourcePackage,
             String targetModule,
@@ -166,12 +325,33 @@ class ModuleStructureTest {
         private static ClassDependencyRow from(
                 final ClassDependencyKey dependency, final Collection<String> dependencyTypes) {
             return new ClassDependencyRow(
+                    dependency.sourceModule(),
                     dependency.sourceType(),
                     dependency.sourcePackage(),
                     dependency.targetModule(),
                     dependency.targetType(),
                     dependency.targetPackage(),
                     String.join(", ", dependencyTypes));
+        }
+
+        private String sourceNodeId() {
+            return mermaidId(sourcePackage + "." + sourceType);
+        }
+
+        private String targetNodeId() {
+            return mermaidId(targetPackage + "." + targetType);
+        }
+    }
+
+    private record MermaidNode(String module, String id, String type, String packageName)
+            implements Comparable<MermaidNode> {
+
+        @Override
+        public int compareTo(final MermaidNode that) {
+            return Comparator.comparing(MermaidNode::module)
+                    .thenComparing(MermaidNode::type)
+                    .thenComparing(MermaidNode::packageName)
+                    .compare(this, that);
         }
     }
 }

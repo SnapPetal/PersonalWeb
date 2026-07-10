@@ -9,6 +9,8 @@ Generated artifacts include:
 - `docs/modulith/module-*.adoc` - application module canvases
 - `docs/modulith/all-docs.adoc` - aggregate Asciidoc entry point
 - `docs/modulith-class-dependencies.adoc` - concrete cross-module class dependency table
+- `docs/modulith-class-dependencies.md` - GitHub-renderable Mermaid class dependency graph
+- `docs/modulith-event-flow.md` - GitHub-renderable Mermaid event flow graph
 
 Regenerate the docs with the repository toolchain:
 
