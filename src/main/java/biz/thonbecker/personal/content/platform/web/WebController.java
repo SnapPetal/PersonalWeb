@@ -8,7 +8,7 @@ public class WebController {
 
     @GetMapping("/")
     public String index() {
-        return "index";
+        return "redirect:https://thonbecker.biz";
     }
 
     @GetMapping("/trivia")
