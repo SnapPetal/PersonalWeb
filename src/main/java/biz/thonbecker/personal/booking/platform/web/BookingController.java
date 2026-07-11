@@ -3,6 +3,7 @@ package biz.thonbecker.personal.booking.platform.web;
 import biz.thonbecker.personal.booking.api.Booking;
 import biz.thonbecker.personal.booking.platform.BookingService;
 import biz.thonbecker.personal.booking.platform.web.model.CreateBookingRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -134,11 +135,13 @@ public class BookingController {
      */
     @PostMapping("/confirmation/{confirmationCode}/cancel")
     @ResponseBody
-    public ResponseEntity<Void> cancelBooking(@PathVariable final String confirmationCode) {
+    public ResponseEntity<Void> cancelBooking(
+            @PathVariable final String confirmationCode, final HttpServletResponse response) {
         try {
             log.info("Cancelling booking: {}", confirmationCode);
             final var booking = bookingService.getBookingByConfirmationCode(confirmationCode);
             bookingService.cancelBooking(booking.id());
+            response.setHeader("HX-Redirect", "/booking/confirmation/" + confirmationCode);
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to cancel booking: {}", e.getMessage(), e);

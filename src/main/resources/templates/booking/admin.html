@@ -87,7 +87,10 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="bookings-list"
+                                       hx-get="/booking/admin/bookings"
+                                       hx-trigger="bookingUpdated from:body"
+                                       hx-swap="outerHTML">
                                     <tr th:each="booking : ${bookings}">
                                         <td>
                                             <code th:text="${booking.confirmationCode()}">CODE</code>
@@ -109,7 +112,10 @@
                                         <td>
                                             <button th:if="${booking.status().name() == 'CONFIRMED'}"
                                                     class="btn btn-sm btn-danger"
-                                                    th:onclick="'cancelBooking(' + ${booking.id()} + ')'">
+                                                    th:attr="hx-post=@{'/booking/admin/bookings/' + ${booking.id()} + '/cancel'}"
+                                                    hx-confirm="Cancel this booking?"
+                                                    hx-disabled-elt="this"
+                                                    hx-swap="none">
                                                 Cancel
                                             </button>
                                         </td>
@@ -133,16 +139,19 @@
                                 <h5 class="mb-0">Add Availability Slot</h5>
                             </div>
                             <div class="card-body">
-                                <form id="availabilityForm">
+                                <form id="availabilityForm"
+                                      hx-post="/booking/admin/availability"
+                                      hx-swap="none"
+                                      hx-disabled-elt="find button">
                                     <div class="mb-3">
                                         <label for="slotStartTime" class="form-label">Start Time</label>
-                                        <input type="datetime-local" class="form-control" id="slotStartTime" required>
+                                        <input type="datetime-local" class="form-control" id="slotStartTime" name="startTime" required>
                                     </div>
                                     <div class="mb-3">
                                         <label for="slotEndTime" class="form-label">End Time</label>
-                                        <input type="datetime-local" class="form-control" id="slotEndTime" required>
+                                        <input type="datetime-local" class="form-control" id="slotEndTime" name="endTime" required>
                                     </div>
-                                    <button type="button" class="btn btn-primary" onclick="createAvailabilitySlot()">
+                                    <button type="submit" class="btn btn-primary">
                                         <i class="bi bi-plus-circle"></i> Add Slot
                                     </button>
                                 </form>
@@ -156,7 +165,11 @@
                                 <h5 class="mb-0">Current Availability</h5>
                             </div>
                             <div class="card-body">
-                                <div class="list-group">
+                                <div id="availability-list"
+                                     class="list-group"
+                                     hx-get="/booking/admin/availability"
+                                     hx-trigger="availabilityUpdated from:body"
+                                     hx-swap="outerHTML">
                                     <div th:each="slot : ${availabilitySlots}" class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <div th:text="${#temporals.format(slot.startTime(), 'MMM d, yyyy h:mm a')}">Start</div>
@@ -164,7 +177,10 @@
                                             <div th:text="${#temporals.format(slot.endTime(), 'MMM d, yyyy h:mm a')}">End</div>
                                         </div>
                                         <button class="btn btn-sm btn-danger"
-                                                th:onclick="'deleteAvailabilitySlot(' + ${slot.id()} + ')'">
+                                                th:attr="hx-delete=@{'/booking/admin/availability/' + ${slot.id()}}"
+                                                hx-confirm="Delete this availability slot?"
+                                                hx-disabled-elt="this"
+                                                hx-swap="none">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -221,87 +237,6 @@
         </div>
     </div>
 </main>
-
-<script>
-    function createAvailabilitySlot() {
-        const startTime = document.getElementById('slotStartTime').value;
-        const endTime = document.getElementById('slotEndTime').value;
-
-        if (!startTime || !endTime) {
-            alert('Please fill in all fields');
-            return;
-        }
-
-        fetch('/booking/admin/availability', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-XSRF-TOKEN': getCsrfToken()
-            },
-            body: JSON.stringify({
-                startTime: startTime,
-                endTime: endTime
-            })
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Failed to create slot');
-            location.reload();
-        })
-        .catch(error => {
-            alert('Failed to create availability slot');
-            console.error(error);
-        });
-    }
-
-    function deleteAvailabilitySlot(slotId) {
-        if (!confirm('Delete this availability slot?')) return;
-
-        fetch(`/booking/admin/availability/${slotId}`, {
-            method: 'DELETE',
-            headers: {
-                'X-XSRF-TOKEN': getCsrfToken()
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Failed to delete slot');
-            location.reload();
-        })
-        .catch(error => {
-            alert('Failed to delete availability slot');
-            console.error(error);
-        });
-    }
-
-    function cancelBooking(bookingId) {
-        if (!confirm('Cancel this booking?')) return;
-
-        fetch(`/booking/admin/bookings/${bookingId}/cancel`, {
-            method: 'POST',
-            headers: {
-                'X-XSRF-TOKEN': getCsrfToken()
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Failed to cancel booking');
-            location.reload();
-        })
-        .catch(error => {
-            alert('Failed to cancel booking');
-            console.error(error);
-        });
-    }
-
-    function getCsrfToken() {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            const [name, value] = cookie.trim().split('=');
-            if (name === 'XSRF-TOKEN') {
-                return decodeURIComponent(value);
-            }
-        }
-        return '';
-    }
-</script>
 
 </body>
 </html>

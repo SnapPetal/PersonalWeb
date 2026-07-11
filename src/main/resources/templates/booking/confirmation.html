@@ -6,6 +6,7 @@
     <title>Booking Confirmation - Thon Becker</title>
 
     <!-- JS dependencies -->
+    <th:block th:replace="~{fragments/assets :: htmxScripts}"></th:block>
     <th:block th:replace="~{fragments/assets :: bootstrapScripts}"></th:block>
     <script th:src="@{/js/theme-toggle.js}"></script>
 
@@ -14,7 +15,7 @@
     <link th:href="@{/css/main.css}" rel="stylesheet">
 
 </head>
-<body class="booking-page">
+<body class="booking-page" hx-ext="loading-states, form-validation, error-handling">
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
     <div class="container">
@@ -126,9 +127,15 @@
 
                         <!-- Cancel Button -->
                         <div th:if="${booking.status().name() == 'CONFIRMED'}" class="text-center mt-4">
-                            <button class="btn btn-danger" onclick="cancelBooking()">
-                                <i class="bi bi-x-circle"></i> Cancel This Booking
-                            </button>
+                            <form method="post"
+                                  th:attr="hx-post=@{'/booking/confirmation/' + ${booking.confirmationCode()} + '/cancel'}"
+                                  hx-confirm="Are you sure you want to cancel this booking?"
+                                  hx-disabled-elt="find button"
+                                  hx-indicator="this">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-x-circle"></i> Cancel This Booking
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -146,42 +153,6 @@
         </div>
     </div>
 </main>
-
-<script th:inline="javascript">
-    function cancelBooking() {
-        if (!confirm('Are you sure you want to cancel this booking?')) {
-            return;
-        }
-
-        const confirmationCode = /*[[${booking.confirmationCode()}]]*/ '';
-
-        fetch(`/booking/confirmation/${confirmationCode}/cancel`, {
-            method: 'POST',
-            headers: {
-                'X-XSRF-TOKEN': getCsrfToken()
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Cancellation failed');
-            location.reload();
-        })
-        .catch(error => {
-            alert('Failed to cancel booking. Please try again or contact support.');
-            console.error(error);
-        });
-    }
-
-    function getCsrfToken() {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            const [name, value] = cookie.trim().split('=');
-            if (name === 'XSRF-TOKEN') {
-                return decodeURIComponent(value);
-            }
-        }
-        return '';
-    }
-</script>
 
 </body>
 </html>

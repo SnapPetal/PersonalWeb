@@ -4,9 +4,13 @@ import biz.thonbecker.personal.booking.api.BookingType;
 import biz.thonbecker.personal.booking.platform.BookingService;
 import biz.thonbecker.personal.booking.platform.web.model.CreateAvailabilitySlotRequest;
 import biz.thonbecker.personal.booking.platform.web.model.CreateBookingTypeRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -78,7 +82,7 @@ public class BookingAdminController {
      * @param request Slot details
      * @return Success response
      */
-    @PostMapping("/availability")
+    @PostMapping(value = "/availability", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Void> createAvailabilitySlot(
             @Valid @RequestBody final CreateAvailabilitySlotRequest request) {
@@ -96,6 +100,22 @@ public class BookingAdminController {
         }
     }
 
+    @PostMapping(value = "/availability", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @ResponseBody
+    public ResponseEntity<Void> createAvailabilitySlotFromForm(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime endTime,
+            final HttpServletResponse response) {
+        try {
+            bookingService.createAvailabilitySlot(startTime, endTime);
+            response.setHeader("HX-Trigger", "availabilityUpdated");
+            return ResponseEntity.ok().build();
+        } catch (final Exception e) {
+            log.error("Failed to create availability slot: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     /**
      * Deletes an availability slot.
      *
@@ -104,15 +124,23 @@ public class BookingAdminController {
      */
     @DeleteMapping("/availability/{slotId}")
     @ResponseBody
-    public ResponseEntity<Void> deleteAvailabilitySlot(@PathVariable final Long slotId) {
+    public ResponseEntity<Void> deleteAvailabilitySlot(
+            @PathVariable final Long slotId, final HttpServletResponse response) {
         try {
             log.info("Deleting availability slot: {}", slotId);
             bookingService.deleteAvailabilitySlot(slotId);
+            response.setHeader("HX-Trigger", "availabilityUpdated");
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to delete availability slot: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @GetMapping("/availability")
+    public String listAvailability(final Model model) {
+        model.addAttribute("availabilitySlots", bookingService.getAllAvailabilitySlots());
+        return "booking/admin-fragments :: availability-list";
     }
 
     /**
@@ -136,10 +164,11 @@ public class BookingAdminController {
      */
     @PostMapping("/bookings/{bookingId}/cancel")
     @ResponseBody
-    public ResponseEntity<Void> cancelBooking(@PathVariable final Long bookingId) {
+    public ResponseEntity<Void> cancelBooking(@PathVariable final Long bookingId, final HttpServletResponse response) {
         try {
             log.info("Admin cancelling booking: {}", bookingId);
             bookingService.cancelBooking(bookingId);
+            response.setHeader("HX-Trigger", "bookingUpdated");
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to cancel booking: {}", e.getMessage(), e);

@@ -170,14 +170,17 @@
                 this.showTimeSlots = true;
                 this.$refs.timeSlots.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
 
-                fetch(`/booking/types/${this.selectedBookingTypeId}/slots?date=${this.bookingDate}`)
-                    .then(response => response.text())
-                    .then(html => {
-                        this.$refs.timeSlots.innerHTML = html;
-                    })
-                    .catch(() => {
-                        this.$refs.timeSlots.innerHTML = '<div class="alert alert-danger">Failed to load time slots</div>';
+                const slotsRequest = htmx.ajax(
+                    'GET',
+                    `/booking/types/${this.selectedBookingTypeId}/slots?date=${this.bookingDate}`,
+                    { target: this.$refs.timeSlots, swap: 'innerHTML' },
+                );
+                if (slotsRequest && typeof slotsRequest.catch === 'function') {
+                    slotsRequest.catch(() => {
+                        this.$refs.timeSlots.innerHTML =
+                            '<div class="alert alert-danger">Failed to load time slots</div>';
                     });
+                }
             },
 
             selectTimeSlot(button) {

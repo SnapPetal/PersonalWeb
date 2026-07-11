@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<tbody th:fragment="bookings-list" id="bookings-list">
+    <tr th:each="booking : ${bookings}">
+        <td><code th:text="${booking.confirmationCode()}">CODE</code></td>
+        <td th:text="${booking.bookingType().name()}">Type</td>
+        <td>
+            <div th:text="${booking.attendeeName()}">Name</div>
+            <small class="text-muted" th:text="${booking.attendeeEmail()}">Email</small>
+        </td>
+        <td>
+            <div th:text="${#temporals.format(booking.startTime(), 'MMM d, yyyy')}">Date</div>
+            <small th:text="${#temporals.format(booking.startTime(), 'h:mm a')}">Time</small>
+        </td>
+        <td>
+            <span th:class="'badge bg-' + ${booking.status().name() == 'CONFIRMED' ? 'success' :
+                  (booking.status().name() == 'CANCELLED' ? 'danger' : 'secondary')}"
+                  th:text="${booking.status().name()}">Status</span>
+        </td>
+        <td>
+            <button th:if="${booking.status().name() == 'CONFIRMED'}"
+                    class="btn btn-sm btn-danger"
+                    th:attr="hx-post=@{'/booking/admin/bookings/' + ${booking.id()} + '/cancel'}"
+                    hx-confirm="Cancel this booking?"
+                    hx-disabled-elt="this"
+                    hx-swap="none">
+                Cancel
+            </button>
+        </td>
+    </tr>
+    <tr th:if="${bookings.isEmpty()}">
+        <td colspan="6" class="text-center text-muted">No bookings yet</td>
+    </tr>
+</tbody>
+
+<div th:fragment="availability-list" id="availability-list" class="list-group">
+    <div th:each="slot : ${availabilitySlots}"
+         class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+            <div th:text="${#temporals.format(slot.startTime(), 'MMM d, yyyy h:mm a')}">Start</div>
+            <small class="text-muted">to</small>
+            <div th:text="${#temporals.format(slot.endTime(), 'MMM d, yyyy h:mm a')}">End</div>
+        </div>
+        <button class="btn btn-sm btn-danger"
+                th:attr="hx-delete=@{'/booking/admin/availability/' + ${slot.id()}}"
+                hx-confirm="Delete this availability slot?"
+                hx-disabled-elt="this"
+                hx-swap="none">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+    <div th:if="${availabilitySlots.isEmpty()}" class="list-group-item text-center text-muted">
+        No availability slots configured
+    </div>
+</div>
+</body>
+</html>
