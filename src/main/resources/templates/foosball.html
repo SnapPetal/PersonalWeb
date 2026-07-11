@@ -152,7 +152,7 @@
                                 <div id="playerStatsList" 
                                     class="tab-pane fade show active"
                                     hx-get="/foosball/fragments/player-stats"
-                                    hx-trigger="playerUpdate from:body"
+                                    hx-trigger="playerUpdate, playerStatsUpdated from:body"
                                     hx-target="this"
                                     hx-swap="innerHTML transition:true"
                                     hx-indicator="#stats-loading">
@@ -181,12 +181,12 @@
                           hx-target="#main-alerts"
                           hx-swap="outerHTML"
                           hx-indicator="#addPlayerForm"
+                          hx-disabled-elt="find button, #addPlayerModal button"
                           hx-encoding="application/x-www-form-urlencoded"
                           data-hx-on--after-request="
                               if(event.detail.successful) {
                                   if(!event.detail.xhr.responseText.includes('alert-danger')) {
                                       this.reset();
-                                      htmx.trigger('body', 'playerUpdate');
                                       bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')).hide();
                                   }
                               }"
@@ -221,14 +221,13 @@
                           hx-target="#main-alerts"
                           hx-swap="innerHTML"
                           hx-indicator="#addGameForm"
+                          hx-disabled-elt="find button, #addGameModal button"
                           hx-encoding="application/x-www-form-urlencoded"
                           data-hx-on--after-request="
                               if(event.detail.successful) {
                                   if(event.detail.xhr.responseText.includes('alert-success')) {
                                       this.reset();
                                       bootstrap.Modal.getInstance(document.getElementById('addGameModal')).hide();
-                                      htmx.trigger('#playerStatsList', 'refresh');
-                                      if (document.getElementById('gamesList')) { htmx.trigger('#gamesList', 'refresh'); }
                                   }
                               }
                           ">

@@ -96,12 +96,12 @@
                           hx-target="#main-alerts"
                           hx-swap="outerHTML"
                           hx-indicator="#addPlayerForm"
+                          hx-disabled-elt="find button, #addPlayerModal button"
                           hx-encoding="application/x-www-form-urlencoded"
                           data-hx-on--after-request="
                               if(event.detail.successful) {
                                   if(!event.detail.xhr.responseText.includes('alert-danger')) {
                                       this.reset();
-                                      htmx.trigger('body', 'refresh-players');
                                       bootstrap.Modal.getInstance(document.getElementById('addPlayerModal')).hide();
                                   }
                               }"

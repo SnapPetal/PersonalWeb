@@ -4,8 +4,7 @@
 <!-- Player Statistics List Fragment -->
 <div th:fragment="playerStatsList" class="skeleton-loading">
     <div th:if="${#lists.isEmpty(playerStats)}"
-         class="text-center text-muted py-4 foosball-empty-state"
-         hx-swap-oob="true">
+         class="text-center text-muted py-4 foosball-empty-state">
         <i class="bi bi-graph-up display-4"></i>
         <p class="mt-2">No player statistics available yet.</p>
         <button class="btn btn-outline-primary btn-sm"
@@ -16,10 +15,8 @@
     </div>
     
     <div th:unless="${#lists.isEmpty(playerStats)}"
-         class="table-responsive"
-         hx-boost="true">
-        <table class="table table-sm foosball-table"
-               hx-preserve="true">
+         class="table-responsive">
+        <table class="table table-sm foosball-table">
             <thead>
                 <tr>
                     <th><i class="bi bi-person"></i> Player</th>
@@ -32,10 +29,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="stat : ${playerStats}"
-                    th:attr="data-player-name=${stat.playerName}"
-                    hx-target="this"
-                    hx-swap="outerHTML transition:true">
+                <tr th:each="stat : ${playerStats}" th:attr="data-player-name=${stat.playerName}">
                     <td><strong class="foosball-player-name" th:text="${stat.playerName}"></strong></td>
                     <td>
                         <span class="badge bg-warning text-dark" th:text="${stat.rating != null ? stat.rating : 1000}"></span>
@@ -117,8 +111,7 @@
     <option th:each="player : ${players}"
             th:value="${player.name}"
             th:text="${player.name}"
-            th:attr="data-id=${player.id}"
-            hx-preserve="true">
+            th:attr="data-id=${player.id}">
     </option>
 </th:block>
 
@@ -126,8 +119,7 @@
 <div th:fragment="successAlert"
      th:if="${successMessage}"
      class="alert alert-success alert-dismissible fade show"
-     role="alert"
-     hx-swap-oob="true">
+     role="alert">
     <i class="bi bi-check-circle"></i>
     <span th:text="${successMessage}">Success!</span>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -137,8 +129,7 @@
 <div th:fragment="errorAlert"
      th:if="${errorMessage}"
      class="alert alert-danger alert-dismissible fade show"
-     role="alert"
-     hx-swap-oob="true">
+     role="alert">
     <i class="bi bi-exclamation-circle"></i>
     <span th:text="${errorMessage}">Error!</span>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>

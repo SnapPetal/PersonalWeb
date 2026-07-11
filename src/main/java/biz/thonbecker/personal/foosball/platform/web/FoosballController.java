@@ -6,6 +6,7 @@ import biz.thonbecker.personal.foosball.domain.Player;
 import biz.thonbecker.personal.foosball.domain.Team;
 import biz.thonbecker.personal.foosball.platform.FoosballService;
 import biz.thonbecker.personal.foosball.platform.TournamentService;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -141,12 +142,13 @@ public class FoosballController {
     }
 
     @PostMapping("/htmx/players")
-    public String createPlayerHtmx(@RequestParam String name, Model model) {
+    public String createPlayerHtmx(@RequestParam String name, Model model, HttpServletResponse response) {
         try {
             if (name != null && !name.trim().isEmpty()) {
                 Player player = new Player(name.trim());
                 foosballService.createPlayer(player);
                 model.addAttribute("success", "Player '" + name.trim() + "' added successfully!");
+                response.setHeader("HX-Trigger", "{\"playerUpdate\":null,\"refresh-players\":null}");
             } else {
                 model.addAttribute("error", "Please provide a player name.");
             }
@@ -164,7 +166,8 @@ public class FoosballController {
             @RequestParam String blackTeamPlayer1,
             @RequestParam String blackTeamPlayer2,
             @RequestParam String winner,
-            Model model) {
+            Model model,
+            HttpServletResponse response) {
 
         try {
             // Validation
@@ -208,6 +211,7 @@ public class FoosballController {
             Game createdGame = foosballService.createGame(game);
             if (createdGame != null) {
                 model.addAttribute("success", "Game recorded successfully!");
+                response.setHeader("HX-Trigger", "playerStatsUpdated");
             } else {
                 model.addAttribute("error", "Failed to record game. Server returned an empty response.");
             }
