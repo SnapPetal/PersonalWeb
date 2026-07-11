@@ -3,13 +3,10 @@ const readThemePreference = () => {
   const cookie = document.cookie
     .split("; ")
     .find((value) => value.startsWith("PERSONALWEB_THEME="));
-  return cookie
-    ? cookie.split("=")[1]
-    : localStorage.getItem("darkMode");
+  return cookie ? cookie.split("=")[1] : null;
 };
 
 const saveThemePreference = (value) => {
-  localStorage.setItem("darkMode", value);
   document.cookie = `PERSONALWEB_THEME=${value}; Max-Age=31536000; Path=/; Domain=.thonbecker.biz; SameSite=Lax`;
 };
 
