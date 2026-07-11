@@ -1,6 +1,6 @@
 (() => {
   const root = document.documentElement;
-  const cookie = document.cookie.split("; ").find((value) => value.startsWith("darkMode="));
+  const cookie = document.cookie.split("; ").find((value) => value.startsWith("PERSONALWEB_THEME="));
   const saved = cookie ? cookie.split("=")[1] : localStorage.getItem("darkMode");
   const preferred = saved === "enabled" || (saved === null && matchMedia("(prefers-color-scheme: dark)").matches);
   root.dataset.theme = preferred ? "dark" : "light";
@@ -20,7 +20,7 @@
       const dark = root.dataset.theme !== "dark";
       root.dataset.theme = dark ? "dark" : "light";
       localStorage.setItem("darkMode", dark ? "enabled" : "disabled");
-      document.cookie = `darkMode=${dark ? "enabled" : "disabled"}; Max-Age=31536000; Path=/; Domain=.thonbecker.biz; SameSite=Lax`;
+      document.cookie = `PERSONALWEB_THEME=${dark ? "enabled" : "disabled"}; Max-Age=31536000; Path=/; Domain=.thonbecker.biz; SameSite=Lax`;
       update();
     });
     update();

@@ -2,13 +2,15 @@
 const readThemePreference = () => {
   const cookie = document.cookie
     .split("; ")
-    .find((value) => value.startsWith("darkMode="));
-  return cookie ? cookie.split("=")[1] : localStorage.getItem("darkMode");
+    .find((value) => value.startsWith("PERSONALWEB_THEME="));
+  return cookie
+    ? cookie.split("=")[1]
+    : localStorage.getItem("darkMode");
 };
 
 const saveThemePreference = (value) => {
   localStorage.setItem("darkMode", value);
-  document.cookie = `darkMode=${value}; Max-Age=31536000; Path=/; Domain=.thonbecker.biz; SameSite=Lax`;
+  document.cookie = `PERSONALWEB_THEME=${value}; Max-Age=31536000; Path=/; Domain=.thonbecker.biz; SameSite=Lax`;
 };
 
 const savedDarkMode = readThemePreference() === "enabled";

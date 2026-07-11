@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class LandscapeOwnerCookie {
 
-    static final String COOKIE_NAME = "LANDSCAPE_OWNER";
+    static final String COOKIE_NAME = "PERSONALWEB_LANDSCAPE_OWNER";
     private static final Pattern OWNER_ID_PATTERN = Pattern.compile("anon:[0-9a-f-]{36}");
     private static final Duration MAX_AGE = Duration.ofDays(365 * 2L);
 
