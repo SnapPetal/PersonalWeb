@@ -2,6 +2,7 @@ package biz.thonbecker.personal.notification.platform;
 
 import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
+import biz.thonbecker.personal.landscape.api.LandscapeRecoveryRequestedEvent;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
@@ -124,6 +125,19 @@ public class EmailNotificationService {
 
         sendPlainEmail(sender, event.attendeeEmail(), subject, body);
         log.info("Sent cancellation email to {} for booking {}", event.attendeeEmail(), event.confirmationCode());
+    }
+
+    @Retryable(maxAttempts = 3)
+    public void sendLandscapeRecovery(final LandscapeRecoveryRequestedEvent event) {
+        final var subject = "Restore your landscape projects";
+        final var body = "Use this single-use link within 15 minutes to restore your landscape projects:\n\n"
+                + event.recoveryUrl()
+                + "\n\nIf you did not request this link, you can ignore this email.";
+        if (!properties.enabled()) {
+            log.info("Email disabled — would send landscape recovery to {}", event.email());
+            return;
+        }
+        sendPlainEmail(properties.sender(), event.email(), subject, body);
     }
 
     private void sendEmailWithAttachment(

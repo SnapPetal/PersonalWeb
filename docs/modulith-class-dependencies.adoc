@@ -132,6 +132,20 @@ No direct cross-module class dependencies.
 |`biz.thonbecker.personal.foosball.api`
 |`DEFAULT, EVENT_LISTENER`
 
+|`EmailNotificationService`
+|`biz.thonbecker.personal.notification.platform`
+|Landscape Planning
+|`LandscapeRecoveryRequestedEvent`
+|`biz.thonbecker.personal.landscape.api`
+|`DEFAULT`
+
+|`NotificationEventListener`
+|`biz.thonbecker.personal.notification.api`
+|Landscape Planning
+|`LandscapeRecoveryRequestedEvent`
+|`biz.thonbecker.personal.landscape.api`
+|`DEFAULT, EVENT_LISTENER`
+
 |`EventLoggingListener`
 |`biz.thonbecker.personal.notification.api`
 |Trivia Quiz

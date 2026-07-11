@@ -25,6 +25,15 @@ public class LandscapeOwnerCookie {
         }
 
         final var ownerId = "anon:" + UUID.randomUUID();
+        write(ownerId, request, response);
+        return ownerId;
+    }
+
+    public void restore(final String ownerId, final HttpServletRequest request, final HttpServletResponse response) {
+        write(ownerId, request, response);
+    }
+
+    private void write(final String ownerId, final HttpServletRequest request, final HttpServletResponse response) {
         final var cookie = ResponseCookie.from(COOKIE_NAME, ownerId)
                 .httpOnly(true)
                 .secure(request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto")))
@@ -33,7 +42,6 @@ public class LandscapeOwnerCookie {
                 .maxAge(MAX_AGE)
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
-        return ownerId;
     }
 
     private String findOwnerId(final HttpServletRequest request) {
