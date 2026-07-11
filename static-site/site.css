@@ -24,6 +24,7 @@ h3 { margin:.25rem 0 .65rem; font-size:1.75rem; }
 .verse-card h2 { font-size:2rem; margin:0; }
 .verse-card .verse-text { margin:0; font-size:1.2rem; line-height:1.55; }
 .verse-card .verse-reference { margin:.75rem 0 0; color:var(--green); font-weight:700; }
+.verse-toggle { margin-top:.75rem; border:0; background:transparent; color:var(--green); cursor:pointer; font-weight:700; padding:0; }
 .muted { color:var(--muted); }
 .actions { display:flex; align-items:center; gap:1.5rem; margin-top:2rem; flex-wrap:wrap; }
 .text-link { color:var(--green); font-weight:750; }
