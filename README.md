@@ -64,7 +64,7 @@ Skatetricks video analysis extracts duration-aware sequential frames from upload
 | **Database**  | PostgreSQL 18, Liquibase migrations, Caffeine cache                                |
 | **Frontend**  | Thymeleaf, HTMX, Alpine.js, Bootstrap 5, Fabric.js, WebJars                        |
 | **Real-time** | STOMP over SockJS (trivia, tank game)                                              |
-| **AWS**       | S3, S3 Vectors, SES, CloudFront, Polly, Lightsail                                   |
+| **AWS**       | S3, S3 Vectors, SES, CloudFront, Polly, Lightsail                                  |
 
 ### Modules
 

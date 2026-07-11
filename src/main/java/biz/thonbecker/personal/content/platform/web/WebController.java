@@ -10,9 +10,4 @@ public class WebController {
     public String trivia() {
         return "trivia";
     }
-
-    @GetMapping("/religious-freedom")
-    public String religiousFreedom() {
-        return "religious-freedom";
-    }
 }

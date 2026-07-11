@@ -37,8 +37,8 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 
 1. Copy `.env.example` to `.env` and fill in AWS credentials (`PERSONAL_AWS_ACCESS_KEY_ID`, `PERSONAL_AWS_SECRET_ACCESS_KEY`, `PERSONAL_AWS_REGION`), OpenAI credentials (`PERSONAL_OPENAI_API_KEY`), and Nextcloud credentials (`PERSONAL_NEXTCLOUD_USERNAME`, `PERSONAL_NEXTCLOUD_APP_PASSWORD`).
 2. Spring Boot Docker Compose integration auto-starts PostgreSQL from `docker-compose.yml` when running locally—no manual `docker-compose up` needed.
-4. The `dev` profile (`application-dev.yml`) overrides the datasource to `localhost:5432/dbmaster` with user `dbmasteruser` and no password.
-5. **Hot Reload**: Spring Boot DevTools is enabled in the `dev` profile for automatic restart when files change:
+3. The `dev` profile (`application-dev.yml`) overrides the datasource to `localhost:5432/dbmaster` with user `dbmasteruser` and no password.
+4. **Hot Reload**: Spring Boot DevTools is enabled in the `dev` profile for automatic restart when files change:
    - Thymeleaf templates (`src/main/resources/templates/`)
    - Static files (`src/main/resources/static/`)
    - Configuration files (`src/main/resources/application*.yml`)
