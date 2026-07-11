@@ -54,9 +54,11 @@ public class BibleVerseController {
             return "<p class=\"muted\">The verse is unavailable right now.</p>";
         }
         final var greek = verse.greekText();
-        final var toggle = greek == null ? "" : "<button class=\"verse-toggle\" type=\"button\" data-english=\""
-                + HtmlUtils.htmlEscape(verse.text()) + "\" data-greek=\"" + HtmlUtils.htmlEscape(greek)
-                + "\">Show Greek</button>";
+        final var toggle = greek == null
+                ? ""
+                : "<button class=\"verse-toggle\" type=\"button\" data-english=\""
+                        + HtmlUtils.htmlEscape(verse.text()) + "\" data-greek=\"" + HtmlUtils.htmlEscape(greek)
+                        + "\">Show Greek</button>";
         return "<p class=\"verse-text\">" + HtmlUtils.htmlEscape(verse.text()) + "</p>"
                 + "<p class=\"verse-reference\">" + HtmlUtils.htmlEscape(verse.translation()) + "</p>" + toggle;
     }
