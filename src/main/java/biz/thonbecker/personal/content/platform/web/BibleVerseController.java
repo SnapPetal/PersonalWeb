@@ -16,6 +16,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.HtmlUtils;
 import tools.jackson.databind.ObjectMapper;
 
 @RestController
@@ -44,6 +45,16 @@ public class BibleVerseController {
         LocalDate today = LocalDate.now();
         BibleVerse verse = verseCache.get(today, _ -> fetchDailyBibleVerse());
         return ResponseEntity.ok(verse);
+    }
+
+    @GetMapping(value = "/verse-of-day/fragment", produces = MediaType.TEXT_HTML_VALUE)
+    public String getVerseFragment() {
+        final var verse = getVerseOfTheDay().getBody();
+        if (verse == null) {
+            return "<p class=\"muted\">The verse is unavailable right now.</p>";
+        }
+        return "<p class=\"verse-text\">" + HtmlUtils.htmlEscape(verse.text()) + "</p>"
+                + "<p class=\"verse-reference\">" + HtmlUtils.htmlEscape(verse.translation()) + "</p>";
     }
 
     private Cache<LocalDate, BibleVerse> createVerseCache() {

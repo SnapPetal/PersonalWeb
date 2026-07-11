@@ -35,6 +35,8 @@
         <div class="portrait-wrap"><img alt="Thon Becker" class="portrait" src="/images/profile.png"></div>
     </section>
 
+    <section class="verse-card" aria-live="polite"><div><p class="section-label">A verse for today</p><h2>Faith shapes how I build.</h2></div><div hx-get="/api/bible/verse-of-day/fragment" hx-trigger="load" hx-swap="innerHTML"><p class="muted">Loading today’s verse…</p></div></section>
+
     <section class="section about" id="about">
         <p class="section-label">About me</p>
         <div class="about-grid">
