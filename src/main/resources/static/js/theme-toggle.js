@@ -1,5 +1,17 @@
 // theme-toggle.js — Alpine.js component
-const savedDarkMode = localStorage.getItem("darkMode") === "enabled";
+const readThemePreference = () => {
+  const cookie = document.cookie
+    .split("; ")
+    .find((value) => value.startsWith("darkMode="));
+  return cookie ? cookie.split("=")[1] : localStorage.getItem("darkMode");
+};
+
+const saveThemePreference = (value) => {
+  localStorage.setItem("darkMode", value);
+  document.cookie = `darkMode=${value}; Max-Age=31536000; Path=/; Domain=.thonbecker.biz; SameSite=Lax`;
+};
+
+const savedDarkMode = readThemePreference() === "enabled";
 
 if (savedDarkMode) {
   document.documentElement.setAttribute("data-bs-theme", "dark");
@@ -21,7 +33,7 @@ document.addEventListener("alpine:init", () => {
         "data-bs-theme",
         this.isDark ? "dark" : "light"
       );
-      localStorage.setItem("darkMode", this.isDark ? "enabled" : "disabled");
+      saveThemePreference(this.isDark ? "enabled" : "disabled");
     },
 
     get iconClass() {
