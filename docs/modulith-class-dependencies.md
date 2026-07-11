@@ -19,6 +19,9 @@ flowchart LR
     biz_thonbecker_personal_foosball_api_GameRecordedEvent["GameRecordedEvent<br/>foosball.api"]
     biz_thonbecker_personal_foosball_api_PlayerCreatedEvent["PlayerCreatedEvent<br/>foosball.api"]
   end
+  subgraph Landscape_Planning["Landscape Planning"]
+    biz_thonbecker_personal_landscape_api_LandscapeRecoveryRequestedEvent["LandscapeRecoveryRequestedEvent<br/>landscape.api"]
+  end
   subgraph Notification_Services["Notification Services"]
     biz_thonbecker_personal_notification_platform_CalendarService["CalendarService<br/>notification.platform"]
     biz_thonbecker_personal_notification_platform_EmailNotificationService["EmailNotificationService<br/>notification.platform"]
@@ -50,6 +53,8 @@ flowchart LR
   biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
   biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_foosball_api_GameRecordedEvent
   biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_foosball_api_PlayerCreatedEvent
+  biz_thonbecker_personal_notification_platform_EmailNotificationService -->|"DEFAULT"| biz_thonbecker_personal_landscape_api_LandscapeRecoveryRequestedEvent
+  biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_landscape_api_LandscapeRecoveryRequestedEvent
   biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_PlayerJoinedQuizEvent
   biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_QuizCompletedEvent
   biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_QuizStartedEvent

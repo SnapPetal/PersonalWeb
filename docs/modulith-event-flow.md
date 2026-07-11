@@ -12,6 +12,9 @@ flowchart LR
     biz_thonbecker_personal_foosball_api_GameRecordedEvent["GameRecordedEvent"]
     biz_thonbecker_personal_foosball_api_PlayerCreatedEvent["PlayerCreatedEvent"]
   end
+  subgraph Landscape_Planning_events["Landscape Planning Events"]
+    biz_thonbecker_personal_landscape_api_LandscapeRecoveryRequestedEvent["LandscapeRecoveryRequestedEvent"]
+  end
   subgraph Trivia_Quiz_events["Trivia Quiz Events"]
     biz_thonbecker_personal_trivia_api_PlayerJoinedQuizEvent["PlayerJoinedQuizEvent"]
     biz_thonbecker_personal_trivia_api_QuizCompletedEvent["QuizCompletedEvent"]
@@ -38,6 +41,7 @@ flowchart LR
   biz_thonbecker_personal_booking_api_BookingCreatedEvent --> biz_thonbecker_personal_notification_api_NotificationEventListener
   biz_thonbecker_personal_foosball_api_GameRecordedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
   biz_thonbecker_personal_foosball_api_PlayerCreatedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
+  biz_thonbecker_personal_landscape_api_LandscapeRecoveryRequestedEvent --> biz_thonbecker_personal_notification_api_NotificationEventListener
   biz_thonbecker_personal_trivia_api_PlayerJoinedQuizEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
   biz_thonbecker_personal_trivia_api_QuizCompletedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
   biz_thonbecker_personal_trivia_api_QuizStartedEvent --> biz_thonbecker_personal_notification_api_EventLoggingListener
