@@ -5,6 +5,22 @@
   const preferred = saved === "enabled" || (saved === null && matchMedia("(prefers-color-scheme: dark)").matches);
   root.dataset.theme = preferred ? "dark" : "light";
   addEventListener("DOMContentLoaded", () => {
+    const menu = document.querySelector("[data-menu-toggle]");
+    const navigation = document.querySelector("#primary-navigation");
+    if (menu && navigation) {
+      menu.addEventListener("click", () => {
+        const open = navigation.classList.toggle("is-open");
+        menu.setAttribute("aria-expanded", String(open));
+        menu.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+      });
+      navigation.addEventListener("click", (event) => {
+        if (event.target.closest("a")) {
+          navigation.classList.remove("is-open");
+          menu.setAttribute("aria-expanded", "false");
+          menu.setAttribute("aria-label", "Open navigation");
+        }
+      });
+    }
     document.addEventListener("click", (event) => {
       const toggle = event.target.closest(".verse-toggle");
       if (!toggle) return;

@@ -13,9 +13,11 @@
     <title>Thon Becker — Software Engineer</title>
 </head>
 <body>
+<a class="skip-link" href="#top">Skip to content</a>
 <header class="site-header">
     <a class="brand" href="#top">Thon Becker</a>
-    <nav aria-label="Primary navigation">
+    <button aria-controls="primary-navigation" aria-expanded="false" aria-label="Open navigation" class="menu-toggle" data-menu-toggle type="button">☰</button>
+    <nav aria-label="Primary navigation" id="primary-navigation">
         <a href="#about">About</a><a href="#apps">Apps</a><a href="#projects">Projects</a><a href="#contact">Contact</a>
         <button aria-label="Play dad joke of the day" class="joke-toggle" data-joke-toggle type="button">😂</button>
         <button aria-label="Toggle dark mode" class="theme-toggle" data-theme-toggle type="button">☾</button><a class="button compact" href="https://booking.thonbecker.biz/booking">Book a meeting</a>
@@ -30,6 +32,7 @@
             <p class="eyebrow">Software engineer · cloud architect</p>
             <h1>Building useful software with care.</h1>
             <p class="lede">I turn complex ideas into reliable, approachable applications using Java, Spring, AWS, and practical AI.</p>
+            <p class="booking-note"><strong>Need a thoughtful technical partner?</strong> Book a short consultation and we’ll clarify the problem, identify practical next steps, and follow up by email with a calendar invite.</p>
             <p class="experience-line">Bringing <span hx-get="/api/experience/count" hx-trigger="load" hx-swap="innerHTML">years of experience</span> to every project.</p>
             <div class="actions">
                 <a class="button" href="https://booking.thonbecker.biz/booking">Book a meeting</a>
@@ -55,11 +58,11 @@
     <section class="section" id="apps">
         <div class="section-heading"><div><p class="section-label">Interactive work</p><h2>Applications you can use.</h2></div><p>Experiments and tools built around real-time interaction, computer vision, and thoughtful automation.</p></div>
         <div class="app-grid">
-            <a class="card featured" href="https://app.thonbecker.biz/landscape"><span class="card-icon">✦</span><div><p class="card-kicker">AI planning</p><h3>Landscape Planner</h3><p>Upload your yard, explore plants for your hardiness zone, place them visually, and save private projects with email recovery.</p></div><span class="arrow">↗</span></a>
-            <a class="card" href="https://app.thonbecker.biz/skatetricks"><span class="card-icon">◫</span><div><p class="card-kicker">Computer vision</p><h3>Trick Analyzer</h3><p>Analyze skateboard footage with pose estimation and OpenAI vision.</p></div><span class="arrow">↗</span></a>
-            <a class="card" href="https://app.thonbecker.biz/trivia"><span class="card-icon">?</span><div><p class="card-kicker">Real-time multiplayer</p><h3>AI Trivia</h3><p>Dynamic questions and live WebSocket gameplay with friends.</p></div><span class="arrow">↗</span></a>
-            <a class="card" href="https://app.thonbecker.biz/foosball"><span class="card-icon">◎</span><div><p class="card-kicker">Stats and tournaments</p><h3>Foosball Tracker</h3><p>Record games, follow ratings, and manage tournament brackets.</p></div><span class="arrow">↗</span></a>
-            <a class="card" href="https://app.thonbecker.biz/tankgame"><span class="card-icon">◇</span><div><p class="card-kicker">Canvas and WebSockets</p><h3>Tank Battle</h3><p>A server-authoritative real-time multiplayer arena.</p></div><span class="arrow">↗</span></a>
+            <a class="card featured" href="https://app.thonbecker.biz/landscape"><span class="card-icon">✦</span><div><p class="card-kicker">Live · AI planning</p><h3>Landscape Planner</h3><p>Upload your yard, explore plants for your hardiness zone, place them visually, and save private projects with email recovery.</p></div><span class="arrow">↗</span></a>
+            <a class="card" href="https://app.thonbecker.biz/skatetricks"><span class="card-icon">◫</span><div><p class="card-kicker">Live · Computer vision</p><h3>Trick Analyzer</h3><p>Analyze skateboard footage with pose estimation and OpenAI vision.</p></div><span class="arrow">↗</span></a>
+            <a class="card" href="https://app.thonbecker.biz/trivia"><span class="card-icon">?</span><div><p class="card-kicker">Live · Real-time multiplayer</p><h3>AI Trivia</h3><p>Dynamic questions and live WebSocket gameplay with friends.</p></div><span class="arrow">↗</span></a>
+            <a class="card" href="https://app.thonbecker.biz/foosball"><span class="card-icon">◎</span><div><p class="card-kicker">Live · Stats and tournaments</p><h3>Foosball Tracker</h3><p>Record games, follow ratings, and manage tournament brackets.</p></div><span class="arrow">↗</span></a>
+            <a class="card" href="https://app.thonbecker.biz/tankgame"><span class="card-icon">◇</span><div><p class="card-kicker">Experiment · Canvas and WebSockets</p><h3>Tank Battle</h3><p>A server-authoritative real-time multiplayer arena.</p></div><span class="arrow">↗</span></a>
         </div>
     </section>
 
