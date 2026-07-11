@@ -81,7 +81,7 @@ The application uses **AWS Cognito** for user authentication via Spring Security
 **Create Test User:**
 
 ```bash
-aws-vault exec thonbecker -- aws cognito-idp admin-create-user \
+aws cognito-idp admin-create-user \
   --user-pool-id us-east-1_pHStskbGS \
   --username your-email@example.com \
   --user-attributes Name=email,Value=your-email@example.com Name=email_verified,Value=true \

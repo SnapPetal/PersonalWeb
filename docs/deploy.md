@@ -54,6 +54,24 @@ Known production target from `nextcloud-aws`:
 - Published port: `127.0.0.1:3003 -> 8080`
 - Public site: `https://thonbecker.biz`
 
+### Domain split
+
+The production host already runs host-managed nginx in the `nextcloud-aws` repository; do not add another Caddy or nginx container. The intended routing is:
+
+- `thonbecker.biz` and `www.thonbecker.biz` serve the files from `static-site/` at `/var/www/thonbecker-static`.
+- `booking.thonbecker.biz` proxies only booking and shared asset paths to `127.0.0.1:3003`.
+- `app.thonbecker.biz` proxies the complete Spring Boot application to `127.0.0.1:3003`.
+
+An nginx reference is available at [`deploy/lightsail/nginx-domains.conf.example`](../deploy/lightsail/nginx-domains.conf.example). The authoritative production virtual hosts must live in `nextcloud-aws/nginx` so its deployment workflow and Certbot manage them.
+
+Deploy the apex static files independently with:
+
+```bash
+./scripts/deploy-lightsail-static.sh
+```
+
+Landscape projects use a secure, anonymous browser cookie as their owner. Set `PERSONAL_ADMIN_USERNAME` and `PERSONAL_ADMIN_PASSWORD` in the production compose environment for HTTP Basic protection of booking administration.
+
 ### Required inputs
 
 - `DEPLOY_HOST`

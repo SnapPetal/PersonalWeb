@@ -33,4 +33,5 @@
     <include file="classpath:db/changelog/changes/027-calendar-event-mappings.xml"/>
     <include file="classpath:db/changelog/changes/028-add-embedding-text-column.xml"/>
     <include file="classpath:db/changelog/changes/029-booking-overlap-exclusion.xml"/>
+    <include file="classpath:db/changelog/changes/030-remove-cognito-landscape-projects.xml"/>
 </databaseChangeLog>

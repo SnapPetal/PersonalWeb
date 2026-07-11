@@ -1,0 +1,26 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="030-remove-cognito-landscape-projects" author="codex">
+        <comment>Delete legacy Cognito-owned projects while retaining their S3 keys for retryable cleanup.</comment>
+        <createTable tableName="legacy_image_cleanup" schemaName="landscape">
+            <column name="s3_key" type="VARCHAR(500)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <sql>
+            INSERT INTO landscape.legacy_image_cleanup (s3_key)
+            SELECT image_s3_key
+            FROM landscape.landscape_plans
+            WHERE user_id NOT LIKE 'anon:%'
+            ON CONFLICT (s3_key) DO NOTHING
+        </sql>
+        <delete tableName="landscape_plans" schemaName="landscape">
+            <where>user_id NOT LIKE 'anon:%'</where>
+        </delete>
+    </changeSet>
+</databaseChangeLog>

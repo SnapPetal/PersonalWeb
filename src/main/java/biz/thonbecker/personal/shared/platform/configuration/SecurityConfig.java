@@ -6,9 +6,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -41,22 +47,35 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/error")
                         .permitAll()
-                        // Require authentication for protected operations
-                        .requestMatchers("/landscape/plans/**")
-                        .authenticated()
                         .requestMatchers("/booking/admin/**")
-                        .authenticated()
+                        .hasRole("ADMIN")
                         // Allow everything else (for now)
                         .anyRequest()
                         .permitAll())
-                .oauth2Login(oauth2 -> oauth2.defaultSuccessUrl("/", false))
-                .logout(logout -> logout.logoutSuccessUrl("/").permitAll())
+                .httpBasic(basic -> {})
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
                         .ignoringRequestMatchers("/skatetricks-websocket/**", "/quiz-websocket/**"))
                 .addFilterAfter(new CsrfCookieFilter(), org.springframework.security.web.csrf.CsrfFilter.class);
         return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService(
+            @Value("${personal.admin.username}") final String username,
+            @Value("${personal.admin.password}") final String password,
+            final PasswordEncoder passwordEncoder) {
+        final var admin = User.withUsername(username)
+                .password(passwordEncoder.encode(password))
+                .roles("ADMIN")
+                .build();
+        return new InMemoryUserDetailsManager(admin);
     }
 
     /**

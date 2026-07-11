@@ -12,7 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
  * Meta-annotation for module integration tests.
  *
  * <p>Combines {@link ApplicationModuleTest} with Testcontainers PostgreSQL,
- * stub OAuth2, and the test profile. Usage:
+ * shared test infrastructure and the test profile. Usage:
  *
  * <pre>{@code
  * @IntegrationTest

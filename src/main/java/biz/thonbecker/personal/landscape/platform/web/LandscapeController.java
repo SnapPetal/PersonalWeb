@@ -7,8 +7,9 @@ import biz.thonbecker.personal.landscape.api.SeasonalAnalysis;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import biz.thonbecker.personal.landscape.platform.LandscapeService;
 import biz.thonbecker.personal.landscape.platform.web.model.AddPlantRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,20 +31,22 @@ import org.springframework.web.multipart.MultipartFile;
 public class LandscapeController {
 
     private final LandscapeService landscapeService;
+    private final LandscapeOwnerCookie landscapeOwnerCookie;
 
     /**
      * Main landscape planner page.
      *
      * @param model Spring MVC model
-     * @param principal Authenticated user
+     * @param request HTTP request
+     * @param response HTTP response
      * @return Thymeleaf template name
      */
     @GetMapping
-    public String landscapePlanner(final Model model, final Principal principal) {
-        if (principal != null) {
-            final var userPlans = landscapeService.getUserPlans(principal.getName());
-            model.addAttribute("userPlans", userPlans);
-        }
+    public String landscapePlanner(
+            final Model model, final HttpServletRequest request, final HttpServletResponse response) {
+        final var ownerId = landscapeOwnerCookie.resolve(request, response);
+        final var userPlans = landscapeService.getUserPlans(ownerId);
+        model.addAttribute("userPlans", userPlans);
         model.addAttribute("hardinessZones", HardinessZone.values());
         return "landscape/planner";
     }
@@ -56,7 +59,8 @@ public class LandscapeController {
      * @param description Optional description
      * @param hardinessZone Hardiness zone
      * @param zipCode Optional zip code
-     * @param principal Authenticated user
+     * @param request HTTP request
+     * @param response HTTP response
      * @return Created plan
      */
     @PostMapping("/plans")
@@ -67,22 +71,18 @@ public class LandscapeController {
             @RequestParam(value = "description", required = false) final String description,
             @RequestParam("hardinessZone") final HardinessZone hardinessZone,
             @RequestParam(value = "zipCode", required = false) final String zipCode,
-            final Principal principal) {
+            final HttpServletRequest request,
+            final HttpServletResponse response) {
 
         if (image.isEmpty()) {
             log.warn("Empty image uploaded for plan creation");
             return ResponseEntity.badRequest().build();
         }
 
-        if (principal == null) {
-            log.warn("Unauthenticated user attempted to create plan");
-            return ResponseEntity.status(401).build();
-        }
-
         try {
             // CRITICAL: Copy bytes immediately before MultipartFile cleanup
             final var imageBytes = image.getBytes();
-            final var userId = principal.getName();
+            final var userId = landscapeOwnerCookie.resolve(request, response);
 
             log.info("Creating landscape plan for user: {}, zone: {}", userId, hardinessZone);
 
@@ -108,9 +108,11 @@ public class LandscapeController {
      */
     @GetMapping("/plans/{planId}")
     @ResponseBody
-    public ResponseEntity<LandscapePlan> getPlan(@PathVariable final Long planId) {
+    public ResponseEntity<LandscapePlan> getPlan(
+            @PathVariable final Long planId, final HttpServletRequest request, final HttpServletResponse response) {
         try {
-            final var plan = landscapeService.getPlan(planId);
+            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            final var plan = landscapeService.getPlan(planId, ownerId);
             return ResponseEntity.ok(plan);
         } catch (final Exception e) {
             log.error("Failed to retrieve plan {}: {}", planId, e.getMessage(), e);
@@ -119,19 +121,18 @@ public class LandscapeController {
     }
 
     /**
-     * Lists all plans for the authenticated user.
+     * Lists all plans for the current browser owner.
      *
-     * @param principal Authenticated user
+     * @param request HTTP request
+     * @param response HTTP response
      * @return List of user's plans
      */
     @GetMapping("/plans")
     @ResponseBody
-    public ResponseEntity<List<LandscapePlan>> getUserPlans(final Principal principal) {
-        if (principal == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        final var plans = landscapeService.getUserPlans(principal.getName());
+    public ResponseEntity<List<LandscapePlan>> getUserPlans(
+            final HttpServletRequest request, final HttpServletResponse response) {
+        final var ownerId = landscapeOwnerCookie.resolve(request, response);
+        final var plans = landscapeService.getUserPlans(ownerId);
         return ResponseEntity.ok(plans);
     }
 
@@ -180,9 +181,14 @@ public class LandscapeController {
      * @return Thymeleaf fragment with recommendations
      */
     @GetMapping("/plans/{planId}/recommendations")
-    public String getRecommendations(@PathVariable final Long planId, final Model model) {
+    public String getRecommendations(
+            @PathVariable final Long planId,
+            final Model model,
+            final HttpServletRequest request,
+            final HttpServletResponse response) {
         try {
-            final var recommendations = landscapeService.getRecommendations(planId);
+            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            final var recommendations = landscapeService.getRecommendations(planId, ownerId);
             model.addAttribute("recommendations", recommendations);
             log.info("Retrieved {} recommendations for plan {}", recommendations.size(), planId);
         } catch (final Exception e) {
@@ -208,12 +214,17 @@ public class LandscapeController {
     @PostMapping("/plans/{planId}/placements")
     @ResponseBody
     public ResponseEntity<java.util.Map<String, Long>> addPlantPlacement(
-            @PathVariable final Long planId, @RequestBody final AddPlantRequest request) {
+            @PathVariable final Long planId,
+            @RequestBody final AddPlantRequest request,
+            final HttpServletRequest httpRequest,
+            final HttpServletResponse response) {
 
         try {
             log.info("Adding plant placement to plan {}: {}", planId, request.usdaSymbol());
+            final var ownerId = landscapeOwnerCookie.resolve(httpRequest, response);
             final var placementId = landscapeService.addPlantPlacement(
                     planId,
+                    ownerId,
                     request.usdaSymbol(),
                     request.plantName(),
                     request.commonName(),
@@ -237,11 +248,15 @@ public class LandscapeController {
     @DeleteMapping("/plans/{planId}/placements/{placementId}")
     @ResponseBody
     public ResponseEntity<Void> removePlantPlacement(
-            @PathVariable final Long planId, @PathVariable final Long placementId) {
+            @PathVariable final Long planId,
+            @PathVariable final Long placementId,
+            final HttpServletRequest request,
+            final HttpServletResponse response) {
 
         try {
             log.info("Removing plant placement {} from plan {}", placementId, planId);
-            landscapeService.removePlantPlacement(planId, placementId);
+            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            landscapeService.removePlantPlacement(planId, placementId, ownerId);
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to remove plant placement {} from plan {}: {}", placementId, planId, e.getMessage(), e);
@@ -321,10 +336,12 @@ public class LandscapeController {
      */
     @GetMapping("/plans/{planId}/seasons")
     @ResponseBody
-    public ResponseEntity<SeasonalAnalysis> getSeasonalAnalysis(@PathVariable final Long planId) {
+    public ResponseEntity<SeasonalAnalysis> getSeasonalAnalysis(
+            @PathVariable final Long planId, final HttpServletRequest request, final HttpServletResponse response) {
         try {
             log.info("Generating seasonal analysis for plan {}", planId);
-            final var analysis = landscapeService.getSeasonalAnalysis(planId);
+            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            final var analysis = landscapeService.getSeasonalAnalysis(planId, ownerId);
             return ResponseEntity.ok(analysis);
         } catch (final Exception e) {
             log.error("Failed to generate seasonal analysis for plan {}: {}", planId, e.getMessage(), e);
@@ -340,10 +357,12 @@ public class LandscapeController {
      */
     @DeleteMapping("/plans/{planId}")
     @ResponseBody
-    public ResponseEntity<Void> deletePlan(@PathVariable final Long planId) {
+    public ResponseEntity<Void> deletePlan(
+            @PathVariable final Long planId, final HttpServletRequest request, final HttpServletResponse response) {
         try {
             log.info("Deleting landscape plan {}", planId);
-            landscapeService.deletePlan(planId);
+            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            landscapeService.deletePlan(planId, ownerId);
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to delete plan {}: {}", planId, e.getMessage(), e);
