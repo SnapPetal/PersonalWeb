@@ -5,6 +5,33 @@
     min-height: calc(100vh - 72px);
 }
 
+.booking-page .booking-hero {
+    padding-inline: 1rem;
+}
+
+.booking-page .booking-hero h1 {
+    letter-spacing: -0.03em;
+}
+
+.booking-page .booking-hero .lead {
+    max-width: 42rem;
+    margin-inline: auto;
+}
+
+.booking-page .booking-type-card .card-header,
+.booking-page .booking-form-card .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.booking-page .booking-type-card .card-body,
+.booking-page .booking-form-card .card-body {
+    padding: 1.25rem;
+}
+
+.booking-page .booking-form-card {
+    scroll-margin-top: 5rem;
+}
+
 .booking-page .card {
     border-color: var(--app-border-color);
 }
@@ -22,4 +49,39 @@
 [data-bs-theme="dark"] .booking-page .alert-info {
     background-color: var(--app-chip-bg);
     color: var(--app-body-color);
+}
+
+@media (max-width: 576px) {
+    .booking-page main {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    .booking-page .booking-hero {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+
+    .booking-page .booking-hero h1 {
+        font-size: 2.25rem;
+    }
+
+    .booking-page .booking-hero .lead {
+        font-size: 1.05rem;
+    }
+
+    .booking-page .row.g-4 {
+        --bs-gutter-y: 1rem;
+    }
+
+    .booking-page .booking-type-card .card-body,
+    .booking-page .booking-form-card .card-body {
+        padding: 1rem;
+    }
+
+    .booking-page .booking-type-card .btn,
+    .booking-page .booking-form-card .btn-lg {
+        min-height: 2.875rem;
+    }
 }
