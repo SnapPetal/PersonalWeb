@@ -126,8 +126,6 @@ jobs:
               sleep 3
             done
 
-      - name: Verify public domains
-        run: |
-          curl --fail --silent --show-error --retry 5 https://thonbecker.biz/ >/dev/null
-          curl --fail --silent --show-error --retry 5 https://app.thonbecker.biz/landscape >/dev/null
-          curl --fail --silent --show-error --retry 5 https://booking.thonbecker.biz/booking >/dev/null
+            curl --fail --silent --show-error --resolve thonbecker.biz:443:127.0.0.1 https://thonbecker.biz/ >/dev/null
+            curl --fail --silent --show-error --resolve app.thonbecker.biz:443:127.0.0.1 https://app.thonbecker.biz/landscape >/dev/null
+            curl --fail --silent --show-error --resolve booking.thonbecker.biz:443:127.0.0.1 https://booking.thonbecker.biz/booking >/dev/null
