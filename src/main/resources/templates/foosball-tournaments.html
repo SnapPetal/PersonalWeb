@@ -58,8 +58,9 @@
                 </div>
                 <div class="card-body">
                     <div id="tournaments-list"
-                         hx-get="/api/tournaments"
+                         hx-get="/foosball/tournaments/fragments/list"
                          hx-trigger="load"
+                         hx-indicator="#tournaments-list"
                          hx-swap="innerHTML">
                         <div class="text-center py-5">
                             <div class="spinner-border text-primary" role="status">
@@ -122,68 +123,6 @@
     </div>
 
     <script>
-        // Add HTMX response handler for tournament list
-        htmx.on('htmx:afterSwap', function(event) {
-            if (event.detail.target.id === 'tournaments-list') {
-                const data = JSON.parse(event.detail.xhr.response);
-                renderTournaments(data);
-            }
-        });
-
-        function renderTournaments(tournaments) {
-            const container = document.getElementById('tournaments-list');
-
-            if (!tournaments || tournaments.length === 0) {
-                container.innerHTML = '<p class="text-center text-white py-4">No tournaments yet. Create one to get started!</p>';
-                return;
-            }
-
-            const html = tournaments.map(t => `
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h5 class="card-title">${escapeHtml(t.name)}</h5>
-                                ${t.description ? `<p class="text-muted">${escapeHtml(t.description)}</p>` : ''}
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <span class="badge ${getStatusColor(t.status)}">${t.status}</span>
-                                    <span class="badge bg-secondary">${t.tournamentType}</span>
-                                    <span class="badge bg-info text-dark">
-                                        <i class="bi bi-people"></i> ${t.activeRegistrationsCount || 0} participants
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <a href="/foosball/tournaments/${t.id}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            container.innerHTML = html;
-        }
-
-        function getStatusColor(status) {
-            const colors = {
-                'DRAFT': 'bg-secondary',
-                'REGISTRATION_OPEN': 'bg-success',
-                'REGISTRATION_CLOSED': 'bg-warning',
-                'IN_PROGRESS': 'bg-primary',
-                'COMPLETED': 'bg-dark',
-                'CANCELLED': 'bg-danger'
-            };
-            return colors[status] || 'bg-secondary';
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
         async function createTournament() {
             const form = document.getElementById('createTournamentForm');
             const formData = new FormData(form);

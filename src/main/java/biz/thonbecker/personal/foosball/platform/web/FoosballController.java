@@ -9,6 +9,7 @@ import biz.thonbecker.personal.foosball.platform.TournamentService;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -70,6 +71,14 @@ public class FoosballController {
     public String tournaments(Model model) {
         model.addAttribute("players", foosballService.getAllPlayers());
         return "foosball-tournaments";
+    }
+
+    @GetMapping("/tournaments/fragments/list")
+    public String tournamentListFragment(Model model, Pageable pageable) {
+        model.addAttribute(
+                "tournaments",
+                tournamentService.getTournamentSummaries(pageable).getContent());
+        return "foosball-tournament-fragments :: tournamentList";
     }
 
     @GetMapping("/tournaments/{id}")
