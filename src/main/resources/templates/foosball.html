@@ -5,7 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Table Soccer (Foosball Management) - Thon Becker</title>
     
-    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/svg+xml">
     
     <!-- CSRF Token -->
     <meta name="_csrf" th:content="${_csrf.token}"/>
@@ -25,7 +25,7 @@
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
     <script th:src="@{/js/foosball.js}"></script>
 </head>
-<body class="foosball-page">
+<body class="foosball-page" hx-ext="loading-states, form-validation, error-handling">
     <!-- Simple Header with Back Button -->
     <div class="foosball-header py-3 border-bottom bg-light">
         <div class="container">
@@ -152,7 +152,7 @@
                                 <div id="playerStatsList" 
                                     class="tab-pane fade show active"
                                     hx-get="/foosball/fragments/player-stats"
-                                    hx-trigger="load, playerUpdate from:body"
+                                    hx-trigger="playerUpdate from:body"
                                     hx-target="this"
                                     hx-swap="innerHTML transition:true"
                                     hx-indicator="#stats-loading">
@@ -243,10 +243,13 @@
                                                 name="whiteTeamPlayer1"
                                                 required
                                                 hx-get="/foosball/fragments/player-options"
-                                                hx-trigger="load"
+                                                hx-trigger="playerUpdate from:body"
                                                 hx-target="this"
                                                 hx-swap="innerHTML">
                                             <option value="">Select Player...</option>
+                                            <option th:each="player : ${players}"
+                                                    th:value="${player.name}"
+                                                    th:text="${player.name}"></option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
@@ -256,10 +259,13 @@
                                                 name="whiteTeamPlayer2"
                                                 required
                                                 hx-get="/foosball/fragments/player-options"
-                                                hx-trigger="load"
+                                                hx-trigger="playerUpdate from:body"
                                                 hx-target="this"
                                                 hx-swap="innerHTML">
                                             <option value="">Select Player...</option>
+                                            <option th:each="player : ${players}"
+                                                    th:value="${player.name}"
+                                                    th:text="${player.name}"></option>
                                         </select>
                                     </div>
                                 </div>
@@ -274,10 +280,13 @@
                                                 name="blackTeamPlayer1"
                                                 required
                                                 hx-get="/foosball/fragments/player-options"
-                                                hx-trigger="load"
+                                                hx-trigger="playerUpdate from:body"
                                                 hx-target="this"
                                                 hx-swap="innerHTML">
                                             <option value="">Select Player...</option>
+                                            <option th:each="player : ${players}"
+                                                    th:value="${player.name}"
+                                                    th:text="${player.name}"></option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
@@ -287,10 +296,13 @@
                                                 name="blackTeamPlayer2"
                                                 required
                                                 hx-get="/foosball/fragments/player-options"
-                                                hx-trigger="load"
+                                                hx-trigger="playerUpdate from:body"
                                                 hx-target="this"
                                                 hx-swap="innerHTML">
                                             <option value="">Select Player...</option>
+                                            <option th:each="player : ${players}"
+                                                    th:value="${player.name}"
+                                                    th:text="${player.name}"></option>
                                         </select>
                                     </div>
                                 </div>

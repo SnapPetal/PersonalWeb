@@ -5,7 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Tournaments - Foosball - Thon Becker</title>
 
-    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/svg+xml">
 
     <!-- CSRF Token -->
     <meta name="_csrf" th:content="${_csrf.token}"/>
@@ -20,10 +20,11 @@
 
     <!-- JS dependencies -->
     <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+    <script th:src="@{/js/htmx-extensions.js}"></script>
     <script th:src="@{/js/csrf-utils.js}"></script>
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 </head>
-<body class="foosball-page">
+<body class="foosball-page" hx-ext="loading-states, form-validation, error-handling">
     <!-- Header -->
     <div class="foosball-header py-3 border-bottom bg-light">
         <div class="container">

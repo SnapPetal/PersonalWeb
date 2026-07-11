@@ -95,3 +95,18 @@ htmx.defineExtension("error-handling", {
     }
   },
 });
+
+// Keep server-side HTMX failures visible without duplicating page-specific code.
+document.addEventListener("DOMContentLoaded", () => {
+  document.body.addEventListener("htmx:responseError", (event) => {
+    const status = event.detail.xhr?.status ?? "unknown";
+    console.error(
+      `HTMX request failed with status ${status}`,
+      event.detail.pathInfo?.requestPath,
+    );
+  });
+
+  document.body.addEventListener("htmx:sendError", (event) => {
+    console.error("HTMX request could not be sent", event.detail.error);
+  });
+});

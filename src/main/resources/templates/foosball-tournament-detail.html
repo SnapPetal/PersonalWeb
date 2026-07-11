@@ -5,7 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title th:text="${tournament.name} + ' - Tournaments - Foosball'">Tournament Detail</title>
 
-    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/svg+xml">
 
     <!-- CSRF Token -->
     <meta name="_csrf" th:content="${_csrf.token}"/>

@@ -6,12 +6,13 @@
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Landscape Planner - Personal</title>
-    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/svg+xml">
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
     <link rel="stylesheet" th:href="@{/css/landscape.css}">
+    <script th:src="@{/js/htmx-extensions.js}"></script>
 </head>
-<body class="landscape-page">
+<body class="landscape-page" hx-ext="loading-states, form-validation, error-handling">
     <div class="container-fluid py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-tree"></i> Landscape Planner</h2>

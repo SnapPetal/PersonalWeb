@@ -6,12 +6,11 @@
     <title>Booking Confirmation - Thon Becker</title>
 
     <!-- JS dependencies -->
-    <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    <th:block th:replace="~{fragments/assets :: bootstrapScripts}"></th:block>
     <script th:src="@{/js/theme-toggle.js}"></script>
 
     <!-- CSS Dependencies -->
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    <th:block th:replace="~{fragments/assets :: bootstrapCss}"></th:block>
     <link th:href="@{/css/main.css}" rel="stylesheet">
 
 </head>

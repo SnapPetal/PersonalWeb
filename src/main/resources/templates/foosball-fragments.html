@@ -2,7 +2,7 @@
 <html lang="en-US" xmlns:th="http://www.thymeleaf.org">
 
 <!-- Player Statistics List Fragment -->
-<div th:fragment="playerStatsList" id="playerStatsList" class="skeleton-loading">
+<div th:fragment="playerStatsList" class="skeleton-loading">
     <div th:if="${#lists.isEmpty(playerStats)}"
          class="text-center text-muted py-4 foosball-empty-state"
          hx-swap-oob="true">

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:fragment="bootstrapCss">
+        <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
+        <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">
+    </th:block>
+
+    <th:block th:fragment="htmxScripts">
+        <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}"></script>
+        <script th:src="@{/js/htmx-extensions.js}"></script>
+        <script th:src="@{/js/csrf-utils.js}"></script>
+    </th:block>
+
+    <th:block th:fragment="bootstrapScripts">
+        <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
+    </th:block>
+</head>
+</html>
