@@ -35,7 +35,7 @@ A modular monolith personal portfolio and interactive applications platform buil
 - Java 25+
 - Maven 3.9.16+
 - Docker (Spring Boot auto-starts PostgreSQL via Docker Compose)
-- OpenAI API key and AWS credentials (Polly, S3, S3 Vectors, Cognito)
+- OpenAI API key and AWS credentials (Polly, S3, S3 Vectors, SES)
 
 ### Setup
 
@@ -43,7 +43,7 @@ A modular monolith personal portfolio and interactive applications platform buil
 git clone https://github.com/SnapPetal/PersonalWeb.git
 cd PersonalWeb
 cp .env.example .env
-# Edit .env with your AWS and Cognito credentials
+# Edit .env with your AWS, OpenAI, and Nextcloud credentials
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
@@ -59,12 +59,12 @@ Skatetricks video analysis extracts duration-aware sequential frames from upload
 
 |     Layer     |                                    Technologies                                    |
 |---------------|------------------------------------------------------------------------------------|
-| **Backend**   | Spring Boot 4, Spring Modulith, Spring AI, Spring Security + Cognito OAuth2        |
+| **Backend**   | Spring Boot 4, Spring Modulith, Spring AI, Spring Security                         |
 | **AI/ML**     | Spring AI with OpenAI chat, vision, embeddings, image generation; DJL PyTorch YOLO |
 | **Database**  | PostgreSQL 18, Liquibase migrations, Caffeine cache                                |
 | **Frontend**  | Thymeleaf, HTMX, Alpine.js, Bootstrap 5, Fabric.js, WebJars                        |
 | **Real-time** | STOMP over SockJS (trivia, tank game)                                              |
-| **AWS**       | S3, S3 Vectors, SES, CloudFront, Polly, Cognito, Lightsail                         |
+| **AWS**       | S3, S3 Vectors, SES, CloudFront, Polly, Lightsail                                   |
 
 ### Modules
 

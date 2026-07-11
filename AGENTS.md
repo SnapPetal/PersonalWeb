@@ -36,14 +36,7 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 ## Local Development Setup
 
 1. Copy `.env.example` to `.env` and fill in AWS credentials (`PERSONAL_AWS_ACCESS_KEY_ID`, `PERSONAL_AWS_SECRET_ACCESS_KEY`, `PERSONAL_AWS_REGION`), OpenAI credentials (`PERSONAL_OPENAI_API_KEY`), and Nextcloud credentials (`PERSONAL_NEXTCLOUD_USERNAME`, `PERSONAL_NEXTCLOUD_APP_PASSWORD`).
-2. Add Cognito OAuth2 credentials to `.env`:
-
-   ```bash
-   COGNITO_USER_POOL_ID=us-east-1_pHStskbGS
-   COGNITO_CLIENT_ID=7vaut06m1c699il4qo6ri00724
-   COGNITO_CLIENT_SECRET=llh0jo5r7v6tjsodufvc24lnfcouegmq5b6ktjsqtfhq4r3gpd6
-   ```
-3. Spring Boot Docker Compose integration auto-starts PostgreSQL from `docker-compose.yml` when running locally—no manual `docker-compose up` needed.
+2. Spring Boot Docker Compose integration auto-starts PostgreSQL from `docker-compose.yml` when running locally—no manual `docker-compose up` needed.
 4. The `dev` profile (`application-dev.yml`) overrides the datasource to `localhost:5432/dbmaster` with user `dbmasteruser` and no password.
 5. **Hot Reload**: Spring Boot DevTools is enabled in the `dev` profile for automatic restart when files change:
    - Thymeleaf templates (`src/main/resources/templates/`)
@@ -53,56 +46,23 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 
 ## Authentication
 
-### AWS Cognito OAuth2
+### Authentication and access control
 
-The application uses **AWS Cognito** for user authentication via Spring Security OAuth2 Client.
-
-**User Pool Configuration:**
-- Pool ID: `us-east-1_pHStskbGS` (thonbecker-biz-users)
-- Domain: `thonbecker-biz.auth.us-east-1.amazoncognito.com`
-- App Client: `7vaut06m1c699il4qo6ri00724` (personal-web-oauth)
-- Callback URLs: `http://localhost:8080/login/oauth2/code/cognito`, `https://thonbecker.com/login/oauth2/code/cognito`
-- Logout URLs: `http://localhost:8080/`, `https://thonbecker.com/`
-- OAuth Scopes: `openid`, `profile`, `email`
+Cognito/OAuth2 is no longer used. Public landscape projects are associated with an anonymous owner cookie and can be recovered through an email magic link. Booking administration uses HTTP Basic authentication with credentials supplied to the deployment environment.
 
 **Protected Endpoints:**
 - `/landscape/plans/**` - Requires authentication (landscape plan CRUD operations)
 - `/booking/admin/**` - Requires authentication (booking administration)
 - All other endpoints are public by default
 
-**Login Flow:**
-1. User clicks "Login" button on landscape planner page
-2. Redirects to Cognito hosted UI: `/oauth2/authorization/cognito`
-3. User authenticates with Cognito
-4. Redirects back to `/landscape` with OAuth code
-5. Spring Security exchanges code for tokens
-6. User session established, `principal.getName()` returns user email
-
-**Create Test User:**
-
-```bash
-aws cognito-idp admin-create-user \
-  --user-pool-id us-east-1_pHStskbGS \
-  --username your-email@example.com \
-  --user-attributes Name=email,Value=your-email@example.com Name=email_verified,Value=true \
-  --temporary-password TempPass123! \
-  --region us-east-1
-```
-
-**Thymeleaf Security Integration:**
-- Dependency: `thymeleaf-extras-springsecurity6`
-- Use `sec:authorize="isAuthenticated()"` to show/hide elements
-- Use `sec:authentication="name"` to display user email
-
 **GitHub Secrets (for production):**
 
 ```bash
-PERSONAL_COGNITO_USER_POOL_ID
-PERSONAL_COGNITO_CLIENT_ID
-PERSONAL_COGNITO_CLIENT_SECRET
 PERSONAL_OPENAI_API_KEY
 PERSONAL_NEXTCLOUD_USERNAME
 PERSONAL_NEXTCLOUD_APP_PASSWORD
+PERSONAL_ADMIN_USERNAME
+PERSONAL_ADMIN_PASSWORD
 ```
 
 ## Architecture
@@ -195,7 +155,7 @@ Other event listeners (logging in notification module) use `@EventListener` sinc
 - **Frontend**: Thymeleaf templates + HTMX + Alpine.js + Bootstrap 5. Frontend libraries served as WebJars. Fabric.js for interactive canvas (landscape plant placement). **IMPORTANT**: All static resource references (`/js/**`, `/css/**`) MUST use Thymeleaf expressions (`th:src="@{/js/...}"`, `th:href="@{/css/...}"`), never plain `src` or `href`. Spring Boot's content-based resource versioning (`spring.web.resources.chain.strategy.content`) appends MD5 hashes to URLs for cache busting across deployments.
 - **Alpine.js**: Used for client-side reactivity across all modules. Components are registered via `Alpine.data()` inside an `alpine:init` event listener (e.g., `document.addEventListener("alpine:init", () => { Alpine.data("bibleVerse", () => ({...})); });`). This ensures components are registered with Alpine before DOM processing and avoids race conditions with `defer`-loaded Alpine. WebSocket/canvas/media code stays imperative within the component methods. Alpine.js is loaded via WebJar (`org.webjars.npm:alpinejs:3.14.9`) with `defer` attribute. Global CSS rule `[x-cloak] { display: none !important; }` in `main.css` prevents flash of unstyled content. Use `x-if` (not `x-show`) when multiple states should never coexist in the DOM simultaneously (e.g., loading spinner vs content).
 - **HTMX + Alpine.js Coexistence**: HTMX handles server-rendered fragment swaps (foosball, plant search). Alpine.js handles client-side state (games, booking form, media). For pages using both (landscape planner), HTMX swaps raw HTML fragments and Alpine manages surrounding UI state. The `selectTimeSlot` function in booking is exposed to `window` via Alpine's `init()` for compatibility with server-rendered fragment `onclick` handlers.
-- **Theme Toggle**: Sun/moon icon toggle in navbar (home page only) as Alpine `themeToggle()` component. Theme preference stored in localStorage (`darkMode: enabled/disabled`). Booking pages automatically apply the saved theme without showing the toggle.
+- **Theme Toggle**: Sun/moon icon toggle in navbar (home page only) as Alpine `themeToggle()` component. Theme preference is stored in the shared `PERSONALWEB_THEME` cookie on `.thonbecker.biz`, so booking pages automatically apply the same theme.
 - **CSRF**: Cookie-based CSRF tokens (`CookieCsrfTokenRepository`) with `CsrfTokenRequestAttributeHandler` for eager token generation (required in Spring Security 6+ where CSRF tokens are deferred by default). `csrf-utils.js` supports both meta tag and cookie-based token delivery with cookie as fallback. Alpine components on pages without meta tags (booking) read the token directly from the `XSRF-TOKEN` cookie.
 - **Structured AI Output**: Skatetricks trick analyzer uses `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT` with Spring AI's `.entity()` for type-safe JSON responses from OpenAI. `@JsonIgnoreProperties(ignoreUnknown = true)` on response schema records handles extra fields the model may include. System prompts lead with "Your output MUST be ONLY a valid JSON object" to prevent text-before-JSON responses.
 
@@ -444,7 +404,7 @@ landscape:
     timeout: 10000
   storage:
     bucket: cdn-page-stack-processedmediabucket446d3976-oonhpdwdpfzq
-    cdn-domain: https://cdn.thonbecker.com
+    cdn-domain: https://cdn.thonbecker.biz
     folder-prefix: landscape-plans/
 ```
 
