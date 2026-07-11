@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
@@ -69,6 +70,13 @@ public class LandscapeImageStorageService {
             log.error("Failed to store landscape image: {}", e.getMessage(), e);
             throw new ImageStorageException("Failed to store image to S3", e);
         }
+    }
+
+    public void delete(final String objectKey) {
+        final var deleteRequest =
+                DeleteObjectRequest.builder().bucket(bucketName).key(objectKey).build();
+        s3Client.deleteObject(deleteRequest);
+        log.info("Deleted landscape image from S3: {}", objectKey);
     }
 
     /**

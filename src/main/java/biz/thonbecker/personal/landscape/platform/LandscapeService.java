@@ -81,10 +81,11 @@ public class LandscapeService {
     }
 
     @Transactional
-    public List<PlantInfo> getRecommendations(final Long planId) {
+    public List<PlantInfo> getRecommendations(final Long planId, final String ownerId) {
         log.debug("Fetching plant recommendations for plan {}", planId);
 
         final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
+        requireOwner(plan, ownerId);
         if (!plan.getRecommendations().isEmpty()) {
             return plan.getRecommendations().stream()
                     .map(this::convertRecommendation)
@@ -110,6 +111,7 @@ public class LandscapeService {
     @Transactional
     public Long addPlantPlacement(
             final Long planId,
+            final String ownerId,
             final String usdaSymbol,
             final String plantName,
             final String commonName,
@@ -120,6 +122,7 @@ public class LandscapeService {
         log.info("Adding plant placement to plan {}: {}", planId, usdaSymbol);
 
         final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
+        requireOwner(plan, ownerId);
 
         // Use provided names; only call USDA API as fallback
         var resolvedPlantName = plantName;
@@ -147,12 +150,13 @@ public class LandscapeService {
     }
 
     @Transactional
-    public void removePlantPlacement(final Long planId, final Long placementId) {
+    public void removePlantPlacement(final Long planId, final Long placementId, final String ownerId) {
         log.info("Removing plant placement {} from plan {}", placementId, planId);
 
         final var placement = placementRepository
                 .findById(placementId)
                 .orElseThrow(() -> new IllegalArgumentException("Placement not found: " + placementId));
+        requireOwner(placement.getPlan(), ownerId);
 
         if (!placement.getPlan().getId().equals(planId)) {
             throw new IllegalArgumentException("Placement " + placementId + " does not belong to plan " + planId);
@@ -164,11 +168,12 @@ public class LandscapeService {
     }
 
     @Transactional(readOnly = true)
-    public LandscapePlan getPlan(final Long planId) {
+    public LandscapePlan getPlan(final Long planId, final String ownerId) {
         log.debug("Fetching landscape plan {}", planId);
 
         final var plan =
                 planRepository.findByIdWithPlacements(planId).orElseThrow(() -> new PlanNotFoundException(planId));
+        requireOwner(plan, ownerId);
 
         return convertToDomain(plan);
     }
@@ -183,22 +188,25 @@ public class LandscapeService {
     }
 
     @Transactional
-    public void deletePlan(final Long planId) {
+    public void deletePlan(final Long planId, final String ownerId) {
         log.info("Deleting landscape plan {}", planId);
 
         final var plan = planRepository.findById(planId).orElseThrow(() -> new PlanNotFoundException(planId));
+        requireOwner(plan, ownerId);
 
+        imageStorageService.delete(plan.getImageS3Key());
         planRepository.delete(plan);
 
         log.info("Successfully deleted landscape plan {}", planId);
     }
 
     @Transactional(readOnly = true)
-    public SeasonalAnalysis getSeasonalAnalysis(final Long planId) {
+    public SeasonalAnalysis getSeasonalAnalysis(final Long planId, final String ownerId) {
         log.info("Generating seasonal analysis for plan {}", planId);
 
         final var plan =
                 planRepository.findByIdWithPlacements(planId).orElseThrow(() -> new PlanNotFoundException(planId));
+        requireOwner(plan, ownerId);
 
         final var plantDescriptions = plan.getPlacements().stream()
                 .map(p -> {
@@ -257,6 +265,12 @@ public class LandscapeService {
                 .map(recommendation -> toRecommendedPlantEntity(plan, recommendation))
                 .forEach(plan.getRecommendations()::add);
         log.info("Stored {} AI plant recommendations for plan {}", recommendations.size(), plan.getId());
+    }
+
+    private void requireOwner(final LandscapePlanEntity plan, final String ownerId) {
+        if (!Objects.equals(plan.getUserId(), ownerId)) {
+            throw new PlanNotFoundException(plan.getId());
+        }
     }
 
     private static RecommendedPlantEntity toRecommendedPlantEntity(

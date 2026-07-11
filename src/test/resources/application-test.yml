@@ -24,3 +24,8 @@ calendar:
     password: test
     calendar-name: bookings
     organizer-email: test@test.com
+
+personal:
+  admin:
+    username: test-admin
+    password: test-password

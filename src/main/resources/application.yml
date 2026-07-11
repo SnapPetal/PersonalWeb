@@ -10,6 +10,8 @@ server:
 spring:
   application:
     name: "personal"
+  config:
+    import: optional:file:.env[.properties]
   # File Upload Configuration
   servlet:
     multipart:
@@ -82,25 +84,15 @@ spring:
         queue-capacity: 100
       thread-name-prefix: websocket-task-
 
-  # OAuth2 / Cognito Configuration
-  security:
-    oauth2:
-      client:
-        registration:
-          cognito:
-            client-id: ${PERSONAL_COGNITO_CLIENT_ID}
-            client-secret: ${PERSONAL_COGNITO_CLIENT_SECRET}
-            scope: openid,profile,email
-            client-name: AWS Cognito
-            redirect-uri: https://thonbecker.biz/login/oauth2/code/cognito
-        provider:
-          cognito:
-            issuer-uri: https://cognito-idp.${PERSONAL_AWS_REGION:us-east-1}.amazonaws.com/${PERSONAL_COGNITO_USER_POOL_ID}
-
 posthog:
   enabled: ${PERSONAL_POSTHOG_ENABLED:false}
   api-key: ${PERSONAL_POSTHOG_API_KEY:}
   api-host: ${PERSONAL_POSTHOG_API_HOST:https://us.i.posthog.com}
+
+personal:
+  admin:
+    username: ${PERSONAL_ADMIN_USERNAME}
+    password: ${PERSONAL_ADMIN_PASSWORD}
 
 # Bible Verse API Configuration
 bible:

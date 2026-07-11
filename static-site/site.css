@@ -1,0 +1,48 @@
+:root {
+    color-scheme: light dark;
+    --background: #f7f8f4;
+    --surface: #ffffff;
+    --text: #17201b;
+    --muted: #58635d;
+    --accent: #176b46;
+    --border: #d9dfda;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+header, main, footer { width: min(1120px, calc(100% - 2rem)); margin-inline: auto; }
+header, footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+header { padding-block: 1.25rem; }
+nav, .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
+a { color: var(--accent); font-weight: 650; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.brand { color: var(--text); font-size: 1.2rem; }
+.hero { padding: clamp(5rem, 12vw, 10rem) 0; max-width: 850px; }
+.eyebrow { color: var(--accent); font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+h1 { max-width: 800px; margin: .35rem 0 1rem; font-size: clamp(3rem, 8vw, 6.5rem); letter-spacing: -.055em; line-height: .98; }
+h2 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.035em; }
+h3 { margin-top: 0; font-size: 1.35rem; }
+.lede { max-width: 650px; color: var(--muted); font-size: clamp(1.2rem, 2.5vw, 1.55rem); }
+.actions { margin-top: 2rem; }
+.button { display: inline-block; padding: .8rem 1.15rem; border: 1px solid var(--accent); border-radius: 999px; background: var(--accent); color: white; }
+.button:hover { text-decoration: none; filter: brightness(1.08); }
+.button.secondary { background: transparent; color: var(--accent); }
+.button.small { padding: .45rem .85rem; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+article { padding: 1.5rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--surface); }
+article p { color: var(--muted); }
+footer { margin-top: 6rem; padding-block: 2rem; border-top: 1px solid var(--border); color: var(--muted); }
+@media (max-width: 720px) {
+    header, footer { align-items: flex-start; flex-direction: column; }
+    .grid { grid-template-columns: 1fr; }
+    nav > a:not(.button) { display: none; }
+}
+@media (prefers-color-scheme: dark) {
+    :root { --background: #101512; --surface: #18201b; --text: #edf5ef; --muted: #abb9af; --accent: #64d29c; --border: #344239; }
+    .button { color: #102218; }
+}
