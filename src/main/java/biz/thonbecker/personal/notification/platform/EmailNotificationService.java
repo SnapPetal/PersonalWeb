@@ -54,7 +54,7 @@ public class EmailNotificationService {
                   Confirmation Code: %s
 
                 You can view or cancel your booking at:
-                  https://thonbecker.biz/booking/confirmation/%s
+                  https://booking.thonbecker.biz/booking/confirmation/%s
 
                 The meeting details are attached as a calendar file (.ics).
 
@@ -105,7 +105,7 @@ public class EmailNotificationService {
                   Confirmation Code: %s
 
                 If you'd like to reschedule, please visit:
-                  https://thonbecker.biz/booking
+                  https://booking.thonbecker.biz/booking
 
                 Best regards,
                 Thon Becker""",
