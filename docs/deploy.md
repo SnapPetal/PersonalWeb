@@ -5,8 +5,7 @@ The published image is:
 
 - `public.ecr.aws/p0w8z2j2/personal:latest`
 
-The GitHub Actions workflow in `.github/workflows/aws-deploy.yml` handles image build and push.
-It authenticates to AWS with GitHub OIDC and does **not** SSH into the Lightsail Linux instance. The instance rollout is handled separately with the helper script below.
+The GitHub Actions workflow in `.github/workflows/aws-deploy.yml` owns the PersonalWeb release. It builds and publishes the image through GitHub OIDC, uploads the static site, refreshes only the `personal-website` service in the shared Lightsail Compose stack, and verifies all three public domains. The shared Compose topology, nginx, certificates, and unrelated host services remain owned by `nextcloud-aws`.
 
 ## GitHub Actions OIDC
 

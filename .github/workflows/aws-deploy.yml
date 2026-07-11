@@ -67,3 +67,67 @@ jobs:
           docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+  deploy-personalweb:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Package static site
+        run: |
+          tar -czf personal-static.tgz \
+            -C static-site . \
+            -C ../src/main/resources/static images/profile.png images/favicon.svg
+
+      - name: Upload static site archive
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          source: personal-static.tgz
+          target: /tmp
+
+      - name: Publish static site
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          script: |
+            sudo install -d -o $USER -g $USER /var/www/thonbecker-static
+            tar -xzf /tmp/personal-static.tgz -C /var/www/thonbecker-static
+            rm -f /tmp/personal-static.tgz
+
+      - name: Roll out PersonalWeb container
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd ~/nextcloud-aws
+            ./scripts/sync-personalweb-openai-secret.sh
+            docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+            docker compose up -d --no-deps personal-website
+
+            attempts=0
+            until curl -fsS http://127.0.0.1:3003/actuator/health >/dev/null; do
+              attempts=$((attempts + 1))
+              if [ "$attempts" -ge 40 ]; then
+                docker logs personal-website --tail 100
+                exit 1
+              fi
+              sleep 3
+            done
+
+      - name: Verify public domains
+        run: |
+          curl --fail --silent --show-error --retry 5 https://thonbecker.biz/ >/dev/null
+          curl --fail --silent --show-error --retry 5 https://app.thonbecker.biz/landscape >/dev/null
+          curl --fail --silent --show-error --retry 5 https://booking.thonbecker.biz/booking >/dev/null

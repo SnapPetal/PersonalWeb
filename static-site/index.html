@@ -3,54 +3,69 @@
 <head>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
-    <meta content="Thon Becker — software engineer building reliable, AI-powered web applications." name="description">
+    <meta content="Thon Becker — software engineer building thoughtful, reliable applications with Java, Spring, AWS, and practical AI." name="description">
     <link href="/site.css" rel="stylesheet">
+    <link href="/images/favicon.svg" rel="icon" type="image/svg+xml">
     <link href="https://thonbecker.biz" rel="canonical">
     <title>Thon Becker — Software Engineer</title>
 </head>
 <body>
-<header>
-    <a class="brand" href="/">Thon Becker</a>
+<header class="site-header">
+    <a class="brand" href="#top">Thon Becker</a>
     <nav aria-label="Primary navigation">
-        <a href="#work">Work</a>
-        <a href="https://app.thonbecker.biz">Apps</a>
-        <a class="button small" href="https://booking.thonbecker.biz/booking">Book a meeting</a>
+        <a href="#about">About</a><a href="#apps">Apps</a><a href="#projects">Projects</a><a href="#contact">Contact</a>
+        <a class="button compact" href="https://booking.thonbecker.biz/booking">Book a meeting</a>
     </nav>
 </header>
-<main>
+
+<main id="top">
     <section class="hero">
-        <p class="eyebrow">Software engineer · cloud architect</p>
-        <h1>Elegant solutions to complex problems.</h1>
-        <p class="lede">I build reliable applications with Java, Spring, AWS, and practical AI.</p>
-        <div class="actions">
-            <a class="button" href="https://booking.thonbecker.biz/booking">Book a meeting</a>
-            <a class="button secondary" href="https://app.thonbecker.biz">Explore my apps</a>
+        <div>
+            <p class="eyebrow">Software engineer · cloud architect</p>
+            <h1>Building useful software with care.</h1>
+            <p class="lede">I turn complex ideas into reliable, approachable applications using Java, Spring, AWS, and practical AI.</p>
+            <div class="actions">
+                <a class="button" href="https://booking.thonbecker.biz/booking">Book a meeting</a>
+                <a class="text-link" href="#apps">Explore my work <span>↓</span></a>
+            </div>
+        </div>
+        <div class="portrait-wrap"><img alt="Thon Becker" class="portrait" src="/images/profile.png"></div>
+    </section>
+
+    <section class="section about" id="about">
+        <p class="section-label">About me</p>
+        <div class="about-grid">
+            <h2>Engineering that serves real people.</h2>
+            <div>
+                <p class="large-copy">I specialize in enterprise software, cloud architecture, and AI-assisted experiences. I care about systems that are understandable, resilient, and genuinely pleasant to use.</p>
+                <div class="skills"><span>Java 25</span><span>Spring Boot</span><span>Spring Modulith</span><span>AWS</span><span>PostgreSQL</span><span>OpenAI</span></div>
+            </div>
         </div>
     </section>
-    <section id="work">
-        <h2>Selected work</h2>
-        <div class="grid">
-            <article>
-                <h3>Landscape Planner</h3>
-                <p>Create and securely save AI-assisted landscape projects.</p>
-                <a href="https://app.thonbecker.biz/landscape">Open planner →</a>
-            </article>
-            <article>
-                <h3>Interactive Apps</h3>
-                <p>Real-time games, AI trivia, foosball tracking, and skateboard analysis.</p>
-                <a href="https://app.thonbecker.biz">Explore apps →</a>
-            </article>
-            <article>
-                <h3>PersonalWeb</h3>
-                <p>A Spring Modulith application using event-driven boundaries and PostgreSQL.</p>
-                <a href="https://github.com/SnapPetal/PersonalWeb">View source →</a>
-            </article>
+
+    <section class="section" id="apps">
+        <div class="section-heading"><div><p class="section-label">Interactive work</p><h2>Applications you can use.</h2></div><p>Experiments and tools built around real-time interaction, computer vision, and thoughtful automation.</p></div>
+        <div class="app-grid">
+            <a class="card featured" href="https://app.thonbecker.biz/landscape"><span class="card-icon">✦</span><div><p class="card-kicker">AI planning</p><h3>Landscape Planner</h3><p>Upload your yard, explore plants for your hardiness zone, place them visually, and save private projects with email recovery.</p></div><span class="arrow">↗</span></a>
+            <a class="card" href="https://app.thonbecker.biz/skatetricks"><span class="card-icon">◫</span><div><p class="card-kicker">Computer vision</p><h3>Trick Analyzer</h3><p>Analyze skateboard footage with pose estimation and OpenAI vision.</p></div><span class="arrow">↗</span></a>
+            <a class="card" href="https://app.thonbecker.biz/trivia"><span class="card-icon">?</span><div><p class="card-kicker">Real-time multiplayer</p><h3>AI Trivia</h3><p>Dynamic questions and live WebSocket gameplay with friends.</p></div><span class="arrow">↗</span></a>
+            <a class="card" href="https://app.thonbecker.biz/foosball"><span class="card-icon">◎</span><div><p class="card-kicker">Stats and tournaments</p><h3>Foosball Tracker</h3><p>Record games, follow ratings, and manage tournament brackets.</p></div><span class="arrow">↗</span></a>
+            <a class="card" href="https://app.thonbecker.biz/tankgame"><span class="card-icon">◇</span><div><p class="card-kicker">Canvas and WebSockets</p><h3>Tank Battle</h3><p>A server-authoritative real-time multiplayer arena.</p></div><span class="arrow">↗</span></a>
         </div>
     </section>
+
+    <section class="section" id="projects">
+        <p class="section-label">Beyond the apps</p><h2>Projects and reflection.</h2>
+        <div class="project-list">
+            <a href="https://app.thonbecker.biz/religious-freedom"><span><strong>Religious Freedom Reflection</strong><small>A personal America 250 reflection on faith, conscience, and the First Amendment.</small></span><b>Read →</b></a>
+            <a href="https://github.com/SnapPetal/PersonalWeb"><span><strong>PersonalWeb</strong><small>The event-driven Spring Modulith application behind these interactive projects.</small></span><b>GitHub →</b></a>
+            <a href="https://github.com/SnapPetal/nextcloud-aws"><span><strong>Self-hosted Cloud on AWS</strong><small>Infrastructure for Nextcloud, photos, monitoring, backups, and personal services.</small></span><b>GitHub →</b></a>
+        </div>
+    </section>
+
+    <section class="contact" id="contact"><p class="section-label">Let’s connect</p><h2>Have something interesting in mind?</h2><p>I’m always glad to talk through a problem, a project, or a new idea.</p><div class="actions"><a class="button light" href="https://booking.thonbecker.biz/booking">Book a meeting</a><a class="text-link light-link" href="mailto:thon.becker@gmail.com">Send an email ↗</a></div></section>
 </main>
-<footer>
-    <span>© 2026 Thon Becker</span>
-    <span><a href="mailto:thon.becker@gmail.com">Email</a> · <a href="https://github.com/SnapPetal">GitHub</a> · <a href="https://www.linkedin.com/in/thon-becker-66600947/">LinkedIn</a></span>
-</footer>
+
+<footer><a class="brand" href="#top">Thon Becker</a><span>© 2026 · Built with care in Illinois</span><span><a href="https://github.com/SnapPetal">GitHub</a> · <a href="https://www.linkedin.com/in/thon-becker-66600947/">LinkedIn</a></span></footer>
 </body>
 </html>
