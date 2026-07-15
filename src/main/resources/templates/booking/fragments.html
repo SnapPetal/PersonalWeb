@@ -1,6 +1,30 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
+<nav th:fragment="navigation(page)" class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="https://thonbecker.biz">Thon Becker</a>
+        <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="https://thonbecker.biz">Home</a>
+                </li>
+                <li class="nav-item" th:if="${page == 'admin'}">
+                    <a class="nav-link" href="/booking">Public Booking Page</a>
+                </li>
+                <li class="nav-item" th:if="${page == 'admin'}">
+                    <span class="nav-link">Administrator</span>
+                </li>
+                <li class="nav-item" th:if="${page == 'confirmation'}">
+                    <a class="nav-link" href="/booking">Book Another Meeting</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
 
 <!-- Time Slots Fragment -->
 <div th:fragment="time-slots">
@@ -23,6 +47,5 @@
         <span th:text="${error}">Error message</span>
     </div>
 </div>
-
 </body>
 </html>

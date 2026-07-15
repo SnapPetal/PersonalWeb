@@ -18,21 +18,7 @@
 </head>
 <body class="booking-page" hx-ext="loading-states, form-validation, error-handling">
 <!-- Navigation -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm sticky-top">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="https://thonbecker.biz">Thon Becker</a>
-        <button class="navbar-toggler" data-bs-target="#navbarNav" data-bs-toggle="collapse" type="button">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="https://thonbecker.biz">Home</a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+<nav th:replace="~{booking/fragments :: navigation('booking')}"></nav>
 
 <!-- Main Content -->
 <main>
