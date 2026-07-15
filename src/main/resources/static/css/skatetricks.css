@@ -29,6 +29,11 @@
     border: 2px solid #dee2e6;
 }
 
+.skatetricks-page .skatetricks-live-video {
+    max-height: 400px;
+    background: #000;
+}
+
 .skatetricks-page #plyrContainer {
     max-height: 400px;
 }

@@ -153,7 +153,7 @@
                     <small class="text-secondary" th:text="${tournament.description}"></small>
                 </div>
                 <div>
-                    <a href="/foosball/tournaments" class="btn btn-outline-secondary btn-sm">
+                    <a th:href="@{/foosball/tournaments}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-left"></i> Back
                     </a>
                 </div>
@@ -303,7 +303,7 @@
                         <div class="alert alert-info py-2" th:if="${players.isEmpty()}">
                             <small>
                                 <i class="bi bi-info-circle"></i> No players found.
-                                <a href="/foosball" target="_blank" class="alert-link">Create players first</a>
+                                <a th:href="@{/foosball}" target="_blank" class="alert-link">Create players first</a>
                                 then refresh this page.
                             </small>
                         </div>

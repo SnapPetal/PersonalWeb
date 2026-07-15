@@ -41,7 +41,7 @@
                         <div class="tab-content">
                             <!-- Live Camera Tab -->
                             <div class="tab-pane fade show active" id="liveTab">
-                                <video id="liveVideo" autoplay muted playsinline class="w-100 rounded mb-3" style="max-height: 400px; background: #000;"></video>
+                                <video id="liveVideo" autoplay muted playsinline class="w-100 rounded mb-3 skatetricks-live-video"></video>
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-primary"
                                             :disabled="cameraStarted"
@@ -81,7 +81,7 @@
                                     </div>
                                 </div>
                                 <div id="plyrContainer" class="mb-3" style="display: none;">
-                                    <video id="uploadedVideo" controls playsinline class="w-100 rounded" style="max-height: 400px;"></video>
+                                    <video id="uploadedVideo" controls playsinline class="w-100 rounded"></video>
                                 </div>
                                 <p class="text-muted small mb-2 mt-2">Upload any video format (MOV, MP4, etc) or import a remote video URL. Default max 500MB. Videos convert to MP4, publish to the CDN, and then analyze. Public Instagram, Facebook, and YouTube page URLs now attempt provider-specific resolution, but private or protected videos can still fail.</p>
                                 <button class="btn btn-success"
