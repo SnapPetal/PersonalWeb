@@ -21,7 +21,7 @@ env:
 
 jobs:
   build-and-push:
-    name: Build and Push Image
+    name: Build and Publish Container Image
     runs-on: ubuntu-latest
 
     steps:
