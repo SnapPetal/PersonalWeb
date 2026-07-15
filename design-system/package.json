@@ -1,0 +1,11 @@
+{
+  "name": "@thonbecker/personal-design-system",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "~10.6.0"
+  }
+}

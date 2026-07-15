@@ -22,11 +22,19 @@ jobs:
           java-version: '25'
           cache: 'maven'
 
-      - name: Validate design system
-        run: bash scripts/validate-design-system.sh
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: design-system/package-lock.json
+
+      - name: Lint design-system frontend
+        working-directory: design-system
+        run: npm ci && npm run lint
 
       - name: Build design-system WebJar
-        run: mvn -B -f design-system/pom.xml package -DskipTests
+        run: mvn -B -f design-system/pom.xml install -DskipTests
 
       - name: Run verification build
         run: mvn -B verify

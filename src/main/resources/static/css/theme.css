@@ -1,6 +1,4 @@
-@import url("./core/tokens.css");
-@import url("./core/base.css");
-@import url("./core/components.css");
+@import url("/webjars/personal-design-system/1.0.0/design-system.css");
 
 /* -----------------------------
    Bootstrap Theme Overrides

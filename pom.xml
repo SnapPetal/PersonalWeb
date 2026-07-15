@@ -81,6 +81,11 @@
       <version>${djl.version}</version>
     </dependency>
     <dependency>
+      <groupId>biz.thonbecker</groupId>
+      <artifactId>personal-design-system</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
       <version>${caffeine.version}</version>
@@ -379,7 +384,6 @@
           <formats>
             <format>
               <includes>
-                <include>src/main/resources/static/css/core/**/*.css</include>
                 <include>src/main/resources/static/css/tankgame.css</include>
                 <include>design-system/src/main/resources/**/*.css</include>
                 <include>static-site/design-system.css</include>
@@ -400,6 +404,7 @@
             </includes>
             <excludes>
               <exclude>**/target/**/*.md</exclude>
+              <exclude>**/node_modules/**/*.md</exclude>
             </excludes>
             <flexmark/>
           </markdown>

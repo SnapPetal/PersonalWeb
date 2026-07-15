@@ -21,7 +21,7 @@
                 <targetPath>META-INF/resources/webjars/personal-design-system/${project.version}</targetPath>
             </resource>
             <resource>
-                <directory>../src/main/resources/static/css/core</directory>
+                <directory>src/main/resources/core</directory>
                 <includes>
                     <include>**/*.css</include>
                 </includes>
