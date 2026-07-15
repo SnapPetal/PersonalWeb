@@ -22,8 +22,8 @@
         <div class="row g-4">
             <!-- Video Source -->
             <div class="col-lg-7">
-                <div class="card">
-                    <div class="card-header">
+                <div class="card app-card">
+                    <div class="card-header app-card-header">
                         <ul class="nav nav-tabs card-header-tabs" role="tablist">
                             <li class="nav-item">
                                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#liveTab" type="button">
@@ -97,7 +97,7 @@
                 </div>
 
                 <!-- Connection Status -->
-                <div class="card mt-3">
+                <div class="card app-card mt-3">
                     <div class="card-body py-2">
                         <div class="d-flex align-items-center">
                             <i class="bi bi-wifi me-2"></i>
@@ -111,8 +111,8 @@
             <!-- Results Panel -->
             <div class="col-lg-5">
                 <!-- Current Analysis -->
-                <div class="card mb-3">
-                    <div class="card-header"><h5 class="mb-0">Analysis Result</h5></div>
+                <div class="card app-card mb-3">
+                    <div class="card-header app-card-header"><h5 class="mb-0">Analysis Result</h5></div>
                     <div class="card-body">
                         <!-- Default state -->
                         <template x-if="!result && !resultError && !resultLoading">
@@ -248,12 +248,12 @@
                 </div>
 
                 <!-- History -->
-                <div class="card">
-                    <div class="card-header"><h5 class="mb-0">Session History</h5></div>
+                <div class="card app-card">
+                    <div class="card-header app-card-header"><h5 class="mb-0">Session History</h5></div>
                     <div class="card-body p-0">
                         <div class="list-group list-group-flush">
                             <template x-if="trickHistory.length === 0">
-                                <div class="list-group-item text-center text-muted py-3">No tricks analyzed yet</div>
+                                <div class="list-group-item app-empty-state py-3">No tricks analyzed yet</div>
                             </template>
                             <template x-for="item in trickHistory" :key="item.attemptId || $id('history')">
                                 <div class="list-group-item d-flex justify-content-between align-items-center">

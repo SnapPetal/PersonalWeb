@@ -26,7 +26,7 @@
     <!-- Connection Status Card -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card trivia-card">
+            <div class="card app-card trivia-card">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-md-8">
@@ -85,8 +85,8 @@
     <!-- Game Setup Section -->
     <div class="row mb-4">
         <div class="col-md-6">
-            <div class="card trivia-card h-100">
-                <div class="card-header trivia-gradient-header text-white">
+            <div class="card app-card trivia-card h-100">
+                <div class="card-header app-card-header trivia-gradient-header text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-puzzle me-2"></i>Create Quiz
                     </h5>
@@ -156,8 +156,8 @@
         </div>
 
         <div class="col-md-6">
-            <div class="card trivia-card h-100">
-                <div class="card-header trivia-gradient-header text-white">
+            <div class="card app-card trivia-card h-100">
+                <div class="card-header app-card-header trivia-gradient-header text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-people me-2"></i>Players
                     </h5>
@@ -165,7 +165,7 @@
                 <div class="card-body">
                     <div class="trivia-players-container list-group">
                         <!-- Empty state -->
-                        <div x-show="players.length === 0" class="text-center text-muted py-4">
+                        <div x-show="players.length === 0" class="app-empty-state py-4">
                             <i class="bi bi-people display-6 text-muted"></i>
                             <p class="mt-2">No players connected yet</p>
                             <small>Players will appear here when they join</small>
@@ -192,7 +192,7 @@
     <!-- Waiting Room -->
     <div class="row mb-4" x-show="isWaiting" x-cloak>
         <div class="col-12">
-            <div class="card trivia-card trivia-waiting-card text-center">
+            <div class="card app-card trivia-card trivia-waiting-card text-center">
                 <div class="card-body py-5">
                     <div class="trivia-waiting-animation mb-4">
                         <i class="bi bi-hourglass-split display-1 text-warning"></i>
@@ -210,8 +210,8 @@
     <!-- Quiz Area -->
     <div class="row mb-4" x-show="isInProgress" x-cloak>
         <div class="col-md-8">
-            <div class="card trivia-card trivia-question-card">
-                <div class="card-header trivia-gradient-header text-white">
+            <div class="card app-card trivia-card trivia-question-card">
+                <div class="card-header app-card-header trivia-gradient-header text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-question-circle me-2"></i>Question
                     </h5>
@@ -242,8 +242,8 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card trivia-card trivia-scoreboard-card">
-                    <div class="card-header trivia-gradient-header text-white">
+            <div class="card app-card trivia-card trivia-scoreboard-card">
+                <div class="card-header app-card-header trivia-gradient-header text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-trophy me-2"></i>Scoreboard
                     </h5>
@@ -266,8 +266,8 @@
     <!-- Results Area -->
     <div class="row mb-4" x-show="isCompleted" x-cloak>
         <div class="col-12">
-            <div class="card trivia-card trivia-results-card">
-                <div class="card-header trivia-gradient-header text-white">
+            <div class="card app-card trivia-card trivia-results-card">
+                <div class="card-header app-card-header trivia-gradient-header text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-award me-2"></i>Quiz Results
                     </h5>
@@ -305,8 +305,8 @@
     <!-- Log Area -->
     <div class="row">
         <div class="col-12">
-            <div class="card trivia-card trivia-log-card">
-                <div class="card-header trivia-gradient-header text-white">
+            <div class="card app-card trivia-card trivia-log-card">
+                <div class="card-header app-card-header trivia-gradient-header text-white">
                     <h5 class="mb-0">
                         <i class="bi bi-journal-text me-2"></i>Event Log
                     </h5>
