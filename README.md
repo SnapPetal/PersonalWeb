@@ -48,7 +48,7 @@ mvn -f design-system/pom.xml install -DskipTests
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-The local `design-system` Maven module packages the shared CSS as a WebJar. Its Maven build installs a pinned Node/npm runtime, runs `npm ci`, and applies the Airbnb ESLint configuration before packaging. The Spring application consumes the resulting WebJar through `/webjars/personal-design-system/1.0.0/`.
+The local `design-system` Maven module packages the shared CSS and JavaScript as a WebJar. Its Maven build installs a pinned Node/npm runtime, runs `npm ci`, applies the Airbnb ESLint configuration, and runs Prettier/Stylelint for CSS before packaging. The Spring application consumes the resulting WebJar through `/webjars/personal-design-system/1.0.0/`.
 
 For Skatetricks transcoding, set `SKATETRICKS_MEDIACONVERT_ROLE_ARN` from the HomeWeb CDK `MediaConvertRoleArn` output. Do not set `SKATETRICKS_MEDIACONVERT_ENDPOINT`; the app discovers the correct account-specific endpoint automatically via `DescribeEndpoints`.
 
@@ -105,7 +105,7 @@ This runs the WebJar's frontend checks and produces `design-system/target/person
 ```bash
 mvn test                    # Run all tests
 mvn verify                  # Run integration/verification tests
-mvn spotless:apply          # Apply code formatting (required before committing)
+mvn spotless:apply          # Apply Java, JS, Markdown, and POM formatting
 mvn -f design-system/pom.xml install -DskipTests  # Build and lint the local design-system WebJar
 mvn clean package           # Build production jar
 ```
