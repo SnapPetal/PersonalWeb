@@ -35,7 +35,7 @@
                 <div class="row g-4 mb-5">
                     <div th:each="type : ${bookingTypes}" class="col-md-4">
                         <div class="card app-card feature-card booking-type-card">
-                            <div class="card-header text-white" th:style="'background-color: ' + ${type.color}">
+                            <div class="card-header app-card-header text-white" th:style="'background-color: ' + ${type.color}">
                                 <h5 class="card-title mb-0" th:text="${type.name}">Meeting Type</h5>
                             </div>
                             <div class="card-body">
@@ -56,7 +56,7 @@
                 <!-- Booking Form (Initially Hidden) -->
                 <div x-show="showBookingForm" x-cloak x-ref="bookingForm">
                     <div class="card app-card booking-form-card">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header app-card-header bg-primary text-white">
                             <h5 class="mb-0">
                                 <i class="bi bi-calendar-check"></i>
                                 Complete Your Booking
