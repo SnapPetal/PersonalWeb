@@ -4,6 +4,9 @@
     --color-brand: #1f3f77;
     --color-accent: #b21f2d;
     --color-primary: #0d6efd;
+    --color-accent-soft: rgb(178 31 45 / 30%);
+    --text-on-brand: #ffffff;
+    --contact-text: #d6e4ff;
     --surface-page: #ffffff;
     --surface-card: #ffffff;
     --surface-muted: #f8f9fa;
@@ -27,6 +30,9 @@
     --contact: var(--color-brand);
     --line: var(--border-default);
     --warm: rgb(13 110 253 / 8%);
+    --shadow-sm: 0 0.25rem 0.75rem var(--shadow-color);
+    --shadow-md: 0 0.75rem 1.75rem var(--shadow-color);
+    --app-chip-border: rgb(13 110 253 / 30%);
 }
 
 :root[data-theme="dark"] {
@@ -41,4 +47,5 @@
     --color-primary: #8bb9fe;
     --contact: #14284d;
     --warm: rgb(139 185 254 / 10%);
+    --app-chip-border: rgb(139 185 254 / 30%);
 }
