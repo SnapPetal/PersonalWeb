@@ -1,5 +1,124 @@
 /* Foosball Management Styles */
 
+.bracket-container {
+    overflow-x: auto;
+    padding: 20px;
+    background-color: var(--app-section-bg);
+}
+
+.bracket {
+    display: flex;
+    justify-content: space-around;
+    min-width: fit-content;
+}
+
+.round {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    margin: 0 20px;
+}
+
+.round-title {
+    margin-bottom: 20px;
+    padding: 10px;
+    border-radius: 5px;
+    background: var(--app-link-color);
+    color: var(--app-text-on-brand);
+    font-weight: bold;
+    text-align: center;
+}
+
+.match-container {
+    position: relative;
+    margin: 20px 0;
+}
+
+.match {
+    min-width: 250px;
+    border: 2px solid var(--app-border-color);
+    border-radius: 8px;
+    background: var(--app-surface-bg);
+    box-shadow: var(--app-shadow-sm);
+}
+
+.match-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--app-border-color);
+    background: var(--app-section-bg);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.team {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-bottom: 1px solid var(--app-border-color);
+}
+
+.team:last-child {
+    border-bottom: none;
+}
+
+.team.winner {
+    background: var(--app-success-soft);
+    font-weight: bold;
+}
+
+.team.loser {
+    opacity: 0.6;
+}
+
+.team-name {
+    flex: 1;
+}
+
+.team-score {
+    margin-left: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.match.pending {
+    border-color: var(--app-warning);
+}
+
+.match.ready {
+    border-color: var(--app-success);
+}
+
+.match.completed {
+    border-color: var(--app-muted-color);
+}
+
+.bye-match {
+    color: var(--app-muted-color);
+    font-style: italic;
+}
+
+.connector-line {
+    position: absolute;
+    border: 2px solid var(--app-border-color);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.registration-item {
+    transition: background 0.2s;
+}
+
+.registration-item:hover {
+    background: var(--app-section-bg);
+}
+
 /* Header styling */
 .foosball-header {
     background-color: #f8f9fa;
