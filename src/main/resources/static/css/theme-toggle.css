@@ -7,7 +7,7 @@
 
 .theme-toggle:hover {
     transform: scale(1.1);
-    color: var(--primary) !important;
+    color: var(--color-primary) !important;
 }
 
 .theme-toggle:active {

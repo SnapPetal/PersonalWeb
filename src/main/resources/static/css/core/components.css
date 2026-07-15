@@ -1,0 +1,42 @@
+/* Shared reusable components. Module styles should extend these primitives. */
+.app-card {
+    color: var(--app-body-color);
+    background-color: var(--app-surface-bg);
+    border: 1px solid var(--app-border-color);
+    border-radius: var(--app-radius);
+    box-shadow: var(--app-shadow-sm);
+}
+
+.app-card-header,
+.app-card-footer {
+    background-color: transparent;
+    border-color: var(--app-border-color);
+}
+
+.app-empty-state {
+    padding: var(--space-5) var(--space-3);
+    color: var(--app-muted-color);
+    text-align: center;
+}
+
+.app-status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 50%;
+    background-color: var(--app-chip-bg);
+    color: var(--app-brand-blue);
+    font-size: 2.25rem;
+}
+
+.app-status-icon-success {
+    background-color: var(--app-success-soft);
+    color: var(--app-success);
+}
+
+.app-status-icon-danger {
+    background-color: var(--app-danger-soft);
+    color: var(--app-danger);
+}

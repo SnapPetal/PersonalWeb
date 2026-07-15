@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>biz.thonbecker</groupId>
+    <version>1.0.0</version>
+    <artifactId>personal-design-system</artifactId>
+    <packaging>jar</packaging>
+    <name>Personal Design System</name>
+    <description>Shared CSS design tokens and primitives for the PersonalWeb sites</description>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>design-system.css</include>
+                </includes>
+                <targetPath>META-INF/resources/webjars/personal-design-system/${project.version}</targetPath>
+            </resource>
+            <resource>
+                <directory>../src/main/resources/static/css/core</directory>
+                <includes>
+                    <include>**/*.css</include>
+                </includes>
+                <targetPath>META-INF/resources/webjars/personal-design-system/${project.version}/core</targetPath>
+            </resource>
+        </resources>
+    </build>
+</project>
