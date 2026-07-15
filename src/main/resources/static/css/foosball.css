@@ -138,6 +138,24 @@
     transition: background-color 0.2s ease;
 }
 
+.bracket-winners-section {
+    margin-bottom: 2.5rem;
+}
+
+.bracket-losers-section {
+    margin-top: 2.5rem;
+    padding-top: 2.5rem;
+    border-top: 3px solid var(--app-border-color);
+}
+
+.bracket-winners-heading {
+    color: var(--app-success);
+}
+
+.bracket-losers-heading {
+    color: #b58100;
+}
+
 /* Typography standardization */
 .foosball-page h1, .foosball-page h2, .foosball-page h3,
 .foosball-page h4, .foosball-page h5, .foosball-page h6 {

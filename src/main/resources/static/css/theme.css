@@ -85,7 +85,23 @@ body {
 }
 
 [data-bs-theme="dark"] .navbar-light .navbar-toggler-icon {
-    filter: invert(1);
+    filter: invert(1) brightness(1.25);
+}
+
+.navbar-toggler {
+    border-color: var(--app-border-color);
+}
+
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 0.2rem var(--app-chip-bg);
+}
+
+[data-bs-theme="dark"] .navbar-toggler {
+    border-color: var(--app-border-color);
+}
+
+[data-bs-theme="dark"] .navbar-collapse {
+    background-color: var(--app-section-bg);
 }
 
 [data-bs-theme="dark"] .card,
