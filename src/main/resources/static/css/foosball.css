@@ -151,6 +151,10 @@
     font-weight: 600;
 }
 
+.foosball-loading-icon {
+    font-size: 3rem;
+}
+
 /* Dark mode support */
 [data-bs-theme="dark"] {
     .foosball-page {

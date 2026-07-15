@@ -5,6 +5,10 @@
     min-height: 100vh;
 }
 
+.landscape-image-icon {
+    font-size: 3rem;
+}
+
 /* Plan Workspace */
 #planWorkspace {
     min-height: 400px;

@@ -220,7 +220,7 @@
                             <div class="bracket-container" id="bracket-container">
                                 <div th:if="${tournament.status.name() == 'DRAFT' || tournament.status.name() == 'REGISTRATION_OPEN' || tournament.status.name() == 'REGISTRATION_CLOSED'}"
                                      class="text-center py-5 text-white">
-                                    <i class="bi bi-hourglass-split" style="font-size: 3rem;"></i>
+                                    <i class="bi bi-hourglass-split foosball-loading-icon"></i>
                                     <p class="mt-3">Bracket will be generated when the tournament starts</p>
                                 </div>
                                 <div th:if="${tournament.status.name() != 'DRAFT' && tournament.status.name() != 'REGISTRATION_OPEN' && tournament.status.name() != 'REGISTRATION_CLOSED'}"

@@ -18,6 +18,10 @@
     margin-inline: auto;
 }
 
+.booking-not-found-icon {
+    font-size: 5rem;
+}
+
 .booking-page .booking-type-card .card-header,
 .booking-page .booking-form-card .card-header {
     padding: 1rem 1.25rem;
