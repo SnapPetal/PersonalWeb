@@ -29,7 +29,7 @@
         </div>
     </div>
 
-    <div th:if="${plants == null or plants.isEmpty()}" class="text-center text-muted">
+    <div th:if="${plants == null or plants.isEmpty()}" class="app-empty-state">
         <p>No plants found. Try a different search.</p>
     </div>
 </div>
@@ -44,7 +44,7 @@
         </p>
         <div class="row row-cols-1 g-3">
             <div class="col" th:each="rec : ${recommendations}">
-                <div class="card h-100 recommendation-card"
+                <div class="card app-card h-100 recommendation-card"
                      th:data-usda-symbol="${rec.usdaSymbol()}"
                      th:data-scientific-name="${rec.scientificName()}"
                      th:data-common-name="${rec.commonName()}">
@@ -79,7 +79,7 @@
         </div>
     </div>
 
-    <div th:if="${recommendations == null or recommendations.isEmpty()}" class="text-center text-muted">
+    <div th:if="${recommendations == null or recommendations.isEmpty()}" class="app-empty-state">
         <p>No recommendations available.</p>
     </div>
 </div>

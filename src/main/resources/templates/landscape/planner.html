@@ -25,7 +25,7 @@
         <div class="alert alert-success" th:if="${param.recoveryRequested}">Check your email for a recovery link.</div>
         <div class="alert alert-success" th:if="${param.recovered}">Your saved projects have been restored.</div>
         <div class="alert alert-danger" th:if="${param.recoveryInvalid}">That recovery link is invalid or expired.</div>
-        <form class="card card-body mb-4" method="post" th:action="@{/landscape/recovery}">
+        <form class="card app-card card-body mb-4" method="post" th:action="@{/landscape/recovery}">
             <label class="form-label" for="recoveryEmail">Email recovery</label>
             <div class="input-group">
                 <input class="form-control" id="recoveryEmail" name="email" placeholder="you@example.com" required type="email">
@@ -38,8 +38,8 @@
             <!-- Left Panel: Upload & Search -->
             <div class="col-lg-5">
                 <!-- Upload Form -->
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">
+                <div class="card app-card mb-3">
+                    <div class="card-header app-card-header bg-success text-white">
                         <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Create New Plan</h5>
                     </div>
                     <div class="card-body">
@@ -81,8 +81,8 @@
                 </div>
 
                 <!-- My Plans -->
-                <div class="card mb-3" th:if="${userPlans != null and !userPlans.isEmpty()}">
-                    <div class="card-header">
+                <div class="card app-card mb-3" th:if="${userPlans != null and !userPlans.isEmpty()}">
+                    <div class="card-header app-card-header">
                         <h5 class="mb-0"><i class="bi bi-folder"></i> My Plans</h5>
                     </div>
                     <div class="card-body">
@@ -104,8 +104,8 @@
                 </div>
 
                 <!-- Plant Search -->
-                <div class="card" id="plantSearchCard" style="display: none;">
-                    <div class="card-header">
+                <div class="card app-card" id="plantSearchCard" style="display: none;">
+                    <div class="card-header app-card-header">
                         <h5 class="mb-0"><i class="bi bi-search"></i> Search Plants</h5>
                     </div>
                     <div class="card-body">
@@ -146,8 +146,8 @@
             <!-- Right Panel: Workspace & Recommendations -->
             <div class="col-lg-7">
                 <!-- Plan Workspace -->
-                <div class="card mb-3">
-                    <div class="card-header">
+                <div class="card app-card mb-3">
+                    <div class="card-header app-card-header">
                         <h5 class="mb-0"><i class="bi bi-image"></i> Plan Workspace</h5>
                     </div>
                     <div class="card-body" id="planWorkspace">
@@ -159,8 +159,8 @@
                 </div>
 
                 <!-- Plant Recommendations -->
-                <div class="card" id="recommendationsCard" style="display: none;">
-                    <div class="card-header bg-success text-white">
+                <div class="card app-card" id="recommendationsCard" style="display: none;">
+                    <div class="card-header app-card-header bg-success text-white">
                         <h5 class="mb-0"><i class="bi bi-flower1"></i> Plants for Your Zone</h5>
                     </div>
                     <div class="card-body" id="recommendations">
