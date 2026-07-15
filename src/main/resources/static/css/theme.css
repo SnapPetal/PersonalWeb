@@ -16,8 +16,8 @@
     color: var(--app-body-color);
 }
 
-[data-bs-theme="dark"] .navbar-light .navbar-toggler-icon {
-    filter: invert(1) brightness(1.25);
+[data-bs-theme="dark"] .navbar-toggler-icon {
+    filter: brightness(0) invert(1);
 }
 
 .navbar-toggler {
