@@ -167,7 +167,7 @@
             <!-- Tournament Info Bar -->
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="card">
+                    <div class="card app-card">
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-3">
@@ -212,8 +212,8 @@
             <div class="row">
                 <!-- Bracket Visualization -->
                 <div class="col-lg-9 mb-4">
-                    <div class="card">
-                        <div class="card-header">
+                    <div class="card app-card">
+                        <div class="card-header app-card-header">
                             <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Tournament Bracket</h5>
                         </div>
                         <div class="card-body p-0">
@@ -233,8 +233,8 @@
                 <!-- Sidebar -->
                 <div class="col-lg-3">
                     <!-- Registrations -->
-                    <div class="card mb-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card app-card mb-3">
+                        <div class="card-header app-card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0"><i class="bi bi-people"></i> Participants</h6>
                             <button th:if="${tournament.status.name() == 'REGISTRATION_OPEN'}"
                                     class="btn btn-sm btn-primary"
@@ -262,8 +262,8 @@
                     </div>
 
                     <!-- Ready Matches for Score Entry -->
-                    <div th:if="${tournament.status.name() == 'IN_PROGRESS'}" class="card">
-                        <div class="card-header">
+                    <div th:if="${tournament.status.name() == 'IN_PROGRESS'}" class="card app-card">
+                        <div class="card-header app-card-header">
                             <h6 class="mb-0"><i class="bi bi-clipboard-check"></i> Enter Scores</h6>
                         </div>
                         <div class="card-body p-0" id="ready-matches-container">
