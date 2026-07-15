@@ -6,6 +6,7 @@
     --color-secondary: #6c757d;
     --color-success: #198754;
     --color-danger: #dc3545;
+    --color-warning: #ffc107;
 
     --surface-page: #ffffff;
     --surface-card: #ffffff;
@@ -49,6 +50,8 @@
     --app-success-soft: rgb(25 135 84 / 12%);
     --app-danger: var(--color-danger);
     --app-danger-soft: rgb(220 53 69 / 12%);
+    --app-warning: var(--color-warning);
+    --app-text-on-brand: #ffffff;
     --base-font-size: 1rem;
     --icon-font-size: 1.5rem;
     --button-icon-size: 1.2rem;

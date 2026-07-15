@@ -380,6 +380,7 @@
             <format>
               <includes>
                 <include>src/main/resources/static/css/core/**/*.css</include>
+                <include>src/main/resources/static/css/tankgame.css</include>
                 <include>design-system/src/main/resources/**/*.css</include>
                 <include>static-site/design-system.css</include>
                 <include>static-site/site.css</include>
