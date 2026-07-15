@@ -13,13 +13,13 @@
                     <a class="nav-link" href="https://thonbecker.biz">Home</a>
                 </li>
                 <li class="nav-item" th:if="${page == 'admin'}">
-                    <a class="nav-link" href="/booking">Public Booking Page</a>
+                    <a class="nav-link" th:href="@{/booking}">Public Booking Page</a>
                 </li>
                 <li class="nav-item" th:if="${page == 'admin'}">
                     <span class="nav-link">Administrator</span>
                 </li>
                 <li class="nav-item" th:if="${page == 'confirmation'}">
-                    <a class="nav-link" href="/booking">Book Another Meeting</a>
+                    <a class="nav-link" th:href="@{/booking}">Book Another Meeting</a>
                 </li>
             </ul>
         </div>
