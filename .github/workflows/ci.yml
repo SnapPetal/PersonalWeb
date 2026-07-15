@@ -25,5 +25,8 @@ jobs:
       - name: Validate design system
         run: bash scripts/validate-design-system.sh
 
+      - name: Build design-system WebJar
+        run: mvn -B -f design-system/pom.xml package -DskipTests
+
       - name: Run verification build
         run: mvn -B verify

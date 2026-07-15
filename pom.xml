@@ -376,6 +376,22 @@
             </includes>
             <prettier/>
           </javascript>
+          <formats>
+            <format>
+              <includes>
+                <include>src/main/resources/static/css/core/**/*.css</include>
+                <include>design-system/src/main/resources/**/*.css</include>
+                <include>static-site/design-system.css</include>
+              </includes>
+              <prettier>
+                <prettierVersion>3.5.3</prettierVersion>
+                <config>
+                  <printWidth>120</printWidth>
+                  <tabWidth>4</tabWidth>
+                </config>
+              </prettier>
+            </format>
+          </formats>
           <markdown>
             <includes>
               <include>**/*.md</include>
