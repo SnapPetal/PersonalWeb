@@ -1,4 +1,4 @@
-name: CI
+name: PersonalWeb CI
 
 on:
   pull_request:
@@ -9,13 +9,14 @@ permissions:
 
 jobs:
   verify:
+    name: Verify
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Set up JDK
+      - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: 'corretto'
@@ -25,5 +26,5 @@ jobs:
       - name: Build design-system WebJar
         run: mvn -B -f design-system/pom.xml install -DskipTests
 
-      - name: Run verification build
+      - name: Run Maven verification
         run: mvn -B verify

@@ -1,4 +1,4 @@
-name: Build and Push to ECR
+name: PersonalWeb Release
 
 on:
   push:
@@ -21,13 +21,14 @@ env:
 
 jobs:
   build-and-push:
+    name: Build and Push Image
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Set up JDK
+      - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: 'corretto'
@@ -39,10 +40,10 @@ jobs:
           docker system prune -af
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
 
-      - name: Pull builder image
+      - name: Pull buildpack builder image
         run: docker pull paketobuildpacks/builder-jammy-full
 
-      - name: Build Docker Image
+      - name: Build container image
         run: |
           mvn spring-boot:build-image \
             -Dspring-boot.build-image.imageName=${{ env.IMAGE_NAME }}
@@ -56,12 +57,12 @@ jobs:
           aws-region: us-east-1
           role-session-name: personalweb-github-actions
 
-      - name: Login to Amazon ECR Public
+      - name: Log in to Amazon ECR Public
         run: |
           aws ecr-public get-login-password --region us-east-1 | \
             docker login --username AWS --password-stdin public.ecr.aws
 
-      - name: Tag and push image to ECR Public
+      - name: Tag and push container image
         run: |
           docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
           docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
@@ -69,11 +70,12 @@ jobs:
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
   deploy-personalweb:
+    name: Deploy PersonalWeb
     needs: build-and-push
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Check out repository
         uses: actions/checkout@v6
 
       - name: Package static site
