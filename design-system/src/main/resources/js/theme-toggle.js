@@ -1,4 +1,3 @@
-// theme-toggle.js — Alpine.js component
 const readThemePreference = () => {
   const cookie = document.cookie
     .split("; ")

@@ -378,6 +378,7 @@
           <javascript>
             <includes>
               <include>src/main/resources/static/js/*.js</include>
+              <include>design-system/src/main/resources/js/*.js</include>
             </includes>
             <prettier/>
           </javascript>

@@ -32,6 +32,13 @@
                 </includes>
                 <targetPath>META-INF/resources/webjars/personal-design-system/${project.version}/core</targetPath>
             </resource>
+            <resource>
+                <directory>src/main/resources/js</directory>
+                <includes>
+                    <include>**/*.js</include>
+                </includes>
+                <targetPath>META-INF/resources/webjars/personal-design-system/${project.version}/js</targetPath>
+            </resource>
         </resources>
         <plugins>
             <plugin>

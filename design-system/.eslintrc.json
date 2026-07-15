@@ -1,8 +1,27 @@
 {
   "env": {
+    "browser": true,
     "es2022": true,
     "node": true
   },
-  "extends": ["airbnb-base"],
-  "ignorePatterns": ["target/**", "node_modules/**"]
+  "extends": ["airbnb-base", "prettier"],
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "globals": {
+    "Alpine": "readonly",
+    "bootstrap": "readonly",
+    "htmx": "readonly"
+  },
+  "ignorePatterns": ["target/**", "node_modules/**"],
+  "rules": {
+    "consistent-return": "off",
+    "max-len": "off",
+    "no-param-reassign": "off",
+    "no-restricted-syntax": "off",
+    "no-console": "off",
+    "no-unused-vars": "off",
+    "no-use-before-define": "off"
+  }
 }
