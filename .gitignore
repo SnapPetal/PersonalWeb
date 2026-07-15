@@ -1,6 +1,7 @@
 HELP.md
 target/
 /design-system/node_modules/
+/design-system/node/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
