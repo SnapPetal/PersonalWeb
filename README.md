@@ -44,8 +44,11 @@ git clone https://github.com/SnapPetal/PersonalWeb.git
 cd PersonalWeb
 cp .env.example .env
 # Edit .env with your AWS, OpenAI, and Nextcloud credentials
+mvn -f design-system/pom.xml install -DskipTests
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+
+The local `design-system` Maven module packages the shared CSS as a WebJar. Its Maven build installs a pinned Node/npm runtime, runs `npm ci`, and applies the Airbnb ESLint configuration before packaging. The Spring application consumes the resulting WebJar through `/webjars/personal-design-system/1.0.0/`.
 
 For Skatetricks transcoding, set `SKATETRICKS_MEDIACONVERT_ROLE_ARN` from the HomeWeb CDK `MediaConvertRoleArn` output. Do not set `SKATETRICKS_MEDIACONVERT_ENDPOINT`; the app discovers the correct account-specific endpoint automatically via `DescribeEndpoints`.
 
@@ -87,12 +90,23 @@ Each module follows: `api/` (exported events/interfaces) | `domain/` (pure Java 
 
 Cross-module communication is event-driven only — no module calls another module's service directly.
 
+### Shared Design System
+
+The canonical shared CSS lives in `design-system/src/main/resources/` and is packaged as a local WebJar. Update the design-system sources, then run:
+
+```bash
+mvn -f design-system/pom.xml install -DskipTests
+```
+
+This runs the WebJar's frontend checks and produces `design-system/target/personal-design-system-1.0.0.jar`. The static site keeps its own generated CSS bundle in `static-site/design-system.css`.
+
 ## Development
 
 ```bash
 mvn test                    # Run all tests
 mvn verify                  # Run integration/verification tests
 mvn spotless:apply          # Apply code formatting (required before committing)
+mvn -f design-system/pom.xml install -DskipTests  # Build and lint the local design-system WebJar
 mvn clean package           # Build production jar
 ```
 
