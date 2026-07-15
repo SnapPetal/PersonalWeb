@@ -35,6 +35,9 @@ jobs:
           java-version: '25'
           cache: 'maven'
 
+      - name: Build design-system WebJar
+        run: mvn -B -f design-system/pom.xml clean install -DskipTests
+
       - name: Free disk space
         run: |
           docker system prune -af
