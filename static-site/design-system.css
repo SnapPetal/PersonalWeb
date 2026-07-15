@@ -1,0 +1,44 @@
+/* Static-site bundle generated from the shared design contract. */
+:root {
+    color-scheme: light;
+    --color-brand: #1f3f77;
+    --color-accent: #b21f2d;
+    --color-primary: #0d6efd;
+    --surface-page: #ffffff;
+    --surface-card: #ffffff;
+    --surface-muted: #f8f9fa;
+    --text-primary: #212529;
+    --text-muted: #6c757d;
+    --border-default: #dee2e6;
+    --shadow-color: rgb(33 37 41 / 12%);
+    --app-body-bg: var(--surface-page);
+    --app-surface-bg: var(--surface-card);
+    --app-section-bg: var(--surface-muted);
+    --app-body-color: var(--text-primary);
+    --app-muted-color: var(--text-muted);
+    --app-border-color: var(--border-default);
+    --app-link-color: var(--color-primary);
+    --ink: var(--text-primary);
+    --muted: var(--text-muted);
+    --paper: var(--surface-page);
+    --surface: var(--surface-card);
+    --green: var(--color-primary);
+    --green-dark: var(--color-brand);
+    --contact: var(--color-brand);
+    --line: var(--border-default);
+    --warm: rgb(13 110 253 / 8%);
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-page: #212529;
+    --surface-card: #2b3035;
+    --surface-muted: #2b3035;
+    --text-primary: #e9ecef;
+    --text-muted: #adb5bd;
+    --border-default: #373b3e;
+    --color-brand: #8bb9fe;
+    --color-primary: #8bb9fe;
+    --contact: #14284d;
+    --warm: rgb(139 185 254 / 10%);
+}

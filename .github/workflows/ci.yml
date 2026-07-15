@@ -22,5 +22,8 @@ jobs:
           java-version: '25'
           cache: 'maven'
 
+      - name: Validate design system
+        run: bash scripts/validate-design-system.sh
+
       - name: Run verification build
         run: mvn -B verify
