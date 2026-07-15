@@ -27,7 +27,7 @@
                 <!-- Success Message -->
                 <div th:if="${booking != null and booking.status().name() == 'CONFIRMED'}" class="text-center mb-4">
                     <div class="mb-3">
-                        <i class="bi bi-check-circle-fill status-icon status-icon-success"></i>
+                        <i class="bi bi-check-circle-fill app-status-icon app-status-icon-success"></i>
                     </div>
                     <h1 class="display-6 fw-bold text-success">Booking Confirmed!</h1>
                     <p class="lead text-muted">Your meeting has been scheduled successfully</p>
@@ -36,7 +36,7 @@
                 <!-- Cancelled Message -->
                 <div th:if="${booking != null and booking.status().name() == 'CANCELLED'}" class="text-center mb-4">
                     <div class="mb-3">
-                        <i class="bi bi-x-circle-fill status-icon status-icon-danger"></i>
+                        <i class="bi bi-x-circle-fill app-status-icon app-status-icon-danger"></i>
                     </div>
                     <h1 class="display-6 fw-bold text-danger">Booking Cancelled</h1>
                     <p class="lead text-muted">This booking has been cancelled</p>

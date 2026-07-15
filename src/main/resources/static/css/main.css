@@ -15,14 +15,6 @@
     border-bottom: 1px solid var(--app-border-color);
 }
 
-.app-card {
-    border: 1px solid var(--app-border-color);
-    border-radius: var(--app-radius);
-    background-color: var(--app-surface-bg);
-    box-shadow: var(--app-shadow-sm);
-    color: var(--app-body-color);
-}
-
 .app-card .card-header,
 .app-card .card-footer {
     color: var(--app-body-color);
@@ -39,35 +31,6 @@
     transform: translateY(-2px);
     border-color: var(--app-chip-border);
     box-shadow: var(--app-shadow-md);
-}
-
-.feature-icon,
-.status-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    background-color: var(--app-chip-bg);
-    color: var(--app-brand-blue);
-    font-size: 1.35rem;
-}
-
-.status-icon {
-    width: 4.5rem;
-    height: 4.5rem;
-    font-size: 2.25rem;
-}
-
-.status-icon-success {
-    background-color: var(--app-success-soft);
-    color: var(--app-success);
-}
-
-.status-icon-danger {
-    background-color: var(--app-danger-soft);
-    color: var(--app-danger);
 }
 
 .booking-type-card .card-header,
