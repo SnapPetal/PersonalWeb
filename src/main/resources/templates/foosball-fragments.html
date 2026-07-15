@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="en-US" xmlns:th="http://www.thymeleaf.org">
 
+<!-- Shared Foosball subpage header -->
+<div th:fragment="subpageHeader(title, icon, backLabel)"
+     class="foosball-header py-3 border-bottom bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+                <i th:class="${icon}" aria-hidden="true"></i>
+                <span th:text="${title}">Foosball</span>
+            </h4>
+            <a th:href="@{/foosball}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i>
+                <span th:text="${backLabel}">Back to Foosball</span>
+            </a>
+        </div>
+    </div>
+</div>
+
 <!-- Player Statistics List Fragment -->
 <div th:fragment="playerStatsList" class="skeleton-loading">
     <div th:if="${#lists.isEmpty(playerStats)}"

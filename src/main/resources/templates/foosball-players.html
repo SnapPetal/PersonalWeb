@@ -25,17 +25,7 @@
     <script th:src="@{/webjars/bootstrap/js/bootstrap.min.js}"></script>
 </head>
 <body class="foosball-page" hx-ext="loading-states, form-validation, error-handling">
-    <!-- Simple Header with Back Button -->
-    <div class="foosball-header py-3 border-bottom bg-light">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">👥 Foosball Players</h4>
-                <a th:href="@{/foosball}" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-arrow-left"></i> Back to Foosball Stats
-                </a>
-            </div>
-        </div>
-    </div>
+    <div th:replace="~{foosball-fragments :: subpageHeader('Foosball Players', 'bi bi-people', 'Back to Foosball Stats')}"></div>
 
     <!-- Main Content -->
     <main class="py-5">

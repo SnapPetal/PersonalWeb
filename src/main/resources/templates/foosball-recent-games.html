@@ -15,17 +15,7 @@
     <link rel="stylesheet" th:href="@{/css/table-sorter.css}" />
   </head>
   <body class="foosball-page">
-    <!-- Simple Header with Back Button -->
-    <div class="foosball-header py-3 border-bottom bg-light">
-      <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-          <h4 class="mb-0">⚽ Recent Foosball Games</h4>
-          <a th:href="@{/foosball}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Back to Foosball Page
-          </a>
-        </div>
-      </div>
-    </div>
+    <div th:replace="~{foosball-fragments :: subpageHeader('Recent Foosball Games', 'bi bi-clock-history', 'Back to Foosball Page')}"></div>
 
     <!-- Main Content -->
     <main class="py-5">
