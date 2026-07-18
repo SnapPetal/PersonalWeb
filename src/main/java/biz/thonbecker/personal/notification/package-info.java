@@ -19,13 +19,6 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Notification Services",
-        allowedDependencies = {
-            "shared",
-            "booking :: api",
-            "trivia :: api",
-            "foosball :: api",
-            "user :: api",
-            "landscape :: api"
-        })
+        allowedDependencies = {"shared", "booking :: api", "trivia :: api", "foosball :: api", "user :: api"})
 @org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.notification;

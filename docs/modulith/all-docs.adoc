@@ -37,11 +37,11 @@ include::module-calendar.adoc[]
 plantuml::module-landscape.puml[,,format=svg]
 include::module-landscape.adoc[]
 
-== Shared Infrastructure
-plantuml::module-shared.puml[,,format=svg]
-include::module-shared.adoc[]
-
 == Notification Services
 plantuml::module-notification.puml[,,format=svg]
 include::module-notification.adoc[]
+
+== Shared Infrastructure
+plantuml::module-shared.puml[,,format=svg]
+include::module-shared.adoc[]
 

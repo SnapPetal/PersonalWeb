@@ -21,7 +21,6 @@ flowchart LR
   end
   subgraph Landscape_Planning["Landscape Planning"]
     biz_thonbecker_personal_landscape_platform_web_LandscapeController["LandscapeController<br/>landscape.platform.web"]
-    biz_thonbecker_personal_landscape_api_LandscapeRecoveryRequestedEvent["LandscapeRecoveryRequestedEvent<br/>landscape.api"]
   end
   subgraph Notification_Services["Notification Services"]
     biz_thonbecker_personal_notification_platform_CalendarService["CalendarService<br/>notification.platform"]
@@ -50,6 +49,21 @@ flowchart LR
   biz_thonbecker_personal_calendar_platform_IcsGenerator -->|"DEFAULT"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
   biz_thonbecker_personal_calendar_platform_NextcloudCalDavService -->|"DEFAULT"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
   biz_thonbecker_personal_landscape_platform_web_LandscapeController -->|"DEFAULT, USES_COMPONENT"| biz_thonbecker_personal_user_api_UserSessionResolver
+  biz_thonbecker_personal_notification_platform_CalendarService -->|"DEFAULT"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
+  biz_thonbecker_personal_notification_platform_EmailNotificationService -->|"DEFAULT"| biz_thonbecker_personal_booking_api_BookingCancelledEvent
+  biz_thonbecker_personal_notification_platform_EmailNotificationService -->|"DEFAULT"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
+  biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_booking_api_BookingCancelledEvent
+  biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
+  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_foosball_api_GameRecordedEvent
+  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_foosball_api_PlayerCreatedEvent
+  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_PlayerJoinedQuizEvent
+  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_QuizCompletedEvent
+  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_QuizStartedEvent
+  biz_thonbecker_personal_notification_platform_EmailNotificationService -->|"DEFAULT"| biz_thonbecker_personal_user_api_UserLoginLinkRequestedEvent
+  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserLoginEvent
+  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserProfileUpdatedEvent
+  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserRegisteredEvent
+  biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserLoginLinkRequestedEvent
   biz_thonbecker_personal_shared_platform_service_PostHogEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_booking_api_BookingCancelledEvent
   biz_thonbecker_personal_shared_platform_service_PostHogEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
   biz_thonbecker_personal_shared_platform_service_PostHogEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_foosball_api_GameRecordedEvent
@@ -60,22 +74,5 @@ flowchart LR
   biz_thonbecker_personal_shared_platform_service_PostHogEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserLoginEvent
   biz_thonbecker_personal_shared_platform_service_PostHogEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserProfileUpdatedEvent
   biz_thonbecker_personal_shared_platform_service_PostHogEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserRegisteredEvent
-  biz_thonbecker_personal_notification_platform_CalendarService -->|"DEFAULT"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
-  biz_thonbecker_personal_notification_platform_EmailNotificationService -->|"DEFAULT"| biz_thonbecker_personal_booking_api_BookingCancelledEvent
-  biz_thonbecker_personal_notification_platform_EmailNotificationService -->|"DEFAULT"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
-  biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_booking_api_BookingCancelledEvent
-  biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_booking_api_BookingCreatedEvent
-  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_foosball_api_GameRecordedEvent
-  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_foosball_api_PlayerCreatedEvent
-  biz_thonbecker_personal_notification_platform_EmailNotificationService -->|"DEFAULT"| biz_thonbecker_personal_landscape_api_LandscapeRecoveryRequestedEvent
-  biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_landscape_api_LandscapeRecoveryRequestedEvent
-  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_PlayerJoinedQuizEvent
-  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_QuizCompletedEvent
-  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_trivia_api_QuizStartedEvent
-  biz_thonbecker_personal_notification_platform_EmailNotificationService -->|"DEFAULT"| biz_thonbecker_personal_user_api_UserLoginLinkRequestedEvent
-  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserLoginEvent
-  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserProfileUpdatedEvent
-  biz_thonbecker_personal_notification_api_EventLoggingListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserRegisteredEvent
-  biz_thonbecker_personal_notification_api_NotificationEventListener -->|"DEFAULT, EVENT_LISTENER"| biz_thonbecker_personal_user_api_UserLoginLinkRequestedEvent
 ```
 

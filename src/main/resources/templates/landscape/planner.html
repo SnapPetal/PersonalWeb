@@ -22,18 +22,6 @@
             </div>
         </div>
 
-        <div class="alert alert-success" th:if="${param.recoveryRequested}">Check your email for a recovery link.</div>
-        <div class="alert alert-success" th:if="${param.recovered}">Your saved projects have been restored.</div>
-        <div class="alert alert-danger" th:if="${param.recoveryInvalid}">That recovery link is invalid or expired.</div>
-        <form class="card app-card card-body mb-4" method="post" th:action="@{/landscape/recovery}">
-            <label class="form-label" for="recoveryEmail">Email recovery</label>
-            <div class="input-group">
-                <input class="form-control" id="recoveryEmail" name="email" placeholder="you@example.com" required type="email">
-                <button class="btn btn-outline-primary" type="submit">Email recovery link</button>
-            </div>
-            <small class="text-muted mt-2">Use the link to restore these projects in another browser.</small>
-        </form>
-
         <div class="row g-4">
             <!-- Left Panel: Upload & Search -->
             <div class="col-lg-5">

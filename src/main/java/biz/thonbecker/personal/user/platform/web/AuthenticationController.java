@@ -19,14 +19,18 @@ class AuthenticationController {
 
     private final MagicLinkAuthenticationService authenticationService;
 
+    @GetMapping("/login")
+    String login() {
+        return "auth/login";
+    }
+
     @PostMapping("/request")
-    ResponseEntity<Void> requestLoginLink(
-            @RequestBody final LoginRequest loginRequest, final HttpServletRequest httpRequest) {
+    String requestLoginLink(@RequestParam("email") final String email, final HttpServletRequest httpRequest) {
         authenticationService.requestLoginLink(
-                loginRequest.email(),
+                email,
                 httpRequest.getRequestURL().toString().replace("/auth/request", ""),
                 httpRequest.getRemoteAddr());
-        return ResponseEntity.accepted().build();
+        return "redirect:/auth/login?sent";
     }
 
     @GetMapping("/confirm")
@@ -70,6 +74,4 @@ class AuthenticationController {
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(401).build());
     }
-
-    record LoginRequest(String email) {}
 }

@@ -2,7 +2,6 @@ package biz.thonbecker.personal.notification.api;
 
 import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
-import biz.thonbecker.personal.landscape.api.LandscapeRecoveryRequestedEvent;
 import biz.thonbecker.personal.notification.platform.EmailNotificationService;
 import biz.thonbecker.personal.user.api.UserLoginLinkRequestedEvent;
 import lombok.RequiredArgsConstructor;
@@ -39,11 +38,6 @@ class NotificationEventListener {
         log.info("Sending cancellation email for {}", event.confirmationCode());
         emailService.sendCancellationNotification(event);
         log.info("Successfully sent cancellation notification for {}", event.confirmationCode());
-    }
-
-    @TransactionalEventListener
-    void onLandscapeRecoveryRequested(final LandscapeRecoveryRequestedEvent event) {
-        emailService.sendLandscapeRecovery(event);
     }
 
     @TransactionalEventListener

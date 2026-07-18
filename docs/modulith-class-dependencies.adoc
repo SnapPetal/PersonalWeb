@@ -88,6 +88,119 @@ No direct cross-module class dependencies.
 
 |===
 
+== Notification Services
+
+[%autowidth.stretch, cols="1,2,1,1,2,1"]
+|===
+|Source class |Source package |Target module |Target class |Target package |Dependency types
+
+|`CalendarService`
+|`biz.thonbecker.personal.notification.platform`
+|Booking
+|`BookingCreatedEvent`
+|`biz.thonbecker.personal.booking.api`
+|`DEFAULT`
+
+|`EmailNotificationService`
+|`biz.thonbecker.personal.notification.platform`
+|Booking
+|`BookingCancelledEvent`
+|`biz.thonbecker.personal.booking.api`
+|`DEFAULT`
+
+|`EmailNotificationService`
+|`biz.thonbecker.personal.notification.platform`
+|Booking
+|`BookingCreatedEvent`
+|`biz.thonbecker.personal.booking.api`
+|`DEFAULT`
+
+|`NotificationEventListener`
+|`biz.thonbecker.personal.notification.api`
+|Booking
+|`BookingCancelledEvent`
+|`biz.thonbecker.personal.booking.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`NotificationEventListener`
+|`biz.thonbecker.personal.notification.api`
+|Booking
+|`BookingCreatedEvent`
+|`biz.thonbecker.personal.booking.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`EventLoggingListener`
+|`biz.thonbecker.personal.notification.api`
+|Foosball
+|`GameRecordedEvent`
+|`biz.thonbecker.personal.foosball.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`EventLoggingListener`
+|`biz.thonbecker.personal.notification.api`
+|Foosball
+|`PlayerCreatedEvent`
+|`biz.thonbecker.personal.foosball.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`EventLoggingListener`
+|`biz.thonbecker.personal.notification.api`
+|Trivia Quiz
+|`PlayerJoinedQuizEvent`
+|`biz.thonbecker.personal.trivia.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`EventLoggingListener`
+|`biz.thonbecker.personal.notification.api`
+|Trivia Quiz
+|`QuizCompletedEvent`
+|`biz.thonbecker.personal.trivia.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`EventLoggingListener`
+|`biz.thonbecker.personal.notification.api`
+|Trivia Quiz
+|`QuizStartedEvent`
+|`biz.thonbecker.personal.trivia.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`EmailNotificationService`
+|`biz.thonbecker.personal.notification.platform`
+|User Management
+|`UserLoginLinkRequestedEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT`
+
+|`EventLoggingListener`
+|`biz.thonbecker.personal.notification.api`
+|User Management
+|`UserLoginEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`EventLoggingListener`
+|`biz.thonbecker.personal.notification.api`
+|User Management
+|`UserProfileUpdatedEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`EventLoggingListener`
+|`biz.thonbecker.personal.notification.api`
+|User Management
+|`UserRegisteredEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`NotificationEventListener`
+|`biz.thonbecker.personal.notification.api`
+|User Management
+|`UserLoginLinkRequestedEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|===
+
 == Shared Infrastructure
 
 [%autowidth.stretch, cols="1,2,1,1,2,1"]
@@ -161,133 +274,6 @@ No direct cross-module class dependencies.
 |`biz.thonbecker.personal.shared.platform.service`
 |User Management
 |`UserRegisteredEvent`
-|`biz.thonbecker.personal.user.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|===
-
-== Notification Services
-
-[%autowidth.stretch, cols="1,2,1,1,2,1"]
-|===
-|Source class |Source package |Target module |Target class |Target package |Dependency types
-
-|`CalendarService`
-|`biz.thonbecker.personal.notification.platform`
-|Booking
-|`BookingCreatedEvent`
-|`biz.thonbecker.personal.booking.api`
-|`DEFAULT`
-
-|`EmailNotificationService`
-|`biz.thonbecker.personal.notification.platform`
-|Booking
-|`BookingCancelledEvent`
-|`biz.thonbecker.personal.booking.api`
-|`DEFAULT`
-
-|`EmailNotificationService`
-|`biz.thonbecker.personal.notification.platform`
-|Booking
-|`BookingCreatedEvent`
-|`biz.thonbecker.personal.booking.api`
-|`DEFAULT`
-
-|`NotificationEventListener`
-|`biz.thonbecker.personal.notification.api`
-|Booking
-|`BookingCancelledEvent`
-|`biz.thonbecker.personal.booking.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`NotificationEventListener`
-|`biz.thonbecker.personal.notification.api`
-|Booking
-|`BookingCreatedEvent`
-|`biz.thonbecker.personal.booking.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EventLoggingListener`
-|`biz.thonbecker.personal.notification.api`
-|Foosball
-|`GameRecordedEvent`
-|`biz.thonbecker.personal.foosball.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EventLoggingListener`
-|`biz.thonbecker.personal.notification.api`
-|Foosball
-|`PlayerCreatedEvent`
-|`biz.thonbecker.personal.foosball.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EmailNotificationService`
-|`biz.thonbecker.personal.notification.platform`
-|Landscape Planning
-|`LandscapeRecoveryRequestedEvent`
-|`biz.thonbecker.personal.landscape.api`
-|`DEFAULT`
-
-|`NotificationEventListener`
-|`biz.thonbecker.personal.notification.api`
-|Landscape Planning
-|`LandscapeRecoveryRequestedEvent`
-|`biz.thonbecker.personal.landscape.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EventLoggingListener`
-|`biz.thonbecker.personal.notification.api`
-|Trivia Quiz
-|`PlayerJoinedQuizEvent`
-|`biz.thonbecker.personal.trivia.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EventLoggingListener`
-|`biz.thonbecker.personal.notification.api`
-|Trivia Quiz
-|`QuizCompletedEvent`
-|`biz.thonbecker.personal.trivia.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EventLoggingListener`
-|`biz.thonbecker.personal.notification.api`
-|Trivia Quiz
-|`QuizStartedEvent`
-|`biz.thonbecker.personal.trivia.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EmailNotificationService`
-|`biz.thonbecker.personal.notification.platform`
-|User Management
-|`UserLoginLinkRequestedEvent`
-|`biz.thonbecker.personal.user.api`
-|`DEFAULT`
-
-|`EventLoggingListener`
-|`biz.thonbecker.personal.notification.api`
-|User Management
-|`UserLoginEvent`
-|`biz.thonbecker.personal.user.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EventLoggingListener`
-|`biz.thonbecker.personal.notification.api`
-|User Management
-|`UserProfileUpdatedEvent`
-|`biz.thonbecker.personal.user.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`EventLoggingListener`
-|`biz.thonbecker.personal.notification.api`
-|User Management
-|`UserRegisteredEvent`
-|`biz.thonbecker.personal.user.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`NotificationEventListener`
-|`biz.thonbecker.personal.notification.api`
-|User Management
-|`UserLoginLinkRequestedEvent`
 |`biz.thonbecker.personal.user.api`
 |`DEFAULT, EVENT_LISTENER`
 
