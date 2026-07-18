@@ -33,6 +33,7 @@
     --shadow-sm: 0 0.25rem 0.75rem var(--shadow-color);
     --shadow-md: 0 0.75rem 1.75rem var(--shadow-color);
     --app-chip-border: rgb(13 110 253 / 30%);
+    --button-light-text: #1f3f77;
 }
 
 :root[data-theme="dark"] {
@@ -48,4 +49,5 @@
     --contact: #14284d;
     --warm: rgb(139 185 254 / 10%);
     --app-chip-border: rgb(139 185 254 / 30%);
+    --button-light-text: #1f3f77;
 }
