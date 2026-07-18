@@ -4,6 +4,7 @@ import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
 import biz.thonbecker.personal.landscape.api.LandscapeRecoveryRequestedEvent;
 import biz.thonbecker.personal.notification.platform.EmailNotificationService;
+import biz.thonbecker.personal.user.api.UserLoginLinkRequestedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -43,5 +44,10 @@ class NotificationEventListener {
     @TransactionalEventListener
     void onLandscapeRecoveryRequested(final LandscapeRecoveryRequestedEvent event) {
         emailService.sendLandscapeRecovery(event);
+    }
+
+    @TransactionalEventListener
+    void onUserLoginLinkRequested(final UserLoginLinkRequestedEvent event) {
+        emailService.sendUserLoginLink(event);
     }
 }

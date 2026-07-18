@@ -35,4 +35,5 @@
     <include file="classpath:db/changelog/changes/029-booking-overlap-exclusion.xml"/>
     <include file="classpath:db/changelog/changes/030-remove-cognito-landscape-projects.xml"/>
     <include file="classpath:db/changelog/changes/031-landscape-email-recovery.xml"/>
+    <include file="classpath:db/changelog/changes/032-user-magic-link-authentication.xml"/>
 </databaseChangeLog>

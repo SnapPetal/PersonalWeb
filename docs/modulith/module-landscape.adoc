@@ -2,6 +2,8 @@
 |===
 |Base package
 |`biz.thonbecker.personal.landscape`
+|Bean references
+|* `b.t.p.u.api.UserSessionResolver` (in User Management)
 |Events listened to
 |* `org.springframework.boot.context.event.ApplicationReadyEvent`
 |===

@@ -7,6 +7,7 @@ import biz.thonbecker.personal.landscape.api.SeasonalAnalysis;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import biz.thonbecker.personal.landscape.platform.LandscapeService;
 import biz.thonbecker.personal.landscape.platform.web.model.AddPlantRequest;
+import biz.thonbecker.personal.user.api.UserSessionResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -32,6 +33,7 @@ public class LandscapeController {
 
     private final LandscapeService landscapeService;
     private final LandscapeOwnerCookie landscapeOwnerCookie;
+    private final UserSessionResolver userSessionResolver;
 
     /**
      * Main landscape planner page.
@@ -44,7 +46,7 @@ public class LandscapeController {
     @GetMapping
     public String landscapePlanner(
             final Model model, final HttpServletRequest request, final HttpServletResponse response) {
-        final var ownerId = landscapeOwnerCookie.resolve(request, response);
+        final var ownerId = resolveOwnerId(request, response);
         final var userPlans = landscapeService.getUserPlans(ownerId);
         model.addAttribute("userPlans", userPlans);
         model.addAttribute("hardinessZones", HardinessZone.values());
@@ -82,7 +84,7 @@ public class LandscapeController {
         try {
             // CRITICAL: Copy bytes immediately before MultipartFile cleanup
             final var imageBytes = image.getBytes();
-            final var userId = landscapeOwnerCookie.resolve(request, response);
+            final var userId = resolveOwnerId(request, response);
 
             log.info("Creating landscape plan for user: {}, zone: {}", userId, hardinessZone);
 
@@ -111,7 +113,7 @@ public class LandscapeController {
     public ResponseEntity<LandscapePlan> getPlan(
             @PathVariable final Long planId, final HttpServletRequest request, final HttpServletResponse response) {
         try {
-            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            final var ownerId = resolveOwnerId(request, response);
             final var plan = landscapeService.getPlan(planId, ownerId);
             return ResponseEntity.ok(plan);
         } catch (final Exception e) {
@@ -131,7 +133,7 @@ public class LandscapeController {
     @ResponseBody
     public ResponseEntity<List<LandscapePlan>> getUserPlans(
             final HttpServletRequest request, final HttpServletResponse response) {
-        final var ownerId = landscapeOwnerCookie.resolve(request, response);
+        final var ownerId = resolveOwnerId(request, response);
         final var plans = landscapeService.getUserPlans(ownerId);
         return ResponseEntity.ok(plans);
     }
@@ -187,7 +189,7 @@ public class LandscapeController {
             final HttpServletRequest request,
             final HttpServletResponse response) {
         try {
-            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            final var ownerId = resolveOwnerId(request, response);
             final var recommendations = landscapeService.getRecommendations(planId, ownerId);
             model.addAttribute("recommendations", recommendations);
             log.info("Retrieved {} recommendations for plan {}", recommendations.size(), planId);
@@ -221,7 +223,7 @@ public class LandscapeController {
 
         try {
             log.info("Adding plant placement to plan {}: {}", planId, request.usdaSymbol());
-            final var ownerId = landscapeOwnerCookie.resolve(httpRequest, response);
+            final var ownerId = resolveOwnerId(httpRequest, response);
             final var placementId = landscapeService.addPlantPlacement(
                     planId,
                     ownerId,
@@ -255,7 +257,7 @@ public class LandscapeController {
 
         try {
             log.info("Removing plant placement {} from plan {}", placementId, planId);
-            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            final var ownerId = resolveOwnerId(request, response);
             landscapeService.removePlantPlacement(planId, placementId, ownerId);
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
@@ -340,7 +342,7 @@ public class LandscapeController {
             @PathVariable final Long planId, final HttpServletRequest request, final HttpServletResponse response) {
         try {
             log.info("Generating seasonal analysis for plan {}", planId);
-            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            final var ownerId = resolveOwnerId(request, response);
             final var analysis = landscapeService.getSeasonalAnalysis(planId, ownerId);
             return ResponseEntity.ok(analysis);
         } catch (final Exception e) {
@@ -361,12 +363,22 @@ public class LandscapeController {
             @PathVariable final Long planId, final HttpServletRequest request, final HttpServletResponse response) {
         try {
             log.info("Deleting landscape plan {}", planId);
-            final var ownerId = landscapeOwnerCookie.resolve(request, response);
+            final var ownerId = resolveOwnerId(request, response);
             landscapeService.deletePlan(planId, ownerId);
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
             log.error("Failed to delete plan {}: {}", planId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    private String resolveOwnerId(final HttpServletRequest request, final HttpServletResponse response) {
+        final var cookies = request.getCookies() == null ? new jakarta.servlet.http.Cookie[0] : request.getCookies();
+        return java.util.Arrays.stream(cookies)
+                .filter(cookie -> UserSessionResolver.SESSION_COOKIE_NAME.equals(cookie.getName()))
+                .map(jakarta.servlet.http.Cookie::getValue)
+                .findFirst()
+                .flatMap(userSessionResolver::resolveUserId)
+                .orElseGet(() -> landscapeOwnerCookie.resolve(request, response));
     }
 }

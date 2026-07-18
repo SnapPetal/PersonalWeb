@@ -1,0 +1,55 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="032-user-magic-link-authentication" author="codex">
+        <createTable tableName="user_login_tokens" schemaName="trivia">
+            <column name="token_hash" type="VARCHAR(64)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(255)">
+                <constraints nullable="false" foreignKeyName="fk_user_login_tokens_user"
+                             references="trivia.users(id)" deleteCascade="true"/>
+            </column>
+            <column name="email" type="VARCHAR(320)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_ip" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requested_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="used_at" type="TIMESTAMP"/>
+        </createTable>
+        <createIndex indexName="idx_user_login_tokens_email_requested" tableName="user_login_tokens" schemaName="trivia">
+            <column name="email"/>
+            <column name="requested_at"/>
+        </createIndex>
+
+        <createTable tableName="user_sessions" schemaName="trivia">
+            <column name="session_hash" type="VARCHAR(64)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(255)">
+                <constraints nullable="false" foreignKeyName="fk_user_sessions_user"
+                             references="trivia.users(id)" deleteCascade="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoked_at" type="TIMESTAMP"/>
+        </createTable>
+        <createIndex indexName="idx_user_sessions_user" tableName="user_sessions" schemaName="trivia">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

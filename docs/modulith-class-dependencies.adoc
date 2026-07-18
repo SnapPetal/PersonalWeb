@@ -14,10 +14,6 @@ No direct cross-module class dependencies.
 
 No direct cross-module class dependencies.
 
-== Landscape Planning
-
-No direct cross-module class dependencies.
-
 == Skateboard Trick Analyzer
 
 No direct cross-module class dependencies.
@@ -74,6 +70,99 @@ No direct cross-module class dependencies.
 |`BookingCreatedEvent`
 |`biz.thonbecker.personal.booking.api`
 |`DEFAULT`
+
+|===
+
+== Landscape Planning
+
+[%autowidth.stretch, cols="1,2,1,1,2,1"]
+|===
+|Source class |Source package |Target module |Target class |Target package |Dependency types
+
+|`LandscapeController`
+|`biz.thonbecker.personal.landscape.platform.web`
+|User Management
+|`UserSessionResolver`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT, USES_COMPONENT`
+
+|===
+
+== Shared Infrastructure
+
+[%autowidth.stretch, cols="1,2,1,1,2,1"]
+|===
+|Source class |Source package |Target module |Target class |Target package |Dependency types
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|Booking
+|`BookingCancelledEvent`
+|`biz.thonbecker.personal.booking.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|Booking
+|`BookingCreatedEvent`
+|`biz.thonbecker.personal.booking.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|Foosball
+|`GameRecordedEvent`
+|`biz.thonbecker.personal.foosball.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|Foosball
+|`PlayerCreatedEvent`
+|`biz.thonbecker.personal.foosball.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|Trivia Quiz
+|`PlayerJoinedQuizEvent`
+|`biz.thonbecker.personal.trivia.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|Trivia Quiz
+|`QuizCompletedEvent`
+|`biz.thonbecker.personal.trivia.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|Trivia Quiz
+|`QuizStartedEvent`
+|`biz.thonbecker.personal.trivia.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|User Management
+|`UserLoginEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|User Management
+|`UserProfileUpdatedEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT, EVENT_LISTENER`
+
+|`PostHogEventListener`
+|`biz.thonbecker.personal.shared.platform.service`
+|User Management
+|`UserRegisteredEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT, EVENT_LISTENER`
 
 |===
 
@@ -167,6 +256,13 @@ No direct cross-module class dependencies.
 |`biz.thonbecker.personal.trivia.api`
 |`DEFAULT, EVENT_LISTENER`
 
+|`EmailNotificationService`
+|`biz.thonbecker.personal.notification.platform`
+|User Management
+|`UserLoginLinkRequestedEvent`
+|`biz.thonbecker.personal.user.api`
+|`DEFAULT`
+
 |`EventLoggingListener`
 |`biz.thonbecker.personal.notification.api`
 |User Management
@@ -188,81 +284,10 @@ No direct cross-module class dependencies.
 |`biz.thonbecker.personal.user.api`
 |`DEFAULT, EVENT_LISTENER`
 
-|===
-
-== Shared Infrastructure
-
-[%autowidth.stretch, cols="1,2,1,1,2,1"]
-|===
-|Source class |Source package |Target module |Target class |Target package |Dependency types
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|Booking
-|`BookingCancelledEvent`
-|`biz.thonbecker.personal.booking.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|Booking
-|`BookingCreatedEvent`
-|`biz.thonbecker.personal.booking.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|Foosball
-|`GameRecordedEvent`
-|`biz.thonbecker.personal.foosball.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|Foosball
-|`PlayerCreatedEvent`
-|`biz.thonbecker.personal.foosball.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|Trivia Quiz
-|`PlayerJoinedQuizEvent`
-|`biz.thonbecker.personal.trivia.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|Trivia Quiz
-|`QuizCompletedEvent`
-|`biz.thonbecker.personal.trivia.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|Trivia Quiz
-|`QuizStartedEvent`
-|`biz.thonbecker.personal.trivia.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
+|`NotificationEventListener`
+|`biz.thonbecker.personal.notification.api`
 |User Management
-|`UserLoginEvent`
-|`biz.thonbecker.personal.user.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|User Management
-|`UserProfileUpdatedEvent`
-|`biz.thonbecker.personal.user.api`
-|`DEFAULT, EVENT_LISTENER`
-
-|`PostHogEventListener`
-|`biz.thonbecker.personal.shared.platform.service`
-|User Management
-|`UserRegisteredEvent`
+|`UserLoginLinkRequestedEvent`
 |`biz.thonbecker.personal.user.api`
 |`DEFAULT, EVENT_LISTENER`
 

@@ -3,6 +3,7 @@ package biz.thonbecker.personal.notification.platform;
 import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
 import biz.thonbecker.personal.landscape.api.LandscapeRecoveryRequestedEvent;
+import biz.thonbecker.personal.user.api.UserLoginLinkRequestedEvent;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
@@ -135,6 +136,20 @@ public class EmailNotificationService {
                 + "\n\nIf you did not request this link, you can ignore this email.";
         if (!properties.enabled()) {
             log.info("Email disabled — would send landscape recovery to {}", event.email());
+            return;
+        }
+        sendPlainEmail(properties.sender(), event.email(), subject, body);
+    }
+
+    @Retryable(maxAttempts = 3)
+    public void sendUserLoginLink(final UserLoginLinkRequestedEvent event) {
+        final var subject = "Your PersonalWeb sign-in link";
+        final var body = "Use this one-time link to sign in. It expires in 15 minutes:\n\n"
+                + event.loginUrl()
+                + "\n\nIf you did not request this link, you can ignore this email.";
+        if (!properties.enabled()) {
+            log.info("Email disabled — would send authentication link to {}", event.email());
+            log.debug("Subject: {}\nBody:\n{}", subject, body);
             return;
         }
         sendPlainEmail(properties.sender(), event.email(), subject, body);
