@@ -10,6 +10,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
@@ -48,7 +49,7 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
                 Integer.class,
                 normalizedEmail,
                 requestIp,
-                since);
+                Timestamp.from(since));
         if (requestCount != null && requestCount >= MAX_REQUESTS_PER_HOUR) {
             return;
         }
@@ -64,8 +65,8 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
                 user.getId(),
                 normalizedEmail,
                 requestIp,
-                now,
-                now.plus(LOGIN_TOKEN_TTL));
+                Timestamp.from(now),
+                Timestamp.from(now.plus(LOGIN_TOKEN_TTL)));
 
         eventPublisher.publishEvent(new UserLoginLinkRequestedEvent(
                 normalizedEmail,
@@ -86,14 +87,17 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
 
         final var loginToken = rows.getFirst();
         final var now = Instant.now();
-        jdbcTemplate.update("UPDATE identity.user_login_tokens SET used_at = ? WHERE token_hash = ?", now, hash(token));
+        jdbcTemplate.update(
+                "UPDATE identity.user_login_tokens SET used_at = ? WHERE token_hash = ?",
+                Timestamp.from(now),
+                hash(token));
         final var sessionToken = UUID.randomUUID().toString() + UUID.randomUUID();
         jdbcTemplate.update(
                 "INSERT INTO identity.user_sessions (session_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
                 hash(sessionToken),
                 loginToken.userId(),
-                now,
-                now.plus(SESSION_TTL));
+                Timestamp.from(now),
+                Timestamp.from(now.plus(SESSION_TTL)));
         eventPublisher.publishEvent(new UserAuthenticatedEvent(loginToken.userId(), loginToken.email(), now));
         eventPublisher.publishEvent(new UserLoginEvent(loginToken.userId(), loginToken.email(), now));
         return Optional.of(new Session(sessionToken, loginToken.userId(), now.plus(SESSION_TTL)));
