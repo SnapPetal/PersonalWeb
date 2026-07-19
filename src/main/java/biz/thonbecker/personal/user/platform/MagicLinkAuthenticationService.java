@@ -6,6 +6,7 @@ import biz.thonbecker.personal.user.api.UserLoginEvent;
 import biz.thonbecker.personal.user.api.UserLoginLinkRequestedEvent;
 import biz.thonbecker.personal.user.api.UserSessionResolver;
 import biz.thonbecker.personal.user.platform.persistence.UserService;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -34,10 +35,16 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
 
     @Transactional
     public void requestLoginLink(final String email, final String baseUrl, final String requestIp) {
+        requestLoginLink(email, baseUrl, requestIp, "/landscape");
+    }
+
+    @Transactional
+    public void requestLoginLink(
+            final String email, final String baseUrl, final String requestIp, final String redirectPath) {
         final var normalizedEmail = normalizeEmail(email);
         final var since = Instant.now().minus(Duration.ofHours(1));
         final var requestCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM trivia.user_login_tokens WHERE (email = ? OR request_ip = ?) AND requested_at > ?",
+                "SELECT COUNT(*) FROM identity.user_login_tokens WHERE (email = ? OR request_ip = ?) AND requested_at > ?",
                 Integer.class,
                 normalizedEmail,
                 requestIp,
@@ -52,7 +59,7 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
         final var token = UUID.randomUUID().toString() + UUID.randomUUID();
         final var now = Instant.now();
         jdbcTemplate.update(
-                "INSERT INTO trivia.user_login_tokens (token_hash, user_id, email, request_ip, requested_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO identity.user_login_tokens (token_hash, user_id, email, request_ip, requested_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
                 hash(token),
                 user.getId(),
                 normalizedEmail,
@@ -60,14 +67,17 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
                 now,
                 now.plus(LOGIN_TOKEN_TTL));
 
-        eventPublisher.publishEvent(
-                new UserLoginLinkRequestedEvent(normalizedEmail, baseUrl + "/auth/confirm?token=" + token, now));
+        eventPublisher.publishEvent(new UserLoginLinkRequestedEvent(
+                normalizedEmail,
+                baseUrl + "/auth/confirm?token=" + token + "&redirect="
+                        + URLEncoder.encode(redirectPath, StandardCharsets.UTF_8),
+                now));
     }
 
     @Transactional
     public Optional<Session> authenticate(final String token) {
         final var rows = jdbcTemplate.query(
-                "SELECT user_id, email FROM trivia.user_login_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > CURRENT_TIMESTAMP FOR UPDATE",
+                "SELECT user_id, email FROM identity.user_login_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > CURRENT_TIMESTAMP FOR UPDATE",
                 (resultSet, rowNum) -> new LoginToken(resultSet.getString("user_id"), resultSet.getString("email")),
                 hash(token));
         if (rows.isEmpty()) {
@@ -76,10 +86,10 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
 
         final var loginToken = rows.getFirst();
         final var now = Instant.now();
-        jdbcTemplate.update("UPDATE trivia.user_login_tokens SET used_at = ? WHERE token_hash = ?", now, hash(token));
+        jdbcTemplate.update("UPDATE identity.user_login_tokens SET used_at = ? WHERE token_hash = ?", now, hash(token));
         final var sessionToken = UUID.randomUUID().toString() + UUID.randomUUID();
         jdbcTemplate.update(
-                "INSERT INTO trivia.user_sessions (session_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+                "INSERT INTO identity.user_sessions (session_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
                 hash(sessionToken),
                 loginToken.userId(),
                 now,
@@ -96,7 +106,7 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
             return Optional.empty();
         }
         final var rows = jdbcTemplate.query(
-                "SELECT user_id FROM trivia.user_sessions WHERE session_hash = ? AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP",
+                "SELECT user_id FROM identity.user_sessions WHERE session_hash = ? AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP",
                 (resultSet, rowNum) -> resultSet.getString("user_id"),
                 hash(sessionToken));
         return rows.stream().findFirst();
@@ -108,11 +118,11 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
             return;
         }
         final var userIds = jdbcTemplate.query(
-                "SELECT user_id FROM trivia.user_sessions WHERE session_hash = ? AND revoked_at IS NULL",
+                "SELECT user_id FROM identity.user_sessions WHERE session_hash = ? AND revoked_at IS NULL",
                 (resultSet, rowNum) -> resultSet.getString("user_id"),
                 hash(sessionToken));
         jdbcTemplate.update(
-                "UPDATE trivia.user_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE session_hash = ? AND revoked_at IS NULL",
+                "UPDATE identity.user_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE session_hash = ? AND revoked_at IS NULL",
                 hash(sessionToken));
         userIds.stream()
                 .findFirst()

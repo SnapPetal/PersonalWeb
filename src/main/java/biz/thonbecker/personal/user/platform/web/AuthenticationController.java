@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,26 +21,34 @@ class AuthenticationController {
     private final MagicLinkAuthenticationService authenticationService;
 
     @GetMapping("/login")
-    String login() {
+    String login(@RequestParam(defaultValue = "/landscape") final String redirect, final Model model) {
+        model.addAttribute("redirect", safeRedirect(redirect));
         return "auth/login";
     }
 
     @PostMapping("/request")
-    String requestLoginLink(@RequestParam("email") final String email, final HttpServletRequest httpRequest) {
+    String requestLoginLink(
+            @RequestParam("email") final String email,
+            @RequestParam(defaultValue = "/landscape") final String redirect,
+            final HttpServletRequest httpRequest) {
         try {
             authenticationService.requestLoginLink(
                     email,
                     httpRequest.getRequestURL().toString().replace("/auth/request", ""),
-                    httpRequest.getRemoteAddr());
-            return "redirect:/auth/login?sent";
+                    httpRequest.getRemoteAddr(),
+                    safeRedirect(redirect));
+            return "redirect:/auth/login?sent&redirect=" + safeRedirect(redirect);
         } catch (final IllegalArgumentException exception) {
-            return "redirect:/auth/login?error";
+            return "redirect:/auth/login?error&redirect=" + safeRedirect(redirect);
         }
     }
 
     @GetMapping("/confirm")
     ResponseEntity<Void> confirm(
-            @RequestParam final String token, final HttpServletRequest request, final HttpServletResponse response) {
+            @RequestParam final String token,
+            @RequestParam(defaultValue = "/landscape") final String redirect,
+            final HttpServletRequest request,
+            final HttpServletResponse response) {
         return authenticationService
                 .authenticate(token)
                 .map(session -> {
@@ -51,12 +60,16 @@ class AuthenticationController {
                     cookie.setMaxAge((int) Duration.ofHours(24).toSeconds());
                     response.addCookie(cookie);
                     return ResponseEntity.status(302)
-                            .header("Location", "/landscape")
+                            .header("Location", safeRedirect(redirect))
                             .<Void>build();
                 })
                 .orElseGet(() -> ResponseEntity.status(302)
                         .header("Location", "/auth/login?invalid")
                         .build());
+    }
+
+    private String safeRedirect(final String redirect) {
+        return "/trivia".equals(redirect) || "/landscape".equals(redirect) ? redirect : "/landscape";
     }
 
     @PostMapping("/logout")

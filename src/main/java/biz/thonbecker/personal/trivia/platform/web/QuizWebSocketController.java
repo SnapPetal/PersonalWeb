@@ -7,6 +7,7 @@ import biz.thonbecker.personal.trivia.domain.Player;
 import biz.thonbecker.personal.trivia.domain.Quiz;
 import biz.thonbecker.personal.trivia.domain.QuizDifficulty;
 import biz.thonbecker.personal.trivia.platform.TriviaService;
+import java.security.Principal;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -30,14 +31,14 @@ class QuizWebSocketController {
     }
 
     @MessageMapping("/quiz/create/trivia")
-    public void createTriviaQuiz(TriviaQuizRequest request) {
+    public void createTriviaQuiz(TriviaQuizRequest request, Principal principal) {
         log.info("Received trivia quiz creation request: {}", request);
 
         Quiz quiz = triviaService.createTriviaQuiz(
                 request.title(),
                 request.questionCount(),
                 QuizDifficulty.valueOf(request.difficulty()),
-                request.creatorId());
+                principal.getName());
 
         // Broadcast quiz creation to all subscribers
         messagingTemplate.convertAndSend("/topic/quiz/created", new QuizSummary(quiz.getId(), quiz.getTitle()));
@@ -45,11 +46,11 @@ class QuizWebSocketController {
     }
 
     @MessageMapping("/quiz/join")
-    public void joinQuiz(JoinQuizRequest request) {
+    public void joinQuiz(JoinQuizRequest request, Principal principal) {
         log.info("Player {} joining quiz {}", request.playerName(), request.quizId());
 
         final var quizPlayer = new Player();
-        quizPlayer.setId(request.playerId());
+        quizPlayer.setId(principal.getName());
         quizPlayer.setName(request.playerName());
 
         triviaService.addPlayer(request.quizId(), quizPlayer);
@@ -63,11 +64,11 @@ class QuizWebSocketController {
     }
 
     @MessageMapping("/quiz/start")
-    public void startQuiz(StartQuizRequest request) {
-        log.info("Player {} attempting to start quiz: {}", request.playerId(), request.quizId());
+    public void startQuiz(StartQuizRequest request, Principal principal) {
+        log.info("Player {} attempting to start quiz: {}", principal.getName(), request.quizId());
 
         try {
-            QuizState state = triviaService.startQuiz(request.quizId(), request.playerId());
+            QuizState state = triviaService.startQuiz(request.quizId(), principal.getName());
 
             if (state != null) {
                 // Broadcast quiz state to all subscribers of this specific quiz
@@ -83,11 +84,11 @@ class QuizWebSocketController {
     }
 
     @MessageMapping("/quiz/submit")
-    public void submitAnswer(AnswerSubmission submission) {
-        log.info("Answer submitted for quiz {} by player {}", submission.quizId(), submission.playerId());
+    public void submitAnswer(AnswerSubmission submission, Principal principal) {
+        log.info("Answer submitted for quiz {} by player {}", submission.quizId(), principal.getName());
 
         QuizState state = triviaService.submitAnswer(
-                submission.quizId(), submission.playerId(), submission.questionId(), submission.selectedOption());
+                submission.quizId(), principal.getName(), submission.questionId(), submission.selectedOption());
 
         if (state != null) {
             // Broadcast updated state (with scores) to all players

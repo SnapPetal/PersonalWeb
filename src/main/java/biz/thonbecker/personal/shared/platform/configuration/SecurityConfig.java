@@ -16,9 +16,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -27,13 +30,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http, final List<OncePerRequestFilter> authenticationFilters) throws Exception {
+        authenticationFilters.forEach(
+                filter -> http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class));
+        http.authorizeHttpRequests(auth -> auth.requestMatchers("/landscape", "/landscape/**", "/trivia", "/trivia/**")
+                        .authenticated()
                         // Public pages
                         .requestMatchers(
                                 "/",
-                                "/landscape",
-                                "/trivia/**",
                                 "/foosball/**",
                                 "/skate-tricks/**",
                                 "/tank-game/**",
@@ -53,6 +58,13 @@ public class SecurityConfig {
                         .anyRequest()
                         .permitAll())
                 .httpBasic(basic -> {})
+                .exceptionHandling(exceptionHandling -> exceptionHandling.defaultAuthenticationEntryPointFor(
+                        new LoginUrlAuthenticationEntryPoint("/auth/login"),
+                        new OrRequestMatcher(
+                                request -> request.getRequestURI().equals("/trivia"),
+                                request -> request.getRequestURI().startsWith("/trivia/"),
+                                request -> request.getRequestURI().equals("/landscape"),
+                                request -> request.getRequestURI().startsWith("/landscape/"))))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())

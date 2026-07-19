@@ -1,13 +1,13 @@
-package biz.thonbecker.personal.content.platform.web;
+package biz.thonbecker.personal.trivia.platform.web;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
-public class WebController {
+class TriviaController {
 
     @GetMapping("/trivia")
-    public String trivia() {
+    String trivia() {
         return "trivia";
     }
 }

@@ -56,6 +56,22 @@ Skatetricks remote import supports direct downloadable video URLs and now attemp
 
 Skatetricks video analysis extracts duration-aware sequential frames from uploaded/imported MP4s before calling OpenAI vision. Tune `SKATETRICKS_ANALYSIS_MAX_FRAMES` if production needs more or fewer images per analysis; the default is `24`.
 
+## Authentication
+
+Trivia and Landscape use the shared magic-link authentication flow. A visitor enters an email address at `/auth/login`, receives a one-time link, and receives a 24-hour authenticated session after confirming it. Login links expire after 15 minutes and are single-use.
+
+Spring Security resolves the `PERSONALWEB_AUTH_SESSION` cookie into the authenticated principal for every request. `/trivia` and `/landscape/**` require authentication and redirect unauthenticated visitors to login. After signing in, visitors return to the module they originally requested.
+
+Trivia WebSocket commands use the authenticated principal as the player and creator identity. Client-supplied player IDs are not trusted, and unauthenticated quiz commands are rejected.
+
+Authentication data is stored in the `identity` database schema:
+
+- `identity.users` and `identity.user_profiles` store user records.
+- `identity.user_login_tokens` stores hashed, expiring one-time login tokens.
+- `identity.user_sessions` stores hashed session tokens, expiration, and revocation state.
+
+An hourly ShedLock-protected cleanup job removes expired login tokens and expired or revoked sessions. Booking administration remains separate and uses HTTP Basic authentication with deployment-provided administrator credentials.
+
 ## Architecture
 
 ### Stack

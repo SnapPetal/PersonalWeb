@@ -19,8 +19,8 @@ public class AuthenticationCleanupService {
     @Transactional
     public void cleanupExpiredAuthenticationData() {
         jdbcTemplate.update(
-                "DELETE FROM trivia.user_login_tokens WHERE expires_at < CURRENT_TIMESTAMP OR used_at < CURRENT_TIMESTAMP - INTERVAL '1 day'");
+                "DELETE FROM identity.user_login_tokens WHERE expires_at < CURRENT_TIMESTAMP OR used_at < CURRENT_TIMESTAMP - INTERVAL '1 day'");
         jdbcTemplate.update(
-                "DELETE FROM trivia.user_sessions WHERE expires_at < CURRENT_TIMESTAMP OR revoked_at < CURRENT_TIMESTAMP - INTERVAL '7 days'");
+                "DELETE FROM identity.user_sessions WHERE expires_at < CURRENT_TIMESTAMP OR revoked_at < CURRENT_TIMESTAMP - INTERVAL '7 days'");
     }
 }

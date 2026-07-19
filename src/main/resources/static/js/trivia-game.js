@@ -41,15 +41,19 @@ function triviaGame() {
       if (savedName) {
         this.playerName = savedName;
       }
-      this.playerId = localStorage.getItem("trivia-player-id");
-      if (!this.playerId) {
-        this.playerId =
-          "player_" +
-          Date.now() +
-          "_" +
-          Math.random().toString(36).substr(2, 9);
-        localStorage.setItem("trivia-player-id", this.playerId);
-      }
+      fetch("/auth/me")
+        .then((response) => {
+          if (!response.ok) {
+            window.location.href = "/auth/login";
+            return null;
+          }
+          return response.text();
+        })
+        .then((userId) => {
+          if (userId) {
+            this.playerId = userId;
+          }
+        });
     },
 
     log(message, type = "info") {

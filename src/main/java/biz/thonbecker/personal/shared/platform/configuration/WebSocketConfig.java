@@ -1,7 +1,10 @@
 package biz.thonbecker.personal.shared.platform.configuration;
 
+import java.util.List;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -11,12 +14,23 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private final List<ChannelInterceptor> channelInterceptors;
+
+    public WebSocketConfig(final List<ChannelInterceptor> channelInterceptors) {
+        this.channelInterceptors = channelInterceptors;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Enable a simple in-memory message broker to send messages to clients
         config.enableSimpleBroker("/topic");
         // Messages with /app prefix will be routed to @MessageMapping methods
         config.setApplicationDestinationPrefixes("/app");
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(channelInterceptors.toArray(ChannelInterceptor[]::new));
     }
 
     @Override

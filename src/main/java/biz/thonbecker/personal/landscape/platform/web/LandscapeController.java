@@ -7,7 +7,6 @@ import biz.thonbecker.personal.landscape.api.SeasonalAnalysis;
 import biz.thonbecker.personal.landscape.api.WaterRequirement;
 import biz.thonbecker.personal.landscape.platform.LandscapeService;
 import biz.thonbecker.personal.landscape.platform.web.model.AddPlantRequest;
-import biz.thonbecker.personal.user.api.UserSessionResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -16,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +34,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class LandscapeController {
 
     private final LandscapeService landscapeService;
-    private final UserSessionResolver userSessionResolver;
 
     /**
      * Main landscape planner page.
@@ -381,11 +380,10 @@ public class LandscapeController {
     }
 
     private java.util.Optional<String> findOwnerId(final HttpServletRequest request) {
-        final var cookies = request.getCookies() == null ? new jakarta.servlet.http.Cookie[0] : request.getCookies();
-        return java.util.Arrays.stream(cookies)
-                .filter(cookie -> UserSessionResolver.SESSION_COOKIE_NAME.equals(cookie.getName()))
-                .map(jakarta.servlet.http.Cookie::getValue)
-                .findFirst()
-                .flatMap(userSessionResolver::resolveUserId);
+        final var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of(authentication.getName());
     }
 }

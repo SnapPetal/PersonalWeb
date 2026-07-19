@@ -14,6 +14,10 @@ No direct cross-module class dependencies.
 
 No direct cross-module class dependencies.
 
+== Landscape Planning
+
+No direct cross-module class dependencies.
+
 == Skateboard Trick Analyzer
 
 No direct cross-module class dependencies.
@@ -70,21 +74,6 @@ No direct cross-module class dependencies.
 |`BookingCreatedEvent`
 |`biz.thonbecker.personal.booking.api`
 |`DEFAULT`
-
-|===
-
-== Landscape Planning
-
-[%autowidth.stretch, cols="1,2,1,1,2,1"]
-|===
-|Source class |Source package |Target module |Target class |Target package |Dependency types
-
-|`LandscapeController`
-|`biz.thonbecker.personal.landscape.platform.web`
-|User Management
-|`UserSessionResolver`
-|`biz.thonbecker.personal.user.api`
-|`DEFAULT, USES_COMPONENT`
 
 |===
 

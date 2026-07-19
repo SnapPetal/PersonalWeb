@@ -20,6 +20,7 @@
             <div class="alert alert-danger" th:if="${param.error}">We could not send the sign-in link. Please check the email address and try again.</div>
             <form method="post" th:action="@{/auth/request}">
                 <input th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden">
+                <input name="redirect" th:value="${redirect}" type="hidden">
                 <label class="form-label" for="email">Email</label>
                 <input autocomplete="email" class="form-control mb-3" id="email" name="email" required type="email">
                 <button class="btn btn-primary w-100" type="submit">Email me a sign-in link</button>
