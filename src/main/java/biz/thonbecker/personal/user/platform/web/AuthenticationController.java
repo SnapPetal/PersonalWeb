@@ -26,11 +26,15 @@ class AuthenticationController {
 
     @PostMapping("/request")
     String requestLoginLink(@RequestParam("email") final String email, final HttpServletRequest httpRequest) {
-        authenticationService.requestLoginLink(
-                email,
-                httpRequest.getRequestURL().toString().replace("/auth/request", ""),
-                httpRequest.getRemoteAddr());
-        return "redirect:/auth/login?sent";
+        try {
+            authenticationService.requestLoginLink(
+                    email,
+                    httpRequest.getRequestURL().toString().replace("/auth/request", ""),
+                    httpRequest.getRemoteAddr());
+            return "redirect:/auth/login?sent";
+        } catch (final IllegalArgumentException exception) {
+            return "redirect:/auth/login?error";
+        }
     }
 
     @GetMapping("/confirm")
@@ -50,7 +54,9 @@ class AuthenticationController {
                             .header("Location", "/landscape")
                             .<Void>build();
                 })
-                .orElseGet(() -> ResponseEntity.badRequest().build());
+                .orElseGet(() -> ResponseEntity.status(302)
+                        .header("Location", "/auth/login?invalid")
+                        .build());
     }
 
     @PostMapping("/logout")
