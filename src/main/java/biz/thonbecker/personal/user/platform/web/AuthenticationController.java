@@ -88,7 +88,7 @@ class AuthenticationController {
         cookie.setPath("/");
         cookie.setMaxAge(0);
         response.addCookie(cookie);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.status(302).header("Location", "/auth/login").build();
     }
 
     @GetMapping("/me")
