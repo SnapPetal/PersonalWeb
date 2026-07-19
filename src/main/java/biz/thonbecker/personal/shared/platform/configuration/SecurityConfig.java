@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +18,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -59,7 +60,11 @@ public class SecurityConfig {
                         .permitAll())
                 .httpBasic(basic -> {})
                 .exceptionHandling(exceptionHandling -> exceptionHandling.defaultAuthenticationEntryPointFor(
-                        new LoginUrlAuthenticationEntryPoint("/auth/login"),
+                        (request, response, exception) -> {
+                            final var redirect = request.getRequestURI().equals("/trivia") ? "/trivia" : "/landscape";
+                            response.sendRedirect(
+                                    "/auth/login?redirect=" + URLEncoder.encode(redirect, StandardCharsets.UTF_8));
+                        },
                         new OrRequestMatcher(
                                 request -> request.getRequestURI().equals("/trivia"),
                                 request -> request.getRequestURI().startsWith("/trivia/"),
