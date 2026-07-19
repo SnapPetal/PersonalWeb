@@ -6,6 +6,7 @@ import biz.thonbecker.personal.notification.platform.EmailNotificationService;
 import biz.thonbecker.personal.user.api.UserLoginLinkRequestedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -40,8 +41,10 @@ class NotificationEventListener {
         log.info("Successfully sent cancellation notification for {}", event.confirmationCode());
     }
 
-    @TransactionalEventListener
+    @EventListener
     void onUserLoginLinkRequested(final UserLoginLinkRequestedEvent event) {
+        log.info("Sending magic-link email to {}", event.email());
         emailService.sendUserLoginLink(event);
+        log.info("Successfully sent magic-link email to {}", event.email());
     }
 }
