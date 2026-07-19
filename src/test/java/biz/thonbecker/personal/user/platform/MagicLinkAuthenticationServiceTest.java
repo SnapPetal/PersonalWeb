@@ -3,7 +3,6 @@ package biz.thonbecker.personal.user.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -11,48 +10,55 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import biz.thonbecker.personal.user.api.UserLoggedOutEvent;
+import biz.thonbecker.personal.user.platform.persistence.UserLoginTokenRepository;
 import biz.thonbecker.personal.user.platform.persistence.UserService;
-import java.util.List;
+import biz.thonbecker.personal.user.platform.persistence.UserSessionRepository;
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
 class MagicLinkAuthenticationServiceTest {
 
-    private JdbcTemplate jdbcTemplate;
+    private UserLoginTokenRepository loginTokenRepository;
+    private UserSessionRepository sessionRepository;
     private UserService userService;
     private ApplicationEventPublisher eventPublisher;
     private MagicLinkAuthenticationService authenticationService;
 
     @BeforeEach
     void setUp() {
-        jdbcTemplate = mock(JdbcTemplate.class);
+        loginTokenRepository = mock(UserLoginTokenRepository.class);
+        sessionRepository = mock(UserSessionRepository.class);
         userService = mock(UserService.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
-        authenticationService = new MagicLinkAuthenticationService(jdbcTemplate, userService, eventPublisher);
+        authenticationService = new MagicLinkAuthenticationService(
+                loginTokenRepository, sessionRepository, userService, eventPublisher);
     }
 
     @Test
     void rejectsMissingSessionTokens() {
         assertThat(authenticationService.resolveUserId(null)).isEmpty();
         assertThat(authenticationService.resolveUserId(" ")).isEmpty();
-        verifyNoInteractions(jdbcTemplate);
+        verifyNoInteractions(sessionRepository);
     }
 
     @Test
     void resolvesActiveSessionByHashedToken() {
-        when(jdbcTemplate.query(anyString(), any(RowMapper.class), anyString())).thenReturn(List.of("user-1"));
+        final var session = new biz.thonbecker.personal.user.platform.persistence.UserSessionEntity();
+        session.setUserId("user-1");
+        when(sessionRepository.findBySessionHashAndRevokedAtIsNullAndExpiresAtAfter(anyString(), any(Instant.class)))
+                .thenReturn(Optional.of(session));
 
         assertThat(authenticationService.resolveUserId("session-token")).contains("user-1");
-        verify(jdbcTemplate).query(anyString(), any(RowMapper.class), anyString());
+        verify(sessionRepository).findBySessionHashAndRevokedAtIsNullAndExpiresAtAfter(anyString(), any(Instant.class));
     }
 
     @Test
     void rejectsLoginRequestsAfterRateLimit() {
-        when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), any(), any(), any()))
-                .thenReturn(5);
+        when(loginTokenRepository.countRecentRequests(anyString(), anyString(), any(Instant.class)))
+                .thenReturn(5L);
 
         authenticationService.requestLoginLink("person@example.com", "https://app.example.com", "127.0.0.1");
 
@@ -65,16 +71,18 @@ class MagicLinkAuthenticationServiceTest {
         org.assertj.core.api.Assertions.assertThatThrownBy(() ->
                         authenticationService.requestLoginLink("not-an-email", "https://app.example.com", "127.0.0.1"))
                 .isInstanceOf(IllegalArgumentException.class);
-        verifyNoInteractions(jdbcTemplate);
+        verifyNoInteractions(loginTokenRepository);
     }
 
     @Test
     void logsOutAndRevokesAnActiveSession() {
-        when(jdbcTemplate.query(anyString(), any(RowMapper.class), anyString())).thenReturn(List.of("user-1"));
+        final var session = new biz.thonbecker.personal.user.platform.persistence.UserSessionEntity();
+        session.setUserId("user-1");
+        when(sessionRepository.findBySessionHashAndRevokedAtIsNull(anyString())).thenReturn(Optional.of(session));
 
         authenticationService.logout("session-token");
 
-        verify(jdbcTemplate).update(anyString(), any(Object[].class));
+        verify(sessionRepository).save(session);
         verify(eventPublisher).publishEvent(any(UserLoggedOutEvent.class));
     }
 }

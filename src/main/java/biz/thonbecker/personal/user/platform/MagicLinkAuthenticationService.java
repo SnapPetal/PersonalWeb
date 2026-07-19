@@ -5,12 +5,15 @@ import biz.thonbecker.personal.user.api.UserLoggedOutEvent;
 import biz.thonbecker.personal.user.api.UserLoginEvent;
 import biz.thonbecker.personal.user.api.UserLoginLinkRequestedEvent;
 import biz.thonbecker.personal.user.api.UserSessionResolver;
+import biz.thonbecker.personal.user.platform.persistence.UserLoginTokenEntity;
+import biz.thonbecker.personal.user.platform.persistence.UserLoginTokenRepository;
 import biz.thonbecker.personal.user.platform.persistence.UserService;
+import biz.thonbecker.personal.user.platform.persistence.UserSessionEntity;
+import biz.thonbecker.personal.user.platform.persistence.UserSessionRepository;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
@@ -18,7 +21,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +32,8 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
     private static final Duration SESSION_TTL = Duration.ofHours(24);
     private static final int MAX_REQUESTS_PER_HOUR = 5;
 
-    private final JdbcTemplate jdbcTemplate;
+    private final UserLoginTokenRepository loginTokenRepository;
+    private final UserSessionRepository sessionRepository;
     private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -44,13 +47,7 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
             final String email, final String baseUrl, final String requestIp, final String redirectPath) {
         final var normalizedEmail = normalizeEmail(email);
         final var since = Instant.now().minus(Duration.ofHours(1));
-        final var requestCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM identity.user_login_tokens WHERE (email = ? OR request_ip = ?) AND requested_at > ?",
-                Integer.class,
-                normalizedEmail,
-                requestIp,
-                Timestamp.from(since));
-        if (requestCount != null && requestCount >= MAX_REQUESTS_PER_HOUR) {
+        if (loginTokenRepository.countRecentRequests(normalizedEmail, requestIp, since) >= MAX_REQUESTS_PER_HOUR) {
             return;
         }
 
@@ -59,14 +56,14 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
                 .orElseGet(() -> userService.registerUser(normalizedEmail, normalizedEmail));
         final var token = UUID.randomUUID().toString() + UUID.randomUUID();
         final var now = Instant.now();
-        jdbcTemplate.update(
-                "INSERT INTO identity.user_login_tokens (token_hash, user_id, email, request_ip, requested_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
-                hash(token),
-                user.getId(),
-                normalizedEmail,
-                requestIp,
-                Timestamp.from(now),
-                Timestamp.from(now.plus(LOGIN_TOKEN_TTL)));
+        final var loginToken = new UserLoginTokenEntity();
+        loginToken.setTokenHash(hash(token));
+        loginToken.setUserId(user.getId());
+        loginToken.setEmail(normalizedEmail);
+        loginToken.setRequestIp(requestIp);
+        loginToken.setRequestedAt(now);
+        loginToken.setExpiresAt(now.plus(LOGIN_TOKEN_TTL));
+        loginTokenRepository.save(loginToken);
 
         eventPublisher.publishEvent(new UserLoginLinkRequestedEvent(
                 normalizedEmail,
@@ -77,30 +74,26 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
 
     @Transactional
     public Optional<Session> authenticate(final String token) {
-        final var rows = jdbcTemplate.query(
-                "SELECT user_id, email FROM identity.user_login_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > CURRENT_TIMESTAMP FOR UPDATE",
-                (resultSet, rowNum) -> new LoginToken(resultSet.getString("user_id"), resultSet.getString("email")),
-                hash(token));
-        if (rows.isEmpty()) {
+        final var loginToken =
+                loginTokenRepository.findByTokenHashAndUsedAtIsNullAndExpiresAtAfter(hash(token), Instant.now());
+        if (loginToken.isEmpty()) {
             return Optional.empty();
         }
 
-        final var loginToken = rows.getFirst();
+        final var tokenEntity = loginToken.get();
         final var now = Instant.now();
-        jdbcTemplate.update(
-                "UPDATE identity.user_login_tokens SET used_at = ? WHERE token_hash = ?",
-                Timestamp.from(now),
-                hash(token));
+        tokenEntity.setUsedAt(now);
+        loginTokenRepository.save(tokenEntity);
         final var sessionToken = UUID.randomUUID().toString() + UUID.randomUUID();
-        jdbcTemplate.update(
-                "INSERT INTO identity.user_sessions (session_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
-                hash(sessionToken),
-                loginToken.userId(),
-                Timestamp.from(now),
-                Timestamp.from(now.plus(SESSION_TTL)));
-        eventPublisher.publishEvent(new UserAuthenticatedEvent(loginToken.userId(), loginToken.email(), now));
-        eventPublisher.publishEvent(new UserLoginEvent(loginToken.userId(), loginToken.email(), now));
-        return Optional.of(new Session(sessionToken, loginToken.userId(), now.plus(SESSION_TTL)));
+        final var session = new UserSessionEntity();
+        session.setSessionHash(hash(sessionToken));
+        session.setUserId(tokenEntity.getUserId());
+        session.setCreatedAt(now);
+        session.setExpiresAt(now.plus(SESSION_TTL));
+        sessionRepository.save(session);
+        eventPublisher.publishEvent(new UserAuthenticatedEvent(tokenEntity.getUserId(), tokenEntity.getEmail(), now));
+        eventPublisher.publishEvent(new UserLoginEvent(tokenEntity.getUserId(), tokenEntity.getEmail(), now));
+        return Optional.of(new Session(sessionToken, tokenEntity.getUserId(), now.plus(SESSION_TTL)));
     }
 
     @Transactional(readOnly = true)
@@ -109,11 +102,9 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
         if (sessionToken == null || sessionToken.isBlank()) {
             return Optional.empty();
         }
-        final var rows = jdbcTemplate.query(
-                "SELECT user_id FROM identity.user_sessions WHERE session_hash = ? AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP",
-                (resultSet, rowNum) -> resultSet.getString("user_id"),
-                hash(sessionToken));
-        return rows.stream().findFirst();
+        return sessionRepository
+                .findBySessionHashAndRevokedAtIsNullAndExpiresAtAfter(hash(sessionToken), Instant.now())
+                .map(UserSessionEntity::getUserId);
     }
 
     @Transactional
@@ -121,16 +112,13 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
         if (sessionToken == null || sessionToken.isBlank()) {
             return;
         }
-        final var userIds = jdbcTemplate.query(
-                "SELECT user_id FROM identity.user_sessions WHERE session_hash = ? AND revoked_at IS NULL",
-                (resultSet, rowNum) -> resultSet.getString("user_id"),
-                hash(sessionToken));
-        jdbcTemplate.update(
-                "UPDATE identity.user_sessions SET revoked_at = CURRENT_TIMESTAMP WHERE session_hash = ? AND revoked_at IS NULL",
-                hash(sessionToken));
-        userIds.stream()
-                .findFirst()
-                .ifPresent(userId -> eventPublisher.publishEvent(new UserLoggedOutEvent(userId, Instant.now())));
+        sessionRepository
+                .findBySessionHashAndRevokedAtIsNull(hash(sessionToken))
+                .ifPresent(session -> {
+                    session.setRevokedAt(Instant.now());
+                    sessionRepository.save(session);
+                    eventPublisher.publishEvent(new UserLoggedOutEvent(session.getUserId(), Instant.now()));
+                });
     }
 
     private String normalizeEmail(final String email) {
@@ -148,8 +136,6 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
             throw new IllegalStateException("SHA-256 is unavailable", exception);
         }
     }
-
-    private record LoginToken(String userId, String email) {}
 
     public record Session(String token, String userId, Instant expiresAt) {}
 }
