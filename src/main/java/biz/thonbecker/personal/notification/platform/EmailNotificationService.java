@@ -11,6 +11,7 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,9 @@ import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
 @Slf4j
 public class EmailNotificationService {
 
+    private static final DateTimeFormatter APPOINTMENT_DATE_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy");
+    private static final DateTimeFormatter APPOINTMENT_TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a");
+
     private final CalendarService calendarService;
     private final SesClient sesClient;
     private final NotificationProperties properties;
@@ -40,32 +44,35 @@ public class EmailNotificationService {
     public void sendBookingConfirmation(final BookingCreatedEvent event) {
         final var sender = properties.sender();
         final var icsContent = calendarService.generateICalendar(event, sender);
-        final var subject = "Booking Confirmation - " + event.bookingTypeName();
+        final var subject = "Appointment scheduled: " + event.bookingTypeName();
+        final var appointmentDate = event.startTime().format(APPOINTMENT_DATE_FORMAT);
+        final var startTime = event.startTime().format(APPOINTMENT_TIME_FORMAT);
+        final var endTime = event.endTime().format(APPOINTMENT_TIME_FORMAT);
 
         final var body = String.format(
                 """
                 Hi %s,
 
-                Your booking has been confirmed!
+                This is a confirmation that your appointment is scheduled.
 
-                Booking Details:
+                Appointment details:
                   Type: %s
-                  Date/Time: %s - %s
+                  Date: %s
+                  Time: %s - %s
                   Confirmation Code: %s
 
-                You can view or cancel your booking at:
+                View or cancel this appointment:
                   https://booking.thonbecker.biz/booking/confirmation/%s
 
-                The meeting details are attached as a calendar file (.ics).
-
-                Looking forward to speaking with you!
+                A calendar invitation is attached to this email.
 
                 Best regards,
                 Thon Becker""",
                 event.attendeeName(),
                 event.bookingTypeName(),
-                event.startTime(),
-                event.endTime(),
+                appointmentDate,
+                startTime,
+                endTime,
                 event.confirmationCode(),
                 event.confirmationCode());
 
@@ -91,28 +98,33 @@ public class EmailNotificationService {
     @Retryable(maxAttempts = 3)
     public void sendCancellationNotification(final BookingCancelledEvent event) {
         final var sender = properties.sender();
-        final var subject = "Booking Cancelled - " + event.bookingTypeName();
+        final var subject = "Appointment cancelled: " + event.bookingTypeName();
+        final var appointmentDate = event.startTime().format(APPOINTMENT_DATE_FORMAT);
+        final var startTime = event.startTime().format(APPOINTMENT_TIME_FORMAT);
+        final var endTime = event.endTime().format(APPOINTMENT_TIME_FORMAT);
 
         final var body = String.format(
                 """
                 Hi %s,
 
-                Your booking has been cancelled.
+                This is a confirmation that the following appointment has been cancelled.
 
-                Cancelled Booking Details:
+                Appointment details:
                   Type: %s
-                  Date/Time: %s - %s
+                  Date: %s
+                  Time: %s - %s
                   Confirmation Code: %s
 
-                If you'd like to reschedule, please visit:
+                To schedule a new appointment, visit:
                   https://booking.thonbecker.biz/booking
 
                 Best regards,
                 Thon Becker""",
                 event.attendeeName(),
                 event.bookingTypeName(),
-                event.startTime(),
-                event.endTime(),
+                appointmentDate,
+                startTime,
+                endTime,
                 event.confirmationCode());
 
         if (!properties.enabled()) {
@@ -129,10 +141,12 @@ public class EmailNotificationService {
 
     @Retryable(maxAttempts = 3)
     public void sendUserLoginLink(final UserLoginLinkRequestedEvent event) {
-        final var subject = "Your PersonalWeb sign-in link";
-        final var body = "Use this one-time link to sign in. It expires in 15 minutes:\n\n"
+        final var subject = "Sign-in request for thonbecker.biz";
+        final var body = "A sign-in link was requested for this email address.\n\n"
+                + "Sign in to thonbecker.biz:\n"
                 + event.loginUrl()
-                + "\n\nIf you did not request this link, you can ignore this email.";
+                + "\n\nThis link can be used once and expires in 15 minutes.\n"
+                + "If you did not request it, no action is needed.";
         if (!properties.enabled()) {
             log.info("Email disabled — would send authentication link to {}", event.email());
             log.debug("Subject: {}\nBody:\n{}", subject, body);

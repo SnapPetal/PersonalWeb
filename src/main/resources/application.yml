@@ -151,8 +151,8 @@ landscape:
 notification:
   email:
     enabled: true
-    sender: thon.becker@gmail.com
-    admin: thon.becker@gmail.com
+    sender: verify@mail.thonbecker.biz
+    admin: verify@mail.thonbecker.biz
 
 # Calendar Integration (Nextcloud CalDAV)
 calendar:
