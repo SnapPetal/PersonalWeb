@@ -24,7 +24,7 @@
     <jspecify.version>1.0.0</jspecify.version>
     <lombok.version>1.18.46</lombok.version>
     <maven.compiler.release>25</maven.compiler.release>
-    <playwright.version>1.60.0</playwright.version>
+    <playwright.version>1.61.0</playwright.version>
     <plyr.version>3.7.8</plyr.version>
     <shedlock.version>7.7.0</shedlock.version>
     <sockjs-client.version>1.5.1</sockjs-client.version>
