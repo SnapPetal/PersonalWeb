@@ -46,9 +46,6 @@ public class BookingEntity {
     @Column(name = "status", nullable = false, length = 20)
     private BookingStatus status = BookingStatus.PENDING;
 
-    @Column(name = "user_id")
-    private String userId;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
