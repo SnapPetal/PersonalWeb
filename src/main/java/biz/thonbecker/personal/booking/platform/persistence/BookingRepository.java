@@ -20,14 +20,6 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
     Optional<BookingEntity> findByConfirmationCode(String confirmationCode);
 
     /**
-     * Finds all bookings for a specific user.
-     *
-     * @param userId User identifier
-     * @return List of user's bookings
-     */
-    List<BookingEntity> findByUserIdOrderByStartTimeDesc(String userId);
-
-    /**
      * Finds all bookings ordered by start time descending.
      *
      * @return List of all bookings
