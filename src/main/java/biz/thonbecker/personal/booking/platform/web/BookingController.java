@@ -5,7 +5,6 @@ import biz.thonbecker.personal.booking.platform.BookingService;
 import biz.thonbecker.personal.booking.platform.web.model.CreateBookingRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.security.Principal;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,22 +71,14 @@ public class BookingController {
      * Creates a new booking.
      *
      * @param request Booking details
-     * @param principal Authenticated user (optional)
      * @return Created booking
      */
     @PostMapping("/book")
     @ResponseBody
-    public ResponseEntity<Booking> createBooking(
-            @Valid @RequestBody final CreateBookingRequest request, final Principal principal) {
+    public ResponseEntity<Booking> createBooking(@Valid @RequestBody final CreateBookingRequest request) {
 
         try {
-            final var userId = principal != null ? principal.getName() : null;
-
-            log.info(
-                    "Creating booking for type {} at {} (user: {})",
-                    request.bookingTypeId(),
-                    request.startTime(),
-                    userId);
+            log.info("Creating booking for type {} at {}", request.bookingTypeId(), request.startTime());
 
             final var booking = bookingService.createBooking(
                     request.bookingTypeId(),
@@ -95,8 +86,7 @@ public class BookingController {
                     request.attendeeEmail(),
                     request.attendeePhone(),
                     request.startTime(),
-                    request.message(),
-                    userId);
+                    request.message());
 
             log.info("Successfully created booking with confirmation code: {}", booking.confirmationCode());
             return ResponseEntity.ok(booking);
