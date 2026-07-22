@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
  * @param endTime Scheduled end time
  * @param message Optional message from the attendee
  * @param status Current status
- * @param userId User ID if booked by authenticated user (optional)
  * @param createdAt When the booking was created
  */
 public record Booking(
@@ -30,5 +29,4 @@ public record Booking(
         LocalDateTime endTime,
         String message,
         BookingStatus status,
-        String userId,
         Instant createdAt) {}
