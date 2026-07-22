@@ -18,6 +18,7 @@
                 <div class="d-flex gap-2">
                     <form method="post" th:action="@{/auth/logout}">
                         <input th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden">
+                        <input name="redirect" type="hidden" value="/trivia">
                         <button class="btn btn-outline-secondary btn-sm" type="submit">Sign out</button>
                     </form>
                     <a href="https://thonbecker.biz" class="btn btn-outline-secondary btn-sm">
