@@ -108,8 +108,7 @@ public class BookingService {
             final String attendeeEmail,
             final String attendeePhone,
             final LocalDateTime startTime,
-            final String message,
-            final String userId) {
+            final String message) {
 
         log.info("Creating booking for type {} at {}", bookingTypeId, startTime);
 
@@ -158,8 +157,6 @@ public class BookingService {
         booking.setEndTime(endTime);
         booking.setMessage(message);
         booking.setStatus(BookingStatus.CONFIRMED);
-        booking.setUserId(userId);
-
         final BookingEntity savedBooking;
         try {
             savedBooking = bookingRepository.saveAndFlush(booking);
@@ -311,7 +308,6 @@ public class BookingService {
                 entity.getEndTime(),
                 entity.getMessage(),
                 entity.getStatus(),
-                entity.getUserId(),
                 entity.getCreatedAt());
     }
 
