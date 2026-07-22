@@ -14,11 +14,19 @@
     <div class="card shadow-sm">
         <div class="card-body p-4">
             <h1 class="h3 mb-3">Sign in</h1>
-            <p class="text-muted">Enter your email and we’ll send you a one-time link. The link expires in 15 minutes, and your session lasts one day.</p>
+            <p th:if="${redirect != null}" class="text-muted">Enter your email and we’ll send you a one-time link. The link expires in 15 minutes, and your session lasts one day.</p>
+            <p th:if="${redirect == null}" class="text-muted">What would you like to sign in to?</p>
             <div class="alert alert-success" th:if="${param.sent}">If that email can sign in, a link is on its way.</div>
             <div class="alert alert-danger" th:if="${param.invalid}">That sign-in link is invalid or expired. Request a new one.</div>
             <div class="alert alert-danger" th:if="${param.error}">We could not send the sign-in link. Please check the email address and try again.</div>
-            <form method="post" th:action="@{/auth/request}">
+            <div th:if="${redirect == null}" class="d-grid gap-2">
+                <a th:each="destination, iteration : ${loginDestinations}"
+                   class="btn"
+                   th:classappend="${iteration.index == 0 ? 'btn-primary' : 'btn-outline-primary'}"
+                   th:href="@{/auth/login(redirect=${destination.path})}"
+                   th:text="|Sign in to ${destination.label}|"></a>
+            </div>
+            <form th:if="${redirect != null}" method="post" th:action="@{/auth/request}">
                 <input th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden">
                 <input name="redirect" th:value="${redirect}" type="hidden">
                 <label class="form-label" for="email">Email</label>
