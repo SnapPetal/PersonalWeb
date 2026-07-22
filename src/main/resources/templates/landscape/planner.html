@@ -20,6 +20,7 @@
                 <span class="text-muted"><i class="bi bi-person-check"></i> Signed in</span>
                 <form method="post" th:action="@{/auth/logout}">
                     <input th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden">
+                    <input name="redirect" type="hidden" value="/landscape">
                     <button class="btn btn-outline-secondary" type="submit">Sign out</button>
                 </form>
                 <a href="https://thonbecker.biz" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back Home</a>
