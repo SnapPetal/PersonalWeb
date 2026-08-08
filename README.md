@@ -59,7 +59,8 @@ GET /booking/api/availability?from=YYYY-MM-DD&to=YYYY-MM-DD&timezone=America%2FC
 ```
 
 The endpoint returns active meeting types and available start/end times only. It does not return attendee
-records and cannot create, cancel, or modify bookings. Keep this endpoint and the widget read-only.
+records and cannot create, cancel, or modify bookings. Keep this endpoint and the widget read-only. Deploy
+PersonalWeb before deploying changes to the public chat Worker so its availability data source is live.
 
 The local `design-system` Maven module packages the shared CSS and JavaScript as a WebJar. Its Maven build installs a pinned Node/npm runtime, runs `npm ci`, applies the Airbnb ESLint configuration, and runs Prettier/Stylelint for CSS before packaging. The Spring application consumes the resulting WebJar through `/webjars/personal-design-system/1.0.0/`.
 
