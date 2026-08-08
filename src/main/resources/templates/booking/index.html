@@ -31,6 +31,36 @@
                     <p class="lead text-muted mb-0">Schedule a consultation to discuss your project or technical challenges</p>
                 </div>
 
+                <section class="public-chat-card card app-card mb-5" aria-labelledby="public-chat-title">
+                    <div class="card-body p-4" x-data="publicChat()">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                            <div>
+                                <span class="badge text-bg-info mb-2">Active project · Cloudflare OS</span>
+                                <h2 id="public-chat-title" class="h4 mb-2">Ask the website assistant</h2>
+                                <p class="text-muted mb-0">This is a small public chat experiment while I learn how Cloudflare Workers and OpenAI work together.</p>
+                            </div>
+                            <i class="bi bi-chat-dots fs-2 text-info" aria-hidden="true"></i>
+                        </div>
+                        <form @submit.prevent="send()">
+                            <label class="visually-hidden" for="public-chat-message">Message</label>
+                            <div class="input-group">
+                                <input id="public-chat-message" class="form-control" type="text" maxlength="1000"
+                                       placeholder="Ask about the site or the project..." x-model="message"
+                                       :disabled="loading" autocomplete="off">
+                                <button class="btn btn-info" type="submit" :disabled="loading || !message.trim()">
+                                    <span x-show="!loading">Send</span>
+                                    <span x-show="loading" x-cloak>Thinking…</span>
+                                </button>
+                            </div>
+                        </form>
+                        <div class="alert alert-secondary mt-3 mb-0" role="status" x-show="reply || error" x-cloak>
+                            <span x-show="reply" x-text="reply"></span>
+                            <span x-show="error" x-text="error"></span>
+                        </div>
+                        <small class="text-muted d-block mt-3">No booking actions, private data, or account access are connected to this chat.</small>
+                    </div>
+                </section>
+
                 <!-- Booking Types -->
                 <div class="row g-4 mb-5">
                     <div th:each="type : ${bookingTypes}" class="col-md-4">
@@ -123,6 +153,38 @@
 </main>
 
 <script>
+    function publicChat() {
+        return {
+            message: '',
+            reply: '',
+            error: '',
+            loading: false,
+
+            async send() {
+                const message = this.message.trim();
+                if (!message || this.loading) return;
+                this.loading = true;
+                this.reply = '';
+                this.error = '';
+                try {
+                    const response = await fetch('https://chat.thonbecker.biz/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'The chat is temporarily unavailable.');
+                    this.reply = data.message;
+                    this.message = '';
+                } catch (error) {
+                    this.error = error.message || 'The chat is temporarily unavailable.';
+                } finally {
+                    this.loading = false;
+                }
+            },
+        };
+    }
+
     function bookingForm() {
         return {
             selectedBookingTypeId: null,

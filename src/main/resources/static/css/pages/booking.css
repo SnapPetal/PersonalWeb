@@ -18,6 +18,15 @@
     margin-inline: auto;
 }
 
+.booking-page .public-chat-card {
+    border-color: var(--app-chip-border);
+    background: var(--app-chip-bg);
+}
+
+.booking-page .public-chat-card .text-info {
+    color: var(--app-link-color) !important;
+}
+
 .booking-not-found-icon {
     font-size: 5rem;
 }
