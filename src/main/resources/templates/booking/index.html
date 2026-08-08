@@ -45,7 +45,7 @@
                             <label class="visually-hidden" for="public-chat-message">Message</label>
                             <div class="input-group">
                                 <input id="public-chat-message" class="form-control" type="text" maxlength="1000"
-                                       placeholder="Ask about the site or the project..." x-model="message"
+                                       placeholder="Ask about available meeting times..." x-model="message"
                                        :disabled="loading" autocomplete="off">
                                 <button class="btn btn-info" type="submit" :disabled="loading || !message.trim()">
                                     <span x-show="!loading">Send</span>
