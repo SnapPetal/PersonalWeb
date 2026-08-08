@@ -48,6 +48,19 @@ mvn -f design-system/pom.xml install -DskipTests
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
+### Booking availability assistant
+
+The booking page includes a public, read-only availability assistant. The browser sends its IANA timezone
+to `chat.thonbecker.biz`; the assistant defaults to `America/Chicago` when no timezone is supplied. The
+Cloudflare Worker calls this endpoint on PersonalWeb:
+
+```text
+GET /booking/api/availability?from=YYYY-MM-DD&to=YYYY-MM-DD&timezone=America%2FChicago
+```
+
+The endpoint returns active meeting types and available start/end times only. It does not return attendee
+records and cannot create, cancel, or modify bookings. Keep this endpoint and the widget read-only.
+
 The local `design-system` Maven module packages the shared CSS and JavaScript as a WebJar. Its Maven build installs a pinned Node/npm runtime, runs `npm ci`, applies the Airbnb ESLint configuration, and runs Prettier/Stylelint for CSS before packaging. The Spring application consumes the resulting WebJar through `/webjars/personal-design-system/1.0.0/`.
 
 For Skatetricks transcoding, set `SKATETRICKS_MEDIACONVERT_ROLE_ARN` from the HomeWeb CDK `MediaConvertRoleArn` output. Do not set `SKATETRICKS_MEDIACONVERT_ENDPOINT`; the app discovers the correct account-specific endpoint automatically via `DescribeEndpoints`.
