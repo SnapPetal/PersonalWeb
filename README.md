@@ -40,8 +40,8 @@ A modular monolith personal portfolio and interactive applications platform buil
 ### Setup
 
 ```bash
-git clone https://github.com/SnapPetal/PersonalWeb.git
-cd PersonalWeb
+git clone https://github.com/SnapPetal/personal-web.git
+cd personal-web
 cp .env.example .env
 # Edit .env with your AWS, OpenAI, and Nextcloud credentials
 mvn -f design-system/pom.xml install -DskipTests

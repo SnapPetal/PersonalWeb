@@ -28,7 +28,7 @@ AWS trust policy for the role should restrict access to this repository and bran
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:SnapPetal/PersonalWeb:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:SnapPetal/personal-web:ref:refs/heads/main"
         }
       }
     }
