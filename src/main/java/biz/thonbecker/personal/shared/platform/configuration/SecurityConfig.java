@@ -45,6 +45,7 @@ public class SecurityConfig {
                                 "/tank-game/**",
                                 "/booking",
                                 "/booking/types/**",
+                                "/booking/api/availability",
                                 "/booking/book",
                                 "/booking/confirmation/**",
                                 "/css/**",
