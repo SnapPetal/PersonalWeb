@@ -13,5 +13,5 @@
 * `b.t.p.u.api.UserRegisteredEvent` (async) 
 * `b.t.p.b.api.BookingCancelledEvent` 
 * `b.t.p.b.api.BookingCreatedEvent` 
-* `b.t.p.u.api.UserLoginLinkRequestedEvent`
+* `b.t.p.u.api.UserLoginLinkRequestedEvent` 
 |===

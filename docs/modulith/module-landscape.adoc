@@ -3,5 +3,5 @@
 |Base package
 |`biz.thonbecker.personal.landscape`
 |Events listened to
-|* `org.springframework.boot.context.event.ApplicationReadyEvent`
+|* `org.springframework.boot.context.event.ApplicationReadyEvent` 
 |===
