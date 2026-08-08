@@ -1,4 +1,4 @@
-name: PersonalWeb Release
+name: AWS Deploy
 
 on:
   push:
@@ -20,8 +20,8 @@ env:
   ECR_REPOSITORY: "personal"
 
 jobs:
-  build-and-push:
-    name: Build and Publish Container Image
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -72,9 +72,9 @@ jobs:
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
-  deploy-personalweb:
-    name: Deploy PersonalWeb
-    needs: build-and-push
+  deploy:
+    name: Deploy
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
