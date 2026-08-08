@@ -132,7 +132,9 @@ skatetricks:
     bucket: thonbecker-vectors
     index: skatetricks-tricks
     dimension: 1024
-    recreate: true
+    # Never wipe production vectors on restart. Set SKATETRICKS_VECTORSTORE_RECREATE=true only
+    # for an intentional, one-time index migration.
+    recreate: ${SKATETRICKS_VECTORSTORE_RECREATE:false}
 
 # Landscape Planning Configuration
 landscape:
