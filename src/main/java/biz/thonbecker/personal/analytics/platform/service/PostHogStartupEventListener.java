@@ -1,4 +1,4 @@
-package biz.thonbecker.personal.shared.platform.service;
+package biz.thonbecker.personal.analytics.platform.service;
 
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

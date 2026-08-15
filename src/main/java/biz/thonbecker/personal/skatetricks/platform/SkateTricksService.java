@@ -1,5 +1,7 @@
 package biz.thonbecker.personal.skatetricks.platform;
 
+import biz.thonbecker.personal.analytics.api.PostHogEventNames;
+import biz.thonbecker.personal.analytics.api.PostHogEventPublisher;
 import biz.thonbecker.personal.skatetricks.api.SupportedTrick;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisEvent;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
@@ -32,6 +34,7 @@ public class SkateTricksService {
     private final S3VectorsClient s3VectorsClient;
     private final EmbeddingService embeddingService;
     private final SkatetricksObservability observability;
+    private final PostHogEventPublisher postHogEventPublisher;
 
     @Value("${skatetricks.vectorstore.bucket:}")
     private String vectorBucket;
@@ -49,7 +52,8 @@ public class SkateTricksService {
             VideoTranscoder videoTranscoder,
             @org.springframework.lang.Nullable S3VectorsClient s3VectorsClient,
             @org.springframework.lang.Nullable EmbeddingService embeddingService,
-            SkatetricksObservability observability) {
+            SkatetricksObservability observability,
+            PostHogEventPublisher postHogEventPublisher) {
         this.trickAnalyzer = trickAnalyzer;
         this.trickAttemptRepository = trickAttemptRepository;
         this.eventPublisher = eventPublisher;
@@ -57,17 +61,32 @@ public class SkateTricksService {
         this.s3VectorsClient = s3VectorsClient;
         this.embeddingService = embeddingService;
         this.observability = observability;
+        this.postHogEventPublisher = postHogEventPublisher;
     }
 
     @Transactional
     public TrickAnalysisResult analyzeFrames(String sessionId, List<String> base64Frames) {
         final var scope = observability.start("service.analyze_frames");
         log.info("event=analyze_frames_started sessionId={} frameCount={}", sessionId, base64Frames.size());
+        postHogEventPublisher.publish(
+                sessionId,
+                PostHogEventNames.SKATETRICKS_ANALYSIS_STARTED,
+                Map.of("mode", "frames", "frame_count", base64Frames.size()));
         observability.recordFrameCount(base64Frames.size(), "mode", "frames");
 
         try {
             TrickAnalysisResult result = trickAnalyzer.analyze(base64Frames);
             Long id = saveResult(sessionId, result);
+            postHogEventPublisher.publish(
+                    sessionId,
+                    PostHogEventNames.SKATETRICKS_ANALYSIS_COMPLETED,
+                    Map.of(
+                            "mode",
+                            "frames",
+                            "attempt_id",
+                            id,
+                            "trick",
+                            result.trick().name()));
             observability.success(scope, "trick", result.trick().name());
             return result.withAttemptId(id);
         } catch (RuntimeException e) {
@@ -84,6 +103,10 @@ public class SkateTricksService {
                 sessionId,
                 originalFilename,
                 videoData.length);
+        postHogEventPublisher.publish(
+                sessionId,
+                PostHogEventNames.SKATETRICKS_ANALYSIS_STARTED,
+                Map.of("mode", "video", "file_size_bytes", videoData.length));
         observability.recordPayloadSize("input_video", videoData.length, "source", "upload");
 
         try {
@@ -93,6 +116,16 @@ public class SkateTricksService {
 
             TrickAnalysisResult result = trickAnalyzer.analyzeVideo(mp4Data);
             Long id = saveResult(sessionId, result);
+            postHogEventPublisher.publish(
+                    sessionId,
+                    PostHogEventNames.SKATETRICKS_ANALYSIS_COMPLETED,
+                    Map.of(
+                            "mode",
+                            "video",
+                            "attempt_id",
+                            id,
+                            "trick",
+                            result.trick().name()));
             observability.success(scope, "trick", result.trick().name());
             return result.withAttemptId(id);
 
@@ -167,6 +200,14 @@ public class SkateTricksService {
 
         trickAttemptRepository.save(entity);
         writeToVectorStore(entity);
+        postHogEventPublisher.publish(
+                entity.getSessionId(),
+                PostHogEventNames.SKATETRICKS_ATTEMPT_VERIFIED,
+                Map.of(
+                        "attempt_id",
+                        attemptId,
+                        "corrected",
+                        correctedTrickName != null && !correctedTrickName.isBlank()));
         observability.incrementStage("attempt_verification", "success");
         observability.success(scope);
     }

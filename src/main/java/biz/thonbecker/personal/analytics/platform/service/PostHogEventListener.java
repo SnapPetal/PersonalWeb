@@ -1,5 +1,7 @@
-package biz.thonbecker.personal.shared.platform.service;
+package biz.thonbecker.personal.analytics.platform.service;
 
+import biz.thonbecker.personal.analytics.api.PostHogEvent;
+import biz.thonbecker.personal.analytics.api.PostHogEventNames;
 import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
 import biz.thonbecker.personal.foosball.api.GameRecordedEvent;
@@ -22,6 +24,12 @@ import org.springframework.stereotype.Component;
 class PostHogEventListener {
 
     private final PostHogAnalyticsService postHogAnalyticsService;
+
+    @EventListener
+    @Async
+    void onPostHogEvent(final PostHogEvent event) {
+        postHogAnalyticsService.capture(event.distinctId(), event.eventName(), event.properties());
+    }
 
     @EventListener
     @Async
@@ -62,7 +70,7 @@ class PostHogEventListener {
     void onBookingCreated(final BookingCreatedEvent event) {
         postHogAnalyticsService.capture(
                 event.attendeeEmail(),
-                "booking_created",
+                PostHogEventNames.BOOKING_CONFIRMED,
                 Map.of(
                         "booking_id", event.bookingId(),
                         "confirmation_code", event.confirmationCode(),
@@ -77,7 +85,7 @@ class PostHogEventListener {
     void onBookingCancelled(final BookingCancelledEvent event) {
         postHogAnalyticsService.capture(
                 event.attendeeEmail(),
-                "booking_cancelled",
+                PostHogEventNames.BOOKING_CANCELLED,
                 Map.of(
                         "booking_id", event.bookingId(),
                         "confirmation_code", event.confirmationCode(),

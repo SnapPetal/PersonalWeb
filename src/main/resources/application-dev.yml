@@ -30,7 +30,7 @@ skatetricks:
     enabled: false
 
 posthog:
-  enabled: false
+  enabled: ${PERSONAL_POSTHOG_ENABLED:false}
 
 personal:
   admin:

@@ -28,5 +28,7 @@
  *       booking is cancelled
  * </ul>
  */
-@org.springframework.modulith.ApplicationModule(displayName = "Booking")
+@org.springframework.modulith.ApplicationModule(
+        displayName = "Booking",
+        allowedDependencies = {"analytics :: api"})
 package biz.thonbecker.personal.booking;

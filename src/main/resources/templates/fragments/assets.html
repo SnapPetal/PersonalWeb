@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <th:block th:fragment="posthogScripts">
+        <script th:if="${@postHogProperties.browserConfigured}" th:inline="javascript">
+            window.personalPostHogConfig = {
+                projectToken: /*[[${@postHogProperties.projectToken}]]*/ '',
+                apiHost: /*[[${@postHogProperties.apiHost}]]*/ 'https://us.i.posthog.com'
+            };
+        </script>
+        <script th:if="${@postHogProperties.browserConfigured}" defer th:src="@{/js/posthog.js}"></script>
+    </th:block>
     <th:block th:fragment="bootstrapCss">
         <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}">
         <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/font/bootstrap-icons.min.css}">

@@ -88,6 +88,7 @@ posthog:
   enabled: ${PERSONAL_POSTHOG_ENABLED:false}
   api-key: ${PERSONAL_POSTHOG_API_KEY:}
   api-host: ${PERSONAL_POSTHOG_API_HOST:https://us.i.posthog.com}
+  project-token: ${PERSONAL_POSTHOG_PROJECT_TOKEN:}
 
 personal:
   admin:

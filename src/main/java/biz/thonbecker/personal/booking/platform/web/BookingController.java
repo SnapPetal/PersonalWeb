@@ -1,5 +1,7 @@
 package biz.thonbecker.personal.booking.platform.web;
 
+import biz.thonbecker.personal.analytics.api.PostHogEventNames;
+import biz.thonbecker.personal.analytics.api.PostHogEventPublisher;
 import biz.thonbecker.personal.booking.api.Booking;
 import biz.thonbecker.personal.booking.api.BookingType;
 import biz.thonbecker.personal.booking.platform.BookingService;
@@ -40,6 +42,7 @@ public class BookingController {
     private static final int MAX_PUBLIC_AVAILABILITY_DAYS = 14;
 
     private final BookingService bookingService;
+    private final PostHogEventPublisher postHogEventPublisher;
 
     /**
      * Main booking page.
@@ -49,6 +52,7 @@ public class BookingController {
      */
     @GetMapping
     public String bookingPage(final Model model) {
+        postHogEventPublisher.publish("booking-anonymous", PostHogEventNames.BOOKING_STARTED, Map.of());
         final var bookingTypes = bookingService.getActiveBookingTypes();
         model.addAttribute("bookingTypes", bookingTypes);
         return "booking/index";
@@ -71,6 +75,10 @@ public class BookingController {
         try {
             log.debug("Fetching available slots for type {} on {}", bookingTypeId, date);
             final var slots = bookingService.getAvailableSlots(bookingTypeId, date);
+            postHogEventPublisher.publish(
+                    "booking-anonymous",
+                    PostHogEventNames.BOOKING_AVAILABILITY_VIEWED,
+                    Map.of("booking_type_id", bookingTypeId, "available_slot_count", slots.size()));
             model.addAttribute("slots", slots);
             model.addAttribute("bookingTypeId", bookingTypeId);
             model.addAttribute("date", date);
@@ -153,6 +161,10 @@ public class BookingController {
 
         try {
             log.info("Creating booking for type {} at {}", request.bookingTypeId(), request.startTime());
+            postHogEventPublisher.publish(
+                    "booking-anonymous",
+                    PostHogEventNames.BOOKING_SUBMITTED,
+                    Map.of("booking_type_id", request.bookingTypeId()));
 
             final var booking = bookingService.createBooking(
                     request.bookingTypeId(),

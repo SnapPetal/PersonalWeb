@@ -1,9 +1,9 @@
-package biz.thonbecker.personal.shared.platform.web;
+package biz.thonbecker.personal.analytics.platform.web;
 
 import static java.util.Objects.nonNull;
 
-import biz.thonbecker.personal.shared.platform.configuration.PostHogProperties;
-import biz.thonbecker.personal.shared.platform.service.PostHogAnalyticsService;
+import biz.thonbecker.personal.analytics.platform.configuration.PostHogProperties;
+import biz.thonbecker.personal.analytics.platform.service.PostHogAnalyticsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -46,7 +46,7 @@ class PostHogPageViewFilter extends OncePerRequestFilter {
     }
 
     private boolean shouldCapture(final HttpServletRequest request, final HttpServletResponse response) {
-        if (!postHogProperties.isConfigured()) {
+        if (!postHogProperties.isConfigured() || postHogProperties.isBrowserConfigured()) {
             return false;
         }
 
