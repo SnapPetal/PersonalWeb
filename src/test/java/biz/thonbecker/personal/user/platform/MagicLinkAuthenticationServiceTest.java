@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import biz.thonbecker.personal.analytics.api.PostHogEventPublisher;
 import biz.thonbecker.personal.user.api.UserLoggedOutEvent;
 import biz.thonbecker.personal.user.platform.persistence.UserLoginTokenRepository;
 import biz.thonbecker.personal.user.platform.persistence.UserService;
@@ -25,6 +26,7 @@ class MagicLinkAuthenticationServiceTest {
     private UserSessionRepository sessionRepository;
     private UserService userService;
     private ApplicationEventPublisher eventPublisher;
+    private PostHogEventPublisher postHogEventPublisher;
     private MagicLinkAuthenticationService authenticationService;
 
     @BeforeEach
@@ -33,8 +35,9 @@ class MagicLinkAuthenticationServiceTest {
         sessionRepository = mock(UserSessionRepository.class);
         userService = mock(UserService.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
+        postHogEventPublisher = mock(PostHogEventPublisher.class);
         authenticationService = new MagicLinkAuthenticationService(
-                loginTokenRepository, sessionRepository, userService, eventPublisher);
+                loginTokenRepository, sessionRepository, userService, eventPublisher, postHogEventPublisher);
     }
 
     @Test
