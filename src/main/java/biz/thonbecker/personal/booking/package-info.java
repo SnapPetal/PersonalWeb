@@ -30,5 +30,5 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Booking",
-        allowedDependencies = {"analytics :: api"})
+        allowedDependencies = {"shared :: api"})
 package biz.thonbecker.personal.booking;

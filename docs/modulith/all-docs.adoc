@@ -17,6 +17,10 @@ include::module-foosball.adoc[]
 plantuml::module-landscape.puml[,,format=svg]
 include::module-landscape.adoc[]
 
+== Shared Infrastructure
+plantuml::module-shared.puml[,,format=svg]
+include::module-shared.adoc[]
+
 == Skateboard Trick Analyzer
 plantuml::module-skatetricks.puml[,,format=svg]
 include::module-skatetricks.adoc[]
@@ -33,6 +37,10 @@ include::module-trivia.adoc[]
 plantuml::module-user.puml[,,format=svg]
 include::module-user.adoc[]
 
+== Analytics
+plantuml::module-analytics.puml[,,format=svg]
+include::module-analytics.adoc[]
+
 == Calendar Integration
 plantuml::module-calendar.puml[,,format=svg]
 include::module-calendar.adoc[]
@@ -40,8 +48,4 @@ include::module-calendar.adoc[]
 == Notification Services
 plantuml::module-notification.puml[,,format=svg]
 include::module-notification.adoc[]
-
-== Shared Infrastructure
-plantuml::module-shared.puml[,,format=svg]
-include::module-shared.adoc[]
 

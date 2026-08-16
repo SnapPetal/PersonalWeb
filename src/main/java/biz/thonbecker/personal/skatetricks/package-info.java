@@ -22,6 +22,6 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Skateboard Trick Analyzer",
-        allowedDependencies = {"shared", "analytics :: api"})
+        allowedDependencies = {"shared", "shared :: api"})
 @org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.skatetricks;

@@ -1,14 +1,27 @@
 package biz.thonbecker.personal.analytics.platform.service;
 
-import biz.thonbecker.personal.analytics.api.PostHogEvent;
 import biz.thonbecker.personal.analytics.api.PostHogEventNames;
+import biz.thonbecker.personal.booking.api.BookingAvailabilityViewedEvent;
 import biz.thonbecker.personal.booking.api.BookingCancelledEvent;
 import biz.thonbecker.personal.booking.api.BookingCreatedEvent;
+import biz.thonbecker.personal.booking.api.BookingStartedEvent;
+import biz.thonbecker.personal.booking.api.BookingSubmittedEvent;
 import biz.thonbecker.personal.foosball.api.GameRecordedEvent;
 import biz.thonbecker.personal.foosball.api.PlayerCreatedEvent;
+import biz.thonbecker.personal.landscape.api.LandscapeAnalysisCompletedEvent;
+import biz.thonbecker.personal.landscape.api.LandscapePlanSavedEvent;
+import biz.thonbecker.personal.landscape.api.LandscapePlantAddedEvent;
+import biz.thonbecker.personal.landscape.api.LandscapePreviewGeneratedEvent;
+import biz.thonbecker.personal.skatetricks.api.SkatetricksAnalysisCompletedEvent;
+import biz.thonbecker.personal.skatetricks.api.SkatetricksAnalysisStartedEvent;
+import biz.thonbecker.personal.skatetricks.api.SkatetricksAttemptVerifiedEvent;
 import biz.thonbecker.personal.trivia.api.PlayerJoinedQuizEvent;
 import biz.thonbecker.personal.trivia.api.QuizCompletedEvent;
 import biz.thonbecker.personal.trivia.api.QuizStartedEvent;
+import biz.thonbecker.personal.trivia.api.TriviaAnswerSubmittedEvent;
+import biz.thonbecker.personal.user.api.LoginCompletedEvent;
+import biz.thonbecker.personal.user.api.LoginFailedEvent;
+import biz.thonbecker.personal.user.api.LoginRequestedEvent;
 import biz.thonbecker.personal.user.api.UserLoginEvent;
 import biz.thonbecker.personal.user.api.UserProfileUpdatedEvent;
 import biz.thonbecker.personal.user.api.UserRegisteredEvent;
@@ -27,8 +40,116 @@ class PostHogEventListener {
 
     @EventListener
     @Async
-    void onPostHogEvent(final PostHogEvent event) {
-        postHogAnalyticsService.capture(event.distinctId(), event.eventName(), event.properties());
+    void onBookingStarted(final BookingStartedEvent event) {
+        postHogAnalyticsService.capture(event.distinctId(), "booking_started", Map.of());
+    }
+
+    @EventListener
+    @Async
+    void onBookingAvailabilityViewed(final BookingAvailabilityViewedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(),
+                "booking_availability_viewed",
+                Map.of("booking_type_id", event.bookingTypeId(), "available_slot_count", event.availableSlotCount()));
+    }
+
+    @EventListener
+    @Async
+    void onBookingSubmitted(final BookingSubmittedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(), "booking_submitted", Map.of("booking_type_id", event.bookingTypeId()));
+    }
+
+    @EventListener
+    @Async
+    void onLandscapeAnalysisCompleted(final LandscapeAnalysisCompletedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(),
+                "landscape_analysis_completed",
+                Map.of("plan_id", event.planId(), "hardiness_zone", event.hardinessZone()));
+    }
+
+    @EventListener
+    @Async
+    void onLandscapePlanSaved(final LandscapePlanSavedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(),
+                "landscape_plan_saved",
+                Map.of("plan_id", event.planId(), "hardiness_zone", event.hardinessZone()));
+    }
+
+    @EventListener
+    @Async
+    void onLandscapePlantAdded(final LandscapePlantAddedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(),
+                "landscape_plant_added",
+                Map.of("plan_id", event.planId(), "plant_symbol", event.plantSymbol()));
+    }
+
+    @EventListener
+    @Async
+    void onLandscapePreviewGenerated(final LandscapePreviewGeneratedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(),
+                "landscape_preview_generated",
+                Map.of("plan_id", event.planId(), "placement_count", event.placementCount()));
+    }
+
+    @EventListener
+    @Async
+    void onSkatetricksAnalysisStarted(final SkatetricksAnalysisStartedEvent event) {
+        final var properties = new LinkedHashMap<String, Object>();
+        properties.put("mode", event.mode());
+        if (event.frameCount() != null) properties.put("frame_count", event.frameCount());
+        if (event.fileSizeBytes() != null) properties.put("file_size_bytes", event.fileSizeBytes());
+        postHogAnalyticsService.capture(event.distinctId(), "skatetricks_analysis_started", properties);
+    }
+
+    @EventListener
+    @Async
+    void onSkatetricksAnalysisCompleted(final SkatetricksAnalysisCompletedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(),
+                "skatetricks_analysis_completed",
+                Map.of("mode", event.mode(), "attempt_id", event.attemptId(), "trick", event.trick()));
+    }
+
+    @EventListener
+    @Async
+    void onSkatetricksAttemptVerified(final SkatetricksAttemptVerifiedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(),
+                "skatetricks_attempt_verified",
+                Map.of("attempt_id", event.attemptId(), "corrected", event.corrected()));
+    }
+
+    @EventListener
+    @Async
+    void onTriviaAnswerSubmitted(final TriviaAnswerSubmittedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(),
+                "trivia_answer_submitted",
+                Map.of("quiz_id", event.quizId(), "question_id", event.questionId(), "correct", event.correct()));
+    }
+
+    @EventListener
+    @Async
+    void onLoginRequested(final LoginRequestedEvent event) {
+        postHogAnalyticsService.capture(
+                event.distinctId(), "auth_login_requested", Map.of("redirect_path", event.redirectPath()));
+    }
+
+    @EventListener
+    @Async
+    void onLoginCompleted(final LoginCompletedEvent event) {
+        postHogAnalyticsService.capture(event.distinctId(), "auth_login_completed", Map.of("method", event.method()));
+    }
+
+    @EventListener
+    @Async
+    void onLoginFailed(final LoginFailedEvent event) {
+        postHogAnalyticsService.capture(event.distinctId(), "auth_login_failed", Map.of("reason", event.reason()));
     }
 
     @EventListener

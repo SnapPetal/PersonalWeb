@@ -1,7 +1,8 @@
 package biz.thonbecker.personal.user.platform;
 
-import biz.thonbecker.personal.analytics.api.PostHogEventNames;
-import biz.thonbecker.personal.analytics.api.PostHogEventPublisher;
+import biz.thonbecker.personal.user.api.LoginCompletedEvent;
+import biz.thonbecker.personal.user.api.LoginFailedEvent;
+import biz.thonbecker.personal.user.api.LoginRequestedEvent;
 import biz.thonbecker.personal.user.api.UserAuthenticatedEvent;
 import biz.thonbecker.personal.user.api.UserLoggedOutEvent;
 import biz.thonbecker.personal.user.api.UserLoginEvent;
@@ -19,7 +20,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,6 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
     private final UserSessionRepository sessionRepository;
     private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
-    private final PostHogEventPublisher postHogEventPublisher;
 
     @Transactional
     public void requestLoginLink(final String email, final String baseUrl, final String requestIp) {
@@ -50,10 +49,7 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
     public void requestLoginLink(
             final String email, final String baseUrl, final String requestIp, final String redirectPath) {
         final var normalizedEmail = normalizeEmail(email);
-        postHogEventPublisher.publish(
-                "auth-" + hash(normalizedEmail),
-                PostHogEventNames.AUTH_LOGIN_REQUESTED,
-                Map.of("redirect_path", redirectPath));
+        eventPublisher.publishEvent(new LoginRequestedEvent("auth-" + hash(normalizedEmail), redirectPath));
         final var since = Instant.now().minus(Duration.ofHours(1));
         if (loginTokenRepository.countRecentRequests(normalizedEmail, requestIp, since) >= MAX_REQUESTS_PER_HOUR) {
             return;
@@ -85,10 +81,7 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
         final var loginToken =
                 loginTokenRepository.findByTokenHashAndUsedAtIsNullAndExpiresAtAfter(hash(token), Instant.now());
         if (loginToken.isEmpty()) {
-            postHogEventPublisher.publish(
-                    "auth-anonymous",
-                    PostHogEventNames.AUTH_LOGIN_FAILED,
-                    Map.of("reason", "invalid_or_expired_token"));
+            eventPublisher.publishEvent(new LoginFailedEvent("auth-anonymous", "invalid_or_expired_token"));
             return Optional.empty();
         }
 
@@ -105,8 +98,7 @@ public class MagicLinkAuthenticationService implements UserSessionResolver {
         sessionRepository.save(session);
         eventPublisher.publishEvent(new UserAuthenticatedEvent(tokenEntity.getUserId(), tokenEntity.getEmail(), now));
         eventPublisher.publishEvent(new UserLoginEvent(tokenEntity.getUserId(), tokenEntity.getEmail(), now));
-        postHogEventPublisher.publish(
-                tokenEntity.getUserId(), PostHogEventNames.AUTH_LOGIN_COMPLETED, Map.of("method", "magic_link"));
+        eventPublisher.publishEvent(new LoginCompletedEvent(tokenEntity.getUserId(), "magic_link"));
         return Optional.of(new Session(sessionToken, tokenEntity.getUserId(), now.plus(SESSION_TTL)));
     }
 

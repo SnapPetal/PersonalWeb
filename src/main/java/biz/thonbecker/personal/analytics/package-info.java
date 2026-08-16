@@ -6,5 +6,13 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "Analytics",
-        allowedDependencies = {"shared", "booking :: api", "foosball :: api", "trivia :: api", "user :: api"})
+        allowedDependencies = {
+            "shared",
+            "booking :: api",
+            "foosball :: api",
+            "landscape :: api",
+            "skatetricks :: api",
+            "trivia :: api",
+            "user :: api"
+        })
 package biz.thonbecker.personal.analytics;

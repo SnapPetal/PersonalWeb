@@ -1,7 +1,5 @@
 package biz.thonbecker.personal.landscape.platform;
 
-import biz.thonbecker.personal.analytics.api.PostHogEventNames;
-import biz.thonbecker.personal.analytics.api.PostHogEventPublisher;
 import biz.thonbecker.personal.landscape.api.*;
 import biz.thonbecker.personal.landscape.domain.exceptions.PlanNotFoundException;
 import biz.thonbecker.personal.landscape.platform.persistence.*;
@@ -12,10 +10,10 @@ import biz.thonbecker.personal.landscape.platform.service.PlantApiService;
 import biz.thonbecker.personal.landscape.platform.service.PlantImageService;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -39,7 +37,7 @@ public class LandscapeService {
     private final LandscapePlanRepository planRepository;
     private final PlantPlacementRepository placementRepository;
     private final S3Client s3Client;
-    private final PostHogEventPublisher postHogEventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public LandscapePlan createPlan(
@@ -67,14 +65,8 @@ public class LandscapeService {
 
         final var savedPlan = planRepository.save(planEntity);
         addAiRecommendations(savedPlan, imageData, zone, description);
-        postHogEventPublisher.publish(
-                userId,
-                PostHogEventNames.LANDSCAPE_ANALYSIS_COMPLETED,
-                Map.of("plan_id", savedPlan.getId(), "hardiness_zone", zone.name()));
-        postHogEventPublisher.publish(
-                userId,
-                PostHogEventNames.LANDSCAPE_PLAN_SAVED,
-                Map.of("plan_id", savedPlan.getId(), "hardiness_zone", zone.name()));
+        eventPublisher.publishEvent(new LandscapeAnalysisCompletedEvent(userId, savedPlan.getId(), zone.name()));
+        eventPublisher.publishEvent(new LandscapePlanSavedEvent(userId, savedPlan.getId(), zone.name()));
 
         log.info("Successfully created landscape plan {}", savedPlan.getId());
 
@@ -156,10 +148,7 @@ public class LandscapeService {
         placement.setQuantity(1);
 
         final var saved = placementRepository.save(placement);
-        postHogEventPublisher.publish(
-                ownerId,
-                PostHogEventNames.LANDSCAPE_PLANT_ADDED,
-                Map.of("plan_id", planId, "plant_symbol", usdaSymbol));
+        eventPublisher.publishEvent(new LandscapePlantAddedEvent(ownerId, planId, usdaSymbol));
 
         log.info("Successfully added plant placement {} for plan {}", saved.getId(), planId);
         return saved.getId();
@@ -257,14 +246,8 @@ public class LandscapeService {
                     imageGenerationService.generateSeasonalImage(imageData, "fall", plantPlacementPrompts);
             final var winterImage =
                     imageGenerationService.generateSeasonalImage(imageData, "winter", plantPlacementPrompts);
-            postHogEventPublisher.publish(
-                    ownerId,
-                    PostHogEventNames.LANDSCAPE_PREVIEW_GENERATED,
-                    Map.of(
-                            "plan_id",
-                            planId,
-                            "placement_count",
-                            plan.getPlacements().size()));
+            eventPublisher.publishEvent(new LandscapePreviewGeneratedEvent(
+                    ownerId, planId, plan.getPlacements().size()));
 
             return new SeasonalAnalysis(
                     mergeWithImage(textAnalysis.spring(), springImage),

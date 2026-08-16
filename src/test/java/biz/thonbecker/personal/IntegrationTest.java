@@ -24,7 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@ApplicationModuleTest(extraIncludes = "shared")
+@ApplicationModuleTest(extraIncludes = {"shared", "analytics"})
 @Import(TestcontainersConfig.class)
 @ActiveProfiles("test")
 public @interface IntegrationTest {}

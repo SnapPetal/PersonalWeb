@@ -2,9 +2,7 @@ package biz.thonbecker.personal.skatetricks.platform;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
-import biz.thonbecker.personal.analytics.api.PostHogEventPublisher;
 import biz.thonbecker.personal.skatetricks.api.SupportedTrick;
 import biz.thonbecker.personal.skatetricks.api.TrickAnalysisResult;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -46,14 +44,7 @@ class SkateTricksServiceTest {
         };
 
         SkateTricksService service = new SkateTricksService(
-                fallbackAnalyzer(),
-                repositoryStub(),
-                noOpPublisher(),
-                transcoder,
-                null,
-                null,
-                observability(),
-                mock(PostHogEventPublisher.class));
+                fallbackAnalyzer(), repositoryStub(), noOpPublisher(), transcoder, null, null, observability());
 
         byte[] result = service.convertVideo(input, "clip.mov");
 
@@ -83,14 +74,7 @@ class SkateTricksServiceTest {
         };
 
         SkateTricksService service = new SkateTricksService(
-                analyzer,
-                repositoryStub(),
-                noOpPublisher(),
-                passthroughTranscoder(),
-                null,
-                null,
-                observability(),
-                mock(PostHogEventPublisher.class));
+                analyzer, repositoryStub(), noOpPublisher(), passthroughTranscoder(), null, null, observability());
 
         TrickAnalysisResult result = service.analyzeConvertedVideo("session-1", video);
 
@@ -139,14 +123,7 @@ class SkateTricksServiceTest {
         };
 
         SkateTricksService service = new SkateTricksService(
-                analyzer,
-                repositoryStub(),
-                noOpPublisher(),
-                transcoder,
-                null,
-                null,
-                observability(),
-                mock(PostHogEventPublisher.class));
+                analyzer, repositoryStub(), noOpPublisher(), transcoder, null, null, observability());
 
         TrickAnalysisResult result = service.analyzeConvertedVideo("session-2", "skatetricks/output/test/video.mp4");
 

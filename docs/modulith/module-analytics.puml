@@ -1,5 +1,5 @@
 @startuml
-title <size:24>PersonalApplication</size>
+title <size:24>Analytics</size>
 
 set separator none
 top to bottom direction
@@ -20,8 +20,6 @@ System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="")
     Component(PersonalApplication.PersonalApplication.TriviaQuiz, "Trivia Quiz", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.UserManagement, "User Management", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.Analytics, "Analytics", $techn="Module", $descr="", $tags="", $link="")
-    Component(PersonalApplication.PersonalApplication.CalendarIntegration, "Calendar Integration", $techn="Module", $descr="", $tags="", $link="")
-    Component(PersonalApplication.PersonalApplication.NotificationServices, "Notification Services", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.Booking, "Booking", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.Foosball, "Foosball", $techn="Module", $descr="", $tags="", $link="")
     Component(PersonalApplication.PersonalApplication.LandscapePlanning, "Landscape Planning", $techn="Module", $descr="", $tags="", $link="")
@@ -30,11 +28,6 @@ System_Boundary("PersonalApplication_boundary", "PersonalApplication", $tags="")
 
 }
 
-Rel(PersonalApplication.PersonalApplication.CalendarIntegration, PersonalApplication.PersonalApplication.Booking, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.TriviaQuiz, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.Foosball, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")
-Rel(PersonalApplication.PersonalApplication.NotificationServices, PersonalApplication.PersonalApplication.Booking, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.Analytics, PersonalApplication.PersonalApplication.Booking, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.Analytics, PersonalApplication.PersonalApplication.SkateboardTrickAnalyzer, "listens to", $techn="", $tags="", $link="")
 Rel(PersonalApplication.PersonalApplication.Analytics, PersonalApplication.PersonalApplication.UserManagement, "listens to", $techn="", $tags="", $link="")

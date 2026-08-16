@@ -2,21 +2,4 @@
 |===
 |Base package
 |`biz.thonbecker.personal.shared`
-|Spring components
-|_Services_
-
-* `b.t.p.s.api.PostHogEventPublisher` (via `b.t.p.s.platform.service.DefaultPostHogEventPublisher`)
-|Events listened to
-|* `b.t.p.b.api.BookingCancelledEvent` (async) 
-* `b.t.p.b.api.BookingCreatedEvent` (async) 
-* `b.t.p.f.api.GameRecordedEvent` (async) 
-* `b.t.p.f.api.PlayerCreatedEvent` (async) 
-* `b.t.p.t.api.PlayerJoinedQuizEvent` (async) 
-* `b.t.p.s.api.PostHogEvent` (async) 
-* `b.t.p.t.api.QuizCompletedEvent` (async) 
-* `b.t.p.t.api.QuizStartedEvent` (async) 
-* `b.t.p.u.api.UserLoginEvent` (async) 
-* `b.t.p.u.api.UserProfileUpdatedEvent` (async) 
-* `b.t.p.u.api.UserRegisteredEvent` (async) 
-* `org.springframework.boot.context.event.ApplicationReadyEvent` 
 |===

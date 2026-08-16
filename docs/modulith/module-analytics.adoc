@@ -1,0 +1,31 @@
+[%autowidth.stretch, cols="h,a"]
+|===
+|Base package
+|`biz.thonbecker.personal.analytics`
+|Events listened to
+|* `b.t.p.b.api.BookingAvailabilityViewedEvent` (async) 
+* `b.t.p.b.api.BookingCancelledEvent` (async) 
+* `b.t.p.b.api.BookingCreatedEvent` (async) 
+* `b.t.p.b.api.BookingStartedEvent` (async) 
+* `b.t.p.b.api.BookingSubmittedEvent` (async) 
+* `b.t.p.f.api.GameRecordedEvent` (async) 
+* `b.t.p.l.api.LandscapeAnalysisCompletedEvent` (async) 
+* `b.t.p.l.api.LandscapePlanSavedEvent` (async) 
+* `b.t.p.l.api.LandscapePlantAddedEvent` (async) 
+* `b.t.p.l.api.LandscapePreviewGeneratedEvent` (async) 
+* `b.t.p.u.api.LoginCompletedEvent` (async) 
+* `b.t.p.u.api.LoginFailedEvent` (async) 
+* `b.t.p.u.api.LoginRequestedEvent` (async) 
+* `b.t.p.f.api.PlayerCreatedEvent` (async) 
+* `b.t.p.t.api.PlayerJoinedQuizEvent` (async) 
+* `b.t.p.t.api.QuizCompletedEvent` (async) 
+* `b.t.p.t.api.QuizStartedEvent` (async) 
+* `b.t.p.s.api.SkatetricksAnalysisCompletedEvent` (async) 
+* `b.t.p.s.api.SkatetricksAnalysisStartedEvent` (async) 
+* `b.t.p.s.api.SkatetricksAttemptVerifiedEvent` (async) 
+* `b.t.p.t.api.TriviaAnswerSubmittedEvent` (async) 
+* `b.t.p.u.api.UserLoginEvent` (async) 
+* `b.t.p.u.api.UserProfileUpdatedEvent` (async) 
+* `b.t.p.u.api.UserRegisteredEvent` (async) 
+* `org.springframework.boot.context.event.ApplicationReadyEvent` 
+|===

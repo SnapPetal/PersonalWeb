@@ -26,6 +26,6 @@
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "User Management",
-        allowedDependencies = {"shared", "analytics :: api"})
+        allowedDependencies = {"shared", "shared :: api"})
 @org.jspecify.annotations.NullMarked
 package biz.thonbecker.personal.user;

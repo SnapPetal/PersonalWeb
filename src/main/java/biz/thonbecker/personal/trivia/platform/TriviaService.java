@@ -1,7 +1,5 @@
 package biz.thonbecker.personal.trivia.platform;
 
-import biz.thonbecker.personal.analytics.api.PostHogEventNames;
-import biz.thonbecker.personal.analytics.api.PostHogEventPublisher;
 import biz.thonbecker.personal.trivia.api.PlayerJoinedQuizEvent;
 import biz.thonbecker.personal.trivia.api.QuizCompletedEvent;
 import biz.thonbecker.personal.trivia.api.QuizPlayerState;
@@ -9,6 +7,7 @@ import biz.thonbecker.personal.trivia.api.QuizQuestionState;
 import biz.thonbecker.personal.trivia.api.QuizResult;
 import biz.thonbecker.personal.trivia.api.QuizStartedEvent;
 import biz.thonbecker.personal.trivia.api.QuizState;
+import biz.thonbecker.personal.trivia.api.TriviaAnswerSubmittedEvent;
 import biz.thonbecker.personal.trivia.domain.*;
 import java.time.Instant;
 import java.util.*;
@@ -35,17 +34,14 @@ public class TriviaService {
     private final QuestionGenerator questionGenerator;
     private final QuizResultRepository quizResultRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final PostHogEventPublisher postHogEventPublisher;
 
     public TriviaService(
             QuestionGenerator questionGenerator,
             QuizResultRepository quizResultRepository,
-            ApplicationEventPublisher eventPublisher,
-            PostHogEventPublisher postHogEventPublisher) {
+            ApplicationEventPublisher eventPublisher) {
         this.questionGenerator = questionGenerator;
         this.quizResultRepository = quizResultRepository;
         this.eventPublisher = eventPublisher;
-        this.postHogEventPublisher = postHogEventPublisher;
     }
 
     public Quiz createTriviaQuiz(String title, int questionCount, QuizDifficulty difficulty, String creatorId) {
@@ -165,10 +161,7 @@ public class TriviaService {
         Question currentQuestion = quiz.getCurrentQuestion();
         if (currentQuestion != null && currentQuestion.getId().equals(questionId)) {
             final var correct = selectedOption == currentQuestion.getCorrectAnswerIndex();
-            postHogEventPublisher.publish(
-                    playerId,
-                    PostHogEventNames.TRIVIA_ANSWER_SUBMITTED,
-                    Map.of("quiz_id", quizId, "question_id", questionId, "correct", correct));
+            eventPublisher.publishEvent(new TriviaAnswerSubmittedEvent(playerId, quizId, questionId, correct));
             // Check if answer is correct
             if (correct) {
                 // Award points to player

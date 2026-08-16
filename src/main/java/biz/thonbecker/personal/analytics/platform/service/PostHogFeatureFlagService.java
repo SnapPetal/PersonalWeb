@@ -1,8 +1,6 @@
 package biz.thonbecker.personal.analytics.platform.service;
 
 import biz.thonbecker.personal.analytics.platform.configuration.PostHogProperties;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -14,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /** Evaluates PostHog feature flags for server-side code. */
 @Service
@@ -98,7 +98,7 @@ public class PostHogFeatureFlagService {
         }
 
         final var flags = new java.util.LinkedHashMap<String, Object>();
-        featureFlags.fields().forEachRemaining(entry -> flags.put(entry.getKey(), flagValue(entry.getValue())));
+        featureFlags.properties().forEach(entry -> flags.put(entry.getKey(), flagValue(entry.getValue())));
         return Map.copyOf(flags);
     }
 
