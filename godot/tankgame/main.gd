@@ -104,8 +104,9 @@ func _poll_websocket() -> void:
 	websocket.poll()
 	match websocket.get_ready_state():
 		WebSocketPeer.STATE_OPEN:
-			server_connected = true
-			websocket_status = "Connected · Lobby ready"
+			if not server_connected:
+				server_connected = true
+				websocket_status = "Connected · Lobby ready"
 			while websocket.get_available_packet_count() > 0:
 				var message := websocket.get_packet().get_string_from_utf8()
 				if message.length() > 0:
