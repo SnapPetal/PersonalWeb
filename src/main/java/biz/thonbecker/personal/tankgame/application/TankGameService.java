@@ -88,8 +88,8 @@ public class TankGameService {
             double oldY = tank.getY();
 
             // Update rotation based on mouse position
-            double dx = input.getMouseX() - tank.getX();
-            double dy = input.getMouseY() - tank.getY();
+            double dx = input.getMouseX() - (tank.getX() + tank.getWidth() / 2);
+            double dy = input.getMouseY() - (tank.getY() + tank.getHeight() / 2);
             tank.setRotation(Math.atan2(dy, dx));
 
             // Move tank
@@ -286,14 +286,12 @@ public class TankGameService {
         final double targetY = target.getY() + target.getHeight() / 2;
         final double botX = bot.getX() + bot.getWidth() / 2;
         final double botY = bot.getY() + bot.getHeight() / 2;
-        final double distance = Math.hypot(targetX - botX, targetY - botY);
-
         input.setUp(targetY < botY - 20);
         input.setDown(targetY > botY + 20);
         input.setLeft(targetX < botX - 20);
         input.setRight(targetX > botX + 20);
         input.setMouseX(targetX);
         input.setMouseY(targetY);
-        input.setShoot(distance < 500);
+        input.setShoot(true);
     }
 }

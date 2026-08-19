@@ -57,6 +57,7 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void joinQueue(final WebSocketSession session, final String playerName) throws Exception {
+        leave(session);
         final GameState game = tankGameService.findOrCreateWaitingGame();
         final Tank tank = tankGameService.joinGame(game.getGameId(), playerName);
         sessionGames.put(session.getId(), game.getGameId());

@@ -43,6 +43,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_restart()
 		else:
 			_shoot()
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE:
+		fire_requested = true
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
 		_restart()
 
@@ -138,7 +140,7 @@ func _send_input() -> void:
 		"down": Input.is_action_pressed("move_down"),
 		"left": Input.is_action_pressed("move_left"),
 		"right": Input.is_action_pressed("move_right"),
-		"shoot": fire_requested,
+		"shoot": fire_requested or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_action_pressed("fire"),
 		"mouseX": mouse_position.x,
 		"mouseY": mouse_position.y
 	}
@@ -161,7 +163,13 @@ func _handle_server_message(message: String) -> void:
 			server_tanks = game.get("tanks", {})
 			server_projectiles = game.get("projectiles", [])
 			var game_status: String = str(game.get("status", "WAITING"))
-			websocket_status = "Battle live · %d pilots" % server_tanks.size() if game_status == "PLAYING" else "Queued · Waiting for a pilot or AI opponent..."
+			if game_status == "FINISHED":
+				lobby_visible = true
+				queue_sent = false
+				local_tank_id = ""
+				websocket_status = "Battle finished · Winner: " + str(game.get("winnerName", "Unknown"))
+			else:
+				websocket_status = "Battle live · %d pilots" % server_tanks.size() if game_status == "PLAYING" else "Queued · Waiting for a pilot or AI opponent..."
 			for tank_id in server_tanks:
 				if str(tank_id) == local_tank_id:
 					var tank: Dictionary = server_tanks[tank_id]
@@ -185,11 +193,11 @@ func _draw() -> void:
 	draw_string(font, Vector2(28, 525), websocket_status, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("8bd5ca"))
 	if lobby_visible:
 		draw_rect(Rect2(250, 165, 460, 220), Color(0.05, 0.09, 0.15, 0.96), true)
-		draw_string(font, Vector2(340, 215), "IRONBOUND ONLINE", HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color("95e1d3"))
-		draw_string(font, Vector2(370, 250), "MULTIPLAYER TANK RPG", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("e8eef8"))
-		draw_string(font, Vector2(355, 295), "Click or press Enter", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("ffd166"))
-		draw_string(font, Vector2(344, 325), "to enter the battle lobby", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("9fb2cf"))
-		draw_string(font, Vector2(320, 355), "An AI opponent joins if no pilot is found", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("9fb2cf"))
+		draw_string(font, Vector2(250, 215), "IRONBOUND ONLINE", HORIZONTAL_ALIGNMENT_CENTER, 460, 28, Color("95e1d3"))
+		draw_string(font, Vector2(250, 250), "MULTIPLAYER TANK RPG", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("e8eef8"))
+		draw_string(font, Vector2(250, 295), "Click or press Enter", HORIZONTAL_ALIGNMENT_CENTER, 460, 20, Color("ffd166"))
+		draw_string(font, Vector2(250, 325), "to enter the battle lobby", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("9fb2cf"))
+		draw_string(font, Vector2(250, 355), "An AI opponent joins if no pilot is found", HORIZONTAL_ALIGNMENT_CENTER, 460, 13, Color("9fb2cf"))
 
 	if server_connected:
 		_draw_server_state(font)
