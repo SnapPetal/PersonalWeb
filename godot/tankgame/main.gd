@@ -12,6 +12,7 @@ var targets := [Vector2(180, 150), Vector2(760, 145), Vector2(210, 410), Vector2
 var score := 0
 var websocket := WebSocketPeer.new()
 var websocket_status := "Connecting to Spring WebSocket..."
+var game_over := false
 
 func _ready() -> void:
 	_connect_to_server()
@@ -27,17 +28,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		player_angle = player_position.angle_to_point(event.position)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_shoot()
-	if event is InputEventKey and event.keycode == KEY_SPACE and event.pressed and not event.echo:
-		_shoot()
+		if game_over:
+			_restart()
+		else:
+			_shoot()
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
+		_restart()
 
 func _move_player(delta: float) -> void:
-	var direction := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	player_position += direction * TANK_SPEED * delta
 	player_position.x = clamp(player_position.x, 32.0, ARENA_SIZE.x - 32.0)
 	player_position.y = clamp(player_position.y, 90.0, ARENA_SIZE.y - 32.0)
 
 func _shoot() -> void:
+	if game_over:
+		return
 	var muzzle := player_position + Vector2.RIGHT.rotated(player_angle) * 30.0
 	bullets.append({"position": muzzle, "direction": Vector2.RIGHT.rotated(player_angle)})
 
@@ -55,6 +61,16 @@ func _update_bullets(delta: float) -> void:
 				break
 		if hit_target or not Rect2(Vector2.ZERO, ARENA_SIZE).has_point(bullet.position):
 			bullets.remove_at(index)
+	if targets.is_empty():
+		game_over = true
+
+func _restart() -> void:
+	player_position = ARENA_SIZE / 2.0
+	player_angle = 0.0
+	bullets.clear()
+	targets = [Vector2(180, 150), Vector2(760, 145), Vector2(210, 410), Vector2(750, 390)]
+	score = 0
+	game_over = false
 
 func _connect_to_server() -> void:
 	var websocket_url := "ws://127.0.0.1:8080/tankgame-ws"
@@ -101,6 +117,10 @@ func _draw() -> void:
 		draw_circle(target, 4.0, Color("264653"))
 	for bullet in bullets:
 		draw_circle(bullet.position, 5.0, Color("ffd166"))
+	if game_over:
+		draw_rect(Rect2(260, 220, 440, 100), Color(0.05, 0.09, 0.15, 0.92), true)
+		draw_string(font, Vector2(352, 260), "ARENA CLEAR", HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color("95e1d3"))
+	draw_string(font, Vector2(315, 294), "Click or press R to play again", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("e8eef8"))
 
 	draw_set_transform(player_position, player_angle)
 	draw_rect(Rect2(-TANK_SIZE.x / 2.0, -TANK_SIZE.y / 2.0, TANK_SIZE.x, TANK_SIZE.y), Color("4ecdc4"), true)

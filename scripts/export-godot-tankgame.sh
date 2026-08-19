@@ -2,14 +2,10 @@
 
 set -euo pipefail
 
-project_dir="godot/tankgame"
-output_dir="src/main/resources/static/tankgame"
-godot_data_dir="${TMPDIR:-/tmp}/personal-web-godot-data"
-
-mkdir -p "$godot_data_dir/data" "$godot_data_dir/config" "$godot_data_dir/cache"
-export XDG_DATA_HOME="$godot_data_dir/data"
-export XDG_CONFIG_HOME="$godot_data_dir/config"
-export XDG_CACHE_HOME="$godot_data_dir/cache"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+project_root="$(cd "$script_dir/.." && pwd)"
+project_dir="$project_root/godot/tankgame"
+output_dir="$project_root/src/main/resources/static/tankgame"
 
 rm -rf "$output_dir"
 mkdir -p "$output_dir"

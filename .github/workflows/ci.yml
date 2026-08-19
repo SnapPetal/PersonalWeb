@@ -31,7 +31,7 @@ jobs:
         run: |
           mkdir -p build/tankgame
           godot --headless --path godot/tankgame \
-            --export-release "Web" build/tankgame/index.html
+            --export-release "Web" "$GITHUB_WORKSPACE/build/tankgame/index.html"
 
       - name: Upload Godot web client
         uses: actions/upload-artifact@v4
