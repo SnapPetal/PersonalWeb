@@ -13,6 +13,7 @@ public class Tank {
     private int health = 100;
     private int maxHealth = 100;
     private String color;
+    private boolean bot;
     private double rotation = 0; // radians
     private boolean alive = true;
     private int kills = 0;

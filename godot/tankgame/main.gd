@@ -19,6 +19,7 @@ var local_tank_id := ""
 var server_tanks: Dictionary = {}
 var server_projectiles: Array = []
 var fire_requested := false
+var lobby_visible := true
 
 func _ready() -> void:
 	_connect_to_server()
@@ -32,6 +33,9 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if lobby_visible and event.is_pressed() and (event is InputEventMouseButton or (event is InputEventKey and (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER))):
+		_queue_for_battle()
+		return
 	if event is InputEventMouseMotion:
 		player_angle = player_position.angle_to_point(event.position)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
@@ -101,10 +105,7 @@ func _poll_websocket() -> void:
 	match websocket.get_ready_state():
 		WebSocketPeer.STATE_OPEN:
 			server_connected = true
-			websocket_status = "Connected · Finding a battle..."
-			if not queue_sent:
-				websocket.send_text(JSON.stringify({"action": "queue", "playerName": "Pilot"}))
-				queue_sent = true
+			websocket_status = "Connected · Lobby ready"
 			while websocket.get_available_packet_count() > 0:
 				var message := websocket.get_packet().get_string_from_utf8()
 				if message.length() > 0:
@@ -114,8 +115,18 @@ func _poll_websocket() -> void:
 		WebSocketPeer.STATE_CLOSED:
 			server_connected = false
 			queue_sent = false
+			lobby_visible = true
+			local_tank_id = ""
 			if websocket_status.begins_with("Connected") or websocket_status.begins_with("Finding"):
 				websocket_status = "Spring WebSocket disconnected"
+
+func _queue_for_battle() -> void:
+	if not server_connected or queue_sent:
+		return
+	websocket.send_text(JSON.stringify({"action": "queue", "playerName": "Pilot"}))
+	queue_sent = true
+	lobby_visible = false
+	websocket_status = "Queued · Waiting for a pilot or AI opponent..."
 
 func _send_input() -> void:
 	if not server_connected or local_tank_id.is_empty():
@@ -139,16 +150,17 @@ func _handle_server_message(message: String) -> void:
 		return
 	match payload.get("type", ""):
 		"connected":
-			websocket_status = "Connected · Finding a battle..."
+			websocket_status = "Connected · Lobby ready"
 		"joined":
 			local_tank_id = str(payload.get("tankId", ""))
-			websocket_status = "Queued · Waiting for another pilot..."
+			lobby_visible = false
+			websocket_status = "Queued · Waiting for a pilot or AI opponent..."
 		"state":
 			var game: Dictionary = payload.get("game", {})
 			server_tanks = game.get("tanks", {})
 			server_projectiles = game.get("projectiles", [])
 			var game_status: String = str(game.get("status", "WAITING"))
-			websocket_status = "Battle live · %d pilots" % server_tanks.size() if game_status == "PLAYING" else "Queued · Waiting for another pilot..."
+			websocket_status = "Battle live · %d pilots" % server_tanks.size() if game_status == "PLAYING" else "Queued · Waiting for a pilot or AI opponent..."
 			for tank_id in server_tanks:
 				if str(tank_id) == local_tank_id:
 					var tank: Dictionary = server_tanks[tank_id]
@@ -170,6 +182,13 @@ func _draw() -> void:
 	draw_string(font, Vector2(28, 62), "WASD / arrow keys to move · mouse or space to shoot", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("9fb2cf"))
 	draw_string(font, Vector2(680, 34), "Pilots: %d" % server_tanks.size() if server_connected else "Score: %d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("ffd166"))
 	draw_string(font, Vector2(28, 525), websocket_status, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("8bd5ca"))
+	if lobby_visible:
+		draw_rect(Rect2(250, 165, 460, 220), Color(0.05, 0.09, 0.15, 0.96), true)
+		draw_string(font, Vector2(340, 215), "IRONBOUND ONLINE", HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color("95e1d3"))
+		draw_string(font, Vector2(370, 250), "MULTIPLAYER TANK RPG", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("e8eef8"))
+		draw_string(font, Vector2(355, 295), "Click or press Enter", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("ffd166"))
+		draw_string(font, Vector2(344, 325), "to enter the battle lobby", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("9fb2cf"))
+		draw_string(font, Vector2(320, 355), "An AI opponent joins if no pilot is found", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("9fb2cf"))
 
 	if server_connected:
 		_draw_server_state(font)
@@ -185,7 +204,7 @@ func _draw() -> void:
 		draw_string(font, Vector2(352, 260), "ARENA CLEAR", HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color("95e1d3"))
 		draw_string(font, Vector2(315, 294), "Click or press R to play again", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("e8eef8"))
 
-	if not server_connected:
+	if not server_connected and not lobby_visible:
 		draw_set_transform(player_position, player_angle)
 		draw_rect(Rect2(-TANK_SIZE.x / 2.0, -TANK_SIZE.y / 2.0, TANK_SIZE.x, TANK_SIZE.y), Color("4ecdc4"), true)
 		draw_rect(Rect2(-6, -5, 32, 10), Color("95e1d3"), true)

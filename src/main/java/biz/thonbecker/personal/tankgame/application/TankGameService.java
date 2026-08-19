@@ -21,6 +21,7 @@ public class TankGameService {
 
     private static final String[] TANK_COLORS = {"#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A"};
     private static final int MAX_PLAYERS_PER_GAME = 4;
+    private static final long AI_MATCHMAKING_DELAY_MS = 5_000;
 
     public TankGameService(SimpMessagingTemplate messagingTemplate, ProgressionService progressionService) {
         this.messagingTemplate = messagingTemplate;
@@ -104,6 +105,7 @@ public class TankGameService {
         // Limit deltaTime to prevent huge jumps
         final double deltaTime = Math.min(rawDeltaTime, 0.1);
 
+        addAiOpponents(now);
         activeGames.values().forEach(game -> {
             if (game.getStatus() != GameState.GameStatus.PLAYING) {
                 return;
@@ -115,6 +117,11 @@ public class TankGameService {
     }
 
     private void updateGame(GameState game, double deltaTime) {
+        game.getTanks().values().stream()
+                .filter(Tank::isBot)
+                .filter(Tank::isAlive)
+                .forEach(tank -> updateBotInput(game, tank));
+
         // Update tanks based on input
         game.getTanks().values().forEach(tank -> {
             if (!tank.isAlive()) return;
@@ -322,6 +329,9 @@ public class TankGameService {
         // Record each player's match result
         for (int i = 0; i < sortedTanks.size(); i++) {
             Tank tank = sortedTanks.get(i);
+            if (tank.isBot()) {
+                continue;
+            }
             int placement = i + 1; // 1st, 2nd, 3rd, 4th
 
             // Create match result
@@ -359,5 +369,47 @@ public class TankGameService {
         // Clean up
         gameStartTimes.remove(gameId);
         log.info("Finished recording match results for game {}", gameId);
+    }
+
+    private void addAiOpponents(final long now) {
+        activeGames.values().stream()
+                .filter(game -> game.getStatus() == GameState.GameStatus.WAITING)
+                .filter(game -> game.getTanks().values().stream().anyMatch(tank -> !tank.isBot()))
+                .filter(game -> now - game.getCreatedAt() >= AI_MATCHMAKING_DELAY_MS)
+                .forEach(game -> {
+                    try {
+                        final var bot = joinGame(game.getGameId(), "Arena Guard");
+                        bot.setBot(true);
+                        log.info("Added AI opponent {} to game {}", bot.getId(), game.getGameId());
+                    } catch (Exception e) {
+                        log.warn("Could not add AI opponent to game {}: {}", game.getGameId(), e.getMessage());
+                    }
+                });
+    }
+
+    private void updateBotInput(final GameState game, final Tank bot) {
+        final var target = game.getTanks().values().stream()
+                .filter(tank -> !tank.isBot())
+                .filter(Tank::isAlive)
+                .findFirst()
+                .orElse(null);
+        if (target == null) {
+            return;
+        }
+
+        final var input = playerInputs.computeIfAbsent(bot.getId(), ignored -> new PlayerInput());
+        final double targetX = target.getX() + target.getWidth() / 2;
+        final double targetY = target.getY() + target.getHeight() / 2;
+        final double botX = bot.getX() + bot.getWidth() / 2;
+        final double botY = bot.getY() + bot.getHeight() / 2;
+        final double distance = Math.hypot(targetX - botX, targetY - botY);
+
+        input.setUp(targetY < botY - 20);
+        input.setDown(targetY > botY + 20);
+        input.setLeft(targetX < botX - 20);
+        input.setRight(targetX > botX + 20);
+        input.setMouseX(targetX);
+        input.setMouseY(targetY);
+        input.setShoot(distance < 500);
     }
 }
