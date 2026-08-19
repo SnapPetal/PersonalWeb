@@ -8,6 +8,6 @@ public class TankGameController {
 
     @GetMapping("/tankgame")
     public String tankGame() {
-        return "tankgame";
+        return "redirect:/tankgame/index.html";
     }
 }

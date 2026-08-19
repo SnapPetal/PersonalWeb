@@ -90,7 +90,7 @@ Each module follows this internal package convention:
 | `skatetricks`  | `SkateTricksService` | YOLO pose estimation + OpenAI vision trick detection                   |
 | `landscape`    | `LandscapeService`   | AI-powered landscape planning with USDA plant database integration     |
 | `booking`      | `BookingService`     | Appointment scheduling with auto-availability, event publishing        |
-| `tankgame`     | _(self-contained)_   | WebSocket tank game with player progression                            |
+| `tankgame`     | _(self-contained)_   | Godot tank game prototype with player progression                      |
 | `user`         | `UserService`        | User management                                                        |
 | `calendar`     | _(event-driven)_     | Nextcloud CalDAV integration, calendar sync for bookings               |
 | `notification` | _(event-driven)_     | Email notifications via AWS SES (zero coupling to other modules)       |
@@ -148,7 +148,7 @@ Other event listeners (logging in notification module) use `@EventListener` sinc
 - **Scheduled jobs**: ShedLock (`ShedlockConfig`) prevents duplicate execution in distributed environments.
 - **AI**: Spring AI 2.0.0-M5 with OpenAI for chat, vision, embeddings, structured output, and image generation. `EmbeddingService` uses Spring AI's `EmbeddingModel` with OpenAI embeddings for S3 Vectors storage. DJL (Deep Java Library) with PyTorch remains local for YOLO pose estimation in skatetricks.
 - **Image Generation**: `LandscapeImageGenerationService` uses Spring AI's OpenAI `ImageModel` for seasonal landscape images. It returns base64 image data for the existing seasonal preview response contract.
-- **WebSockets**: STOMP over SockJS for trivia and tank game real-time communication. Skatetricks video conversion uses WebSocket for progress updates, but analysis uses HTTP polling to avoid timeout issues with long-running AI inference.
+- **WebSockets**: STOMP over SockJS for trivia and skatetricks browser features; the tank game uses a Godot HTML5 client with a raw WebSocket endpoint. Skatetricks video conversion uses WebSocket for progress updates, but analysis uses HTTP polling to avoid timeout issues with long-running AI inference.
 - **Async processing**: Skatetricks uses async endpoints with status polling for video conversion and analysis. Long-running operations (30+ seconds) are processed in background threads via `ExecutorService`. Client polls status endpoints (GET `/skatetricks/convert/{id}/status`, `/skatetricks/analyze/{id}/status`) every 2 seconds. YOLO models pre-load at startup (`@PostConstruct`) to prevent first-request timeouts.
 - **MediaConvert configuration**: Skatetricks transcoding requires `skatetricks.transcoding.mediaconvert-role-arn` (`SKATETRICKS_MEDIACONVERT_ROLE_ARN`). Do not set `SKATETRICKS_MEDIACONVERT_ENDPOINT`; `AwsMediaConvertVideoTranscoder` resolves the account-specific endpoint at runtime via `DescribeEndpoints`.
 - **Video analysis frame sampling**: Uploaded/imported MP4 analysis extracts duration-aware frames server-side before OpenAI vision analysis. `skatetricks.analysis.max-frames` (`SKATETRICKS_ANALYSIS_MAX_FRAMES`) defaults to `24`.

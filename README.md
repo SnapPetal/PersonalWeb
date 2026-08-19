@@ -26,7 +26,7 @@ A modular monolith personal portfolio and interactive applications platform buil
 | **Skatetricks AI**    | YOLO pose estimation + OpenAI vision trick detection with RAG learning    |
 | **Landscape Planner** | AI-powered landscape design with USDA plant database and Fabric.js canvas |
 | **Booking System**    | Appointment scheduling with auto-availability and calendar integration    |
-| **Tank Game**         | WebSocket-based multiplayer tank game with player progression             |
+| **Tank Game**         | Godot HTML5 tank prototype with Spring WebSocket connectivity             |
 
 ## Quick Start
 
@@ -95,8 +95,8 @@ An hourly ShedLock-protected cleanup job removes expired login tokens and expire
 | **Backend**   | Spring Boot 4, Spring Modulith, Spring AI, Spring Security                         |
 | **AI/ML**     | Spring AI with OpenAI chat, vision, embeddings, image generation; DJL PyTorch YOLO |
 | **Database**  | PostgreSQL 18, Liquibase migrations, Caffeine cache                                |
-| **Frontend**  | Thymeleaf, HTMX, Alpine.js, Bootstrap 5, Fabric.js, WebJars                        |
-| **Real-time** | STOMP over SockJS (trivia, tank game)                                              |
+| **Frontend**  | Thymeleaf, HTMX, Alpine.js, Bootstrap 5, Fabric.js, Godot HTML5, WebJars           |
+| **Real-time** | STOMP over SockJS (trivia, skatetricks); raw WebSocket (Godot tank game)           |
 | **AWS**       | S3, S3 Vectors, SES, CloudFront, Polly, Lightsail                                  |
 
 ### Modules
@@ -108,7 +108,7 @@ src/main/java/biz/thonbecker/personal/
 ├── skatetricks/    # YOLO pose estimation + OpenAI vision trick detection
 ├── landscape/      # AI-powered landscape planning with USDA plant data
 ├── booking/        # Appointment scheduling with auto-availability
-├── tankgame/       # WebSocket tank game with player progression
+├── tankgame/       # Tank game progression and raw WebSocket prototype
 ├── user/           # User management
 ├── calendar/       # Nextcloud CalDAV integration with calendar sync
 ├── notification/   # Event-driven email notifications via AWS SES
@@ -139,6 +139,24 @@ mvn spotless:apply          # Apply Java, JS, Markdown, and POM formatting
 mvn -f design-system/pom.xml install -DskipTests  # Build and lint the local design-system WebJar
 mvn clean package           # Build production jar
 ```
+
+### Godot tank game
+
+The tank game client lives in `godot/tankgame` and is written in GDScript. It is
+exported for the browser and served by Spring Boot from `/tankgame/`. The export
+is intentionally a small offline prototype with a raw WebSocket connection to
+`/tankgame-ws`; this validates the browser delivery and connection path before
+the authoritative multiplayer simulation is moved behind that protocol.
+
+When Godot export templates are installed locally, export the client with:
+
+```bash
+./scripts/export-godot-tankgame.sh
+```
+
+GitHub Actions performs this export before packaging the Spring Boot application,
+so the production JAR contains the current Godot web build. Use Godot 4.7 for
+local development to match CI.
 
 ## Deployment
 

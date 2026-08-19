@@ -8,8 +8,40 @@ permissions:
   contents: read
 
 jobs:
+  export-godot:
+    name: Export Godot tank game
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
+    env:
+      GODOT_VERSION: 4.7.2
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Configure Godot export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates ~/.config
+          mv /root/.config/godot ~/.config/godot
+          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable \
+            ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Export Godot web client
+        run: |
+          mkdir -p build/tankgame
+          godot --headless --path godot/tankgame \
+            --export-release "Web" build/tankgame/index.html
+
+      - name: Upload Godot web client
+        uses: actions/upload-artifact@v4
+        with:
+          name: tankgame-web
+          path: build/tankgame
+
   build:
     name: Build
+    needs: export-godot
     runs-on: ubuntu-latest
 
     steps:
@@ -22,6 +54,12 @@ jobs:
           distribution: 'corretto'
           java-version: '25'
           cache: 'maven'
+
+      - name: Download Godot web client
+        uses: actions/download-artifact@v4
+        with:
+          name: tankgame-web
+          path: src/main/resources/static/tankgame
 
       - name: Build design-system WebJar
         run: mvn -B -f design-system/pom.xml install -DskipTests
