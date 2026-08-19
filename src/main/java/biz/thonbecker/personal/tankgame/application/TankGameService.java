@@ -2,7 +2,6 @@ package biz.thonbecker.personal.tankgame.application;
 
 import biz.thonbecker.personal.tankgame.domain.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,86 +13,41 @@ public class TankGameService {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final ProgressionService progressionService;
-    private final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
-    private final Map<String, PlayerInput> playerInputs = new ConcurrentHashMap<>();
-    private final Map<String, Long> gameStartTimes = new ConcurrentHashMap<>();
+    private final TankGameRoomService roomService;
     private long lastUpdateTime = System.currentTimeMillis();
 
-    private static final String[] TANK_COLORS = {"#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A"};
-    private static final int MAX_PLAYERS_PER_GAME = 4;
-    private static final long AI_MATCHMAKING_DELAY_MS = 5_000;
-
-    public TankGameService(SimpMessagingTemplate messagingTemplate, ProgressionService progressionService) {
+    public TankGameService(
+            SimpMessagingTemplate messagingTemplate,
+            ProgressionService progressionService,
+            TankGameRoomService roomService) {
         this.messagingTemplate = messagingTemplate;
         this.progressionService = progressionService;
+        this.roomService = roomService;
     }
 
     public GameState createGame() {
-        GameState game = new GameState();
-        activeGames.put(game.getGameId(), game);
-        log.info("Created new tank game: {}", game.getGameId());
-        return game;
+        return roomService.createGame();
     }
 
     public synchronized GameState findOrCreateWaitingGame() {
-        return activeGames.values().stream()
-                .filter(game -> game.getStatus() == GameState.GameStatus.WAITING)
-                .filter(game -> game.getTanks().size() < MAX_PLAYERS_PER_GAME)
-                .findFirst()
-                .orElseGet(this::createGame);
+        return roomService.findOrCreateWaitingGame();
     }
 
-    public synchronized Tank joinGame(String gameId, String playerName) {
-        GameState game = activeGames.get(gameId);
-        if (game == null) {
-            throw new IllegalArgumentException("Game not found: " + gameId);
-        }
-
-        if (game.getTanks().size() >= MAX_PLAYERS_PER_GAME) {
-            throw new IllegalStateException("Game is full");
-        }
-
-        String tankId = UUID.randomUUID().toString();
-        int currentTankCount = game.getTanks().size();
-        String color = TANK_COLORS[currentTankCount % TANK_COLORS.length];
-
-        // Spawn position (pass current count to avoid race condition)
-        double[] spawnPos = findSpawnPosition(game, currentTankCount);
-        Tank tank = new Tank(tankId, playerName, spawnPos[0], spawnPos[1], color);
-
-        game.addTank(tank);
-        playerInputs.put(tankId, new PlayerInput());
-
-        // Track game start time when status changes to PLAYING
-        if (game.getStatus() == GameState.GameStatus.PLAYING && !gameStartTimes.containsKey(gameId)) {
-            gameStartTimes.put(gameId, System.currentTimeMillis());
-            log.info("Game {} started with {} players", gameId, game.getTanks().size());
-        }
-
-        log.info("Player {} joined game {} as tank {}", playerName, gameId, tankId);
-        broadcastGameState(game);
-
+    public Tank joinGame(String gameId, String playerName) {
+        final var tank = roomService.joinGame(gameId, playerName);
+        final var game = roomService.getGame(gameId);
+        if (game != null) broadcastGameState(game);
         return tank;
     }
 
     public void leaveGame(String gameId, String tankId) {
-        GameState game = activeGames.get(gameId);
-        if (game != null) {
-            game.removeTank(tankId);
-            playerInputs.remove(tankId);
-            log.info("Tank {} left game {}", tankId, gameId);
-
-            if (game.getTanks().isEmpty()) {
-                activeGames.remove(gameId);
-                log.info("Game {} removed (no players)", gameId);
-            } else {
-                broadcastGameState(game);
-            }
-        }
+        roomService.leaveGame(gameId, tankId);
+        final var game = roomService.getGame(gameId);
+        if (game != null) broadcastGameState(game);
     }
 
     public void updateInput(String tankId, PlayerInput input) {
-        playerInputs.put(tankId, input);
+        roomService.updateInput(tankId, input);
     }
 
     @Scheduled(fixedRate = 16) // ~60 FPS
@@ -105,8 +59,8 @@ public class TankGameService {
         // Limit deltaTime to prevent huge jumps
         final double deltaTime = Math.min(rawDeltaTime, 0.1);
 
-        addAiOpponents(now);
-        activeGames.values().forEach(game -> {
+        roomService.addAiOpponents(now);
+        roomService.getActiveGames().values().forEach(game -> {
             if (game.getStatus() != GameState.GameStatus.PLAYING) {
                 return;
             }
@@ -126,7 +80,7 @@ public class TankGameService {
         game.getTanks().values().forEach(tank -> {
             if (!tank.isAlive()) return;
 
-            PlayerInput input = playerInputs.get(tank.getId());
+            PlayerInput input = roomService.getInput(tank.getId());
             if (input == null) return;
 
             // Store old position for collision rollback
@@ -238,66 +192,12 @@ public class TankGameService {
         messagingTemplate.convertAndSend("/topic/tankgame/" + game.getGameId(), game);
     }
 
-    private double[] findSpawnPosition(GameState game, int tankCount) {
-
-        // Predefined spawn points in corners and edges (far apart)
-        double[][] spawnPoints = {
-            {60, 60}, // Top-left
-            {game.getMapWidth() - 100, 60}, // Top-right
-            {60, game.getMapHeight() - 100}, // Bottom-left
-            {game.getMapWidth() - 100, game.getMapHeight() - 100} // Bottom-right
-        };
-
-        // Use predefined spawn points first (guarantees distance)
-        if (tankCount < spawnPoints.length) {
-            double[] spawn = spawnPoints[tankCount];
-            Tank tempTank = new Tank("temp", "temp", spawn[0], spawn[1], "");
-
-            // Verify not colliding with walls
-            boolean wallCollision = game.getWalls().stream().anyMatch(wall -> tempTank.collidesWith(wall));
-
-            if (!wallCollision) {
-                return spawn;
-            }
-        }
-
-        // Fallback to random position with larger minimum distance
-        Random random = new Random();
-        int attempts = 0;
-        int maxAttempts = 50;
-
-        while (attempts < maxAttempts) {
-            double x = 80 + random.nextDouble() * (game.getMapWidth() - 160);
-            double y = 80 + random.nextDouble() * (game.getMapHeight() - 160);
-
-            Tank tempTank = new Tank("temp", "temp", x, y, "");
-
-            // Check if position collides with walls
-            boolean wallCollision = game.getWalls().stream().anyMatch(wall -> tempTank.collidesWith(wall));
-
-            // Check if too close to other tanks (increased from 100 to 200)
-            boolean tankCollision = game.getTanks().values().stream().anyMatch(other -> {
-                double distance = Math.sqrt(Math.pow(other.getX() - x, 2) + Math.pow(other.getY() - y, 2));
-                return distance < 200; // Minimum 200px apart (was 100)
-            });
-
-            if (!wallCollision && !tankCollision) {
-                return new double[] {x, y};
-            }
-
-            attempts++;
-        }
-
-        // Final fallback to center
-        return new double[] {game.getMapWidth() / 2.0, game.getMapHeight() / 2.0};
-    }
-
     public GameState getGame(String gameId) {
-        return activeGames.get(gameId);
+        return roomService.getGame(gameId);
     }
 
     public Map<String, GameState> getActiveGames() {
-        return new HashMap<>(activeGames);
+        return roomService.getActiveGames();
     }
 
     /**
@@ -305,7 +205,7 @@ public class TankGameService {
      */
     private void recordMatchResults(GameState game) {
         String gameId = game.getGameId();
-        Long startTime = gameStartTimes.get(gameId);
+        Long startTime = roomService.getGameStartTime(gameId);
 
         if (startTime == null) {
             log.warn("No start time found for game {}, skipping match recording", gameId);
@@ -367,24 +267,8 @@ public class TankGameService {
         }
 
         // Clean up
-        gameStartTimes.remove(gameId);
+        roomService.removeGameStartTime(gameId);
         log.info("Finished recording match results for game {}", gameId);
-    }
-
-    private void addAiOpponents(final long now) {
-        activeGames.values().stream()
-                .filter(game -> game.getStatus() == GameState.GameStatus.WAITING)
-                .filter(game -> game.getTanks().values().stream().anyMatch(tank -> !tank.isBot()))
-                .filter(game -> now - game.getCreatedAt() >= AI_MATCHMAKING_DELAY_MS)
-                .forEach(game -> {
-                    try {
-                        final var bot = joinGame(game.getGameId(), "Arena Guard");
-                        bot.setBot(true);
-                        log.info("Added AI opponent {} to game {}", bot.getId(), game.getGameId());
-                    } catch (Exception e) {
-                        log.warn("Could not add AI opponent to game {}: {}", game.getGameId(), e.getMessage());
-                    }
-                });
     }
 
     private void updateBotInput(final GameState game, final Tank bot) {
@@ -397,7 +281,7 @@ public class TankGameService {
             return;
         }
 
-        final var input = playerInputs.computeIfAbsent(bot.getId(), ignored -> new PlayerInput());
+        final var input = roomService.getOrCreateInput(bot.getId());
         final double targetX = target.getX() + target.getWidth() / 2;
         final double targetY = target.getY() + target.getHeight() / 2;
         final double botX = bot.getX() + bot.getWidth() / 2;
