@@ -34,6 +34,14 @@ public class TankGameService {
         return game;
     }
 
+    public synchronized GameState findOrCreateWaitingGame() {
+        return activeGames.values().stream()
+                .filter(game -> game.getStatus() == GameState.GameStatus.WAITING)
+                .filter(game -> game.getTanks().size() < MAX_PLAYERS_PER_GAME)
+                .findFirst()
+                .orElseGet(this::createGame);
+    }
+
     public synchronized Tank joinGame(String gameId, String playerName) {
         GameState game = activeGames.get(gameId);
         if (game == null) {

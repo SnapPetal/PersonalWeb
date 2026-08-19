@@ -11,8 +11,8 @@ class TankGameRawWebSocketConfig implements WebSocketConfigurer {
 
     private final TankGameRawWebSocketHandler handler;
 
-    TankGameRawWebSocketConfig() {
-        handler = new TankGameRawWebSocketHandler();
+    TankGameRawWebSocketConfig(final TankGameRawWebSocketHandler handler) {
+        this.handler = handler;
     }
 
     @Override
