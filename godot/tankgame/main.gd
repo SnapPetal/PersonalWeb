@@ -56,7 +56,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _move_player(delta: float) -> void:
 	if server_connected:
 		return
-	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var direction := _movement_direction()
 	player_position += direction * TANK_SPEED * delta
 	player_position.x = clamp(player_position.x, 32.0, ARENA_SIZE.x - 32.0)
 	player_position.y = clamp(player_position.y, 90.0, ARENA_SIZE.y - 32.0)
@@ -141,17 +141,25 @@ func _send_input() -> void:
 	if not server_connected or local_tank_id.is_empty():
 		return
 	var mouse_position := get_viewport().get_mouse_position()
+	var movement := _movement_direction()
 	var input := {
-		"up": Input.is_action_pressed("move_up"),
-		"down": Input.is_action_pressed("move_down"),
-		"left": Input.is_action_pressed("move_left"),
-		"right": Input.is_action_pressed("move_right"),
+		"up": movement.y < 0.0,
+		"down": movement.y > 0.0,
+		"left": movement.x < 0.0,
+		"right": movement.x > 0.0,
 		"shoot": fire_requested or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_action_pressed("fire"),
 		"mouseX": clamp(mouse_position.x - MAP_ORIGIN.x, 0.0, SERVER_MAP_SIZE.x),
 		"mouseY": clamp(mouse_position.y - MAP_ORIGIN.y, 0.0, SERVER_MAP_SIZE.y)
 	}
 	websocket.send_text(JSON.stringify({"action": "input", "input": input}))
 	fire_requested = false
+
+func _movement_direction() -> Vector2:
+	var left := Input.is_action_pressed("move_left") or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)
+	var right := Input.is_action_pressed("move_right") or Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)
+	var up := Input.is_action_pressed("move_up") or Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP)
+	var down := Input.is_action_pressed("move_down") or Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)
+	return Vector2(float(right) - float(left), float(down) - float(up)).normalized()
 
 func _interpolate_server_state(delta: float) -> void:
 	if not server_connected:
