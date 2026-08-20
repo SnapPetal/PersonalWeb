@@ -10,5 +10,5 @@ if ((${#gd_files[@]} == 0)); then
   exit 0
 fi
 
-gdlint "${gd_files[@]}" --line-length "$line_length"
-gdformat --line-length "$line_length" --check "${gd_files[@]}"
+gdlint "${gd_files[@]}"
+gdformat --line-length="$line_length" --check "${gd_files[@]}"

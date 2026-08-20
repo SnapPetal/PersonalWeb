@@ -10,4 +10,4 @@ if ((${#gd_files[@]} == 0)); then
   exit 0
 fi
 
-gdformat --line-length "$line_length" "${gd_files[@]}"
+gdformat --line-length="$line_length" "${gd_files[@]}"
