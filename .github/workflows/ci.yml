@@ -7,6 +7,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   export-godot:
     name: Export Godot tank game
@@ -34,7 +37,7 @@ jobs:
             --export-release "Web" "$GITHUB_WORKSPACE/build/tankgame/index.html"
 
       - name: Upload Godot web client
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: tankgame-web
           path: build/tankgame
@@ -56,7 +59,7 @@ jobs:
           cache: 'maven'
 
       - name: Download Godot web client
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: tankgame-web
           path: src/main/resources/static/tankgame

@@ -14,6 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   BP_JVM_VERSION: 25
   IMAGE_NAME: "personal"
   ECR_REGISTRY: "public.ecr.aws/p0w8z2j2"
@@ -46,7 +47,7 @@ jobs:
             --export-release "Web" "$GITHUB_WORKSPACE/build/tankgame/index.html"
 
       - name: Upload Godot web client
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: tankgame-web
           path: build/tankgame
@@ -68,7 +69,7 @@ jobs:
           cache: 'maven'
 
       - name: Download Godot web client
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: tankgame-web
           path: src/main/resources/static/tankgame
