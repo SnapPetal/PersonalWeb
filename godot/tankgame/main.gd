@@ -246,7 +246,7 @@ func _draw() -> void:
 		draw_set_transform(player_position, player_angle)
 		draw_rect(Rect2(-TANK_SIZE.x / 2.0, -TANK_SIZE.y / 2.0, TANK_SIZE.x, TANK_SIZE.y), Color("4ecdc4"), true)
 		draw_rect(Rect2(-6, -5, 32, 10), Color("95e1d3"), true)
-		 draw_circle(Vector2.ZERO, 9.0, Color("264653"))
+		draw_circle(Vector2.ZERO, 9.0, Color("264653"))
 		draw_set_transform(Vector2.ZERO, 0.0)
 
 	# Draw the lobby last so the restart dialog stays above walls and tanks.
