@@ -20,11 +20,13 @@ public class TankGameRoomService {
     private static final long AI_MATCHMAKING_DELAY_MS = 5_000;
     private static final long WAITING_GAME_TIMEOUT_MS = 120_000;
     private static final long FINISHED_GAME_TIMEOUT_MS = 30_000;
+    private static final long INPUT_TIMEOUT_MS = 250;
 
     private final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
     private final Map<String, PlayerInput> playerInputs = new ConcurrentHashMap<>();
     private final Map<String, Long> gameStartTimes = new ConcurrentHashMap<>();
     private final Map<String, Long> gameActivityTimes = new ConcurrentHashMap<>();
+    private final Map<String, Long> inputUpdatedTimes = new ConcurrentHashMap<>();
 
     public GameState createGame() {
         final var game = new GameState();
@@ -58,6 +60,7 @@ public class TankGameRoomService {
         game.addTank(tank);
         gameActivityTimes.put(gameId, System.currentTimeMillis());
         playerInputs.put(tank.getId(), new PlayerInput());
+        inputUpdatedTimes.put(tank.getId(), System.currentTimeMillis());
         if (game.getStatus() == GameState.GameStatus.PLAYING && !gameStartTimes.containsKey(gameId)) {
             gameStartTimes.put(gameId, System.currentTimeMillis());
             log.info("Game {} started with {} players", gameId, game.getTanks().size());
@@ -71,6 +74,7 @@ public class TankGameRoomService {
         if (game == null) return;
         game.removeTank(tankId);
         playerInputs.remove(tankId);
+        inputUpdatedTimes.remove(tankId);
         if (game.getTanks().isEmpty()) {
             activeGames.remove(gameId);
             gameStartTimes.remove(gameId);
@@ -86,15 +90,25 @@ public class TankGameRoomService {
                 .orElse(null);
         if (game == null) return;
         playerInputs.put(tankId, input.sanitized(game.getMapWidth(), game.getMapHeight()));
+        inputUpdatedTimes.put(tankId, System.currentTimeMillis());
         gameActivityTimes.put(game.getGameId(), System.currentTimeMillis());
     }
 
     public PlayerInput getInput(final String tankId) {
-        return playerInputs.get(tankId);
+        final var input = playerInputs.get(tankId);
+        if (input == null) return null;
+        final long updatedAt = inputUpdatedTimes.getOrDefault(tankId, 0L);
+        return System.currentTimeMillis() - updatedAt <= INPUT_TIMEOUT_MS ? input : new PlayerInput();
     }
 
     public PlayerInput getOrCreateInput(final String tankId) {
-        return playerInputs.computeIfAbsent(tankId, ignored -> new PlayerInput());
+        final var input = playerInputs.computeIfAbsent(tankId, ignored -> new PlayerInput());
+        inputUpdatedTimes.putIfAbsent(tankId, System.currentTimeMillis());
+        return input;
+    }
+
+    public void markInputUpdated(final String tankId) {
+        inputUpdatedTimes.put(tankId, System.currentTimeMillis());
     }
 
     public void addAiOpponents(final long now) {
@@ -139,6 +153,7 @@ public class TankGameRoomService {
                     : WAITING_GAME_TIMEOUT_MS;
             if (now - lastActivity <= timeout) return false;
             game.getTanks().keySet().forEach(playerInputs::remove);
+            game.getTanks().keySet().forEach(inputUpdatedTimes::remove);
             gameStartTimes.remove(entry.getKey());
             gameActivityTimes.remove(entry.getKey());
             log.info("Removed inactive tank game {}", entry.getKey());

@@ -6,6 +6,7 @@ const MAP_ORIGIN := Vector2(20.0, 70.0)
 const TANK_SIZE := Vector2(42.0, 30.0)
 const TANK_SPEED := 240.0
 const BULLET_SPEED := 520.0
+const RECONNECT_DELAY := 2.0
 
 var player_position := ARENA_SIZE / 2.0
 var player_angle := 0.0
@@ -18,12 +19,15 @@ var game_over := false
 var server_connected := false
 var queue_sent := false
 var local_tank_id := ""
+var current_game_id := ""
 var server_tanks: Dictionary = {}
 var visual_tanks: Dictionary = {}
 var server_projectiles: Array = []
 var server_walls: Array = []
 var fire_requested := false
 var lobby_visible := true
+var reconnect_timer := 0.0
+var input_sequence := 0
 
 
 func _ready() -> void:
@@ -34,14 +38,24 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_move_player(delta)
 	_update_bullets(delta)
-	_poll_websocket()
+	_poll_websocket(delta)
 	_interpolate_server_state(delta)
 	_send_input()
 	queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if lobby_visible and event.is_pressed() and (event is InputEventMouseButton or (event is InputEventKey and (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER))):
+	if (
+		lobby_visible
+		and event.is_pressed()
+		and (
+			event is InputEventMouseButton
+			or (
+				event is InputEventKey
+				and (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER)
+			)
+		)
+	):
 		_queue_for_battle()
 		return
 	if event is InputEventMouseMotion:
@@ -106,6 +120,8 @@ func _restart() -> void:
 
 
 func _connect_to_server() -> void:
+	websocket = WebSocketPeer.new()
+	reconnect_timer = 0.0
 	var websocket_url := "ws://127.0.0.1:8080/tankgame-ws"
 	if OS.has_feature("web"):
 		var protocol: String = JavaScriptBridge.eval("location.protocol")
@@ -116,10 +132,12 @@ func _connect_to_server() -> void:
 		websocket_status = "WebSocket unavailable (offline prototype still works)"
 
 
-func _poll_websocket() -> void:
+func _poll_websocket(delta: float) -> void:
 	websocket.poll()
+	reconnect_timer += delta
 	match websocket.get_ready_state():
 		WebSocketPeer.STATE_OPEN:
+			reconnect_timer = 0.0
 			if not server_connected:
 				server_connected = true
 				websocket_status = "Connected · Lobby ready"
@@ -130,13 +148,16 @@ func _poll_websocket() -> void:
 		WebSocketPeer.STATE_CONNECTING:
 			websocket_status = "Connecting to Spring WebSocket..."
 		WebSocketPeer.STATE_CLOSED:
-			server_connected = false
-			queue_sent = false
-			lobby_visible = true
-			local_tank_id = ""
-			visual_tanks.clear()
-			if websocket_status.begins_with("Connected") or websocket_status.begins_with("Finding"):
-				websocket_status = "Spring WebSocket disconnected"
+			if server_connected or not lobby_visible:
+				server_connected = false
+				queue_sent = false
+				lobby_visible = true
+				local_tank_id = ""
+				current_game_id = ""
+				visual_tanks.clear()
+				websocket_status = "Connection lost · reconnecting..."
+			if reconnect_timer >= RECONNECT_DELAY:
+				_connect_to_server()
 
 
 func _queue_for_battle() -> void:
@@ -158,19 +179,50 @@ func _send_input() -> void:
 		"down": movement.y > 0.0,
 		"left": movement.x < 0.0,
 		"right": movement.x > 0.0,
-		"shoot": fire_requested or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_action_pressed("fire"),
+		"shoot":
+		(
+			fire_requested
+			or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+			or Input.is_action_pressed("fire")
+		),
 		"mouseX": clamp(mouse_position.x - MAP_ORIGIN.x, 0.0, SERVER_MAP_SIZE.x),
 		"mouseY": clamp(mouse_position.y - MAP_ORIGIN.y, 0.0, SERVER_MAP_SIZE.y)
 	}
-	websocket.send_text(JSON.stringify({"action": "input", "input": input}))
+	websocket.send_text(
+		JSON.stringify(
+			{
+				"action": "input",
+				"gameId": current_game_id,
+				"sequence": input_sequence,
+				"input": input
+			}
+		)
+	)
+	input_sequence += 1
 	fire_requested = false
 
 
 func _movement_direction() -> Vector2:
-	var left := Input.is_action_pressed("move_left") or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)
-	var right := Input.is_action_pressed("move_right") or Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)
-	var up := Input.is_action_pressed("move_up") or Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP)
-	var down := Input.is_action_pressed("move_down") or Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)
+	var left := (
+		Input.is_action_pressed("move_left")
+		or Input.is_key_pressed(KEY_A)
+		or Input.is_key_pressed(KEY_LEFT)
+	)
+	var right := (
+		Input.is_action_pressed("move_right")
+		or Input.is_key_pressed(KEY_D)
+		or Input.is_key_pressed(KEY_RIGHT)
+	)
+	var up := (
+		Input.is_action_pressed("move_up")
+		or Input.is_key_pressed(KEY_W)
+		or Input.is_key_pressed(KEY_UP)
+	)
+	var down := (
+		Input.is_action_pressed("move_down")
+		or Input.is_key_pressed(KEY_S)
+		or Input.is_key_pressed(KEY_DOWN)
+	)
 	return Vector2(float(right) - float(left), float(down) - float(up)).normalized()
 
 
@@ -186,7 +238,9 @@ func _interpolate_server_state(delta: float) -> void:
 		var visual: Dictionary = visual_tanks[tank_id]
 		visual["x"] = lerp(float(visual.get("x", 0.0)), float(target.get("x", 0.0)), blend)
 		visual["y"] = lerp(float(visual.get("y", 0.0)), float(target.get("y", 0.0)), blend)
-		visual["rotation"] = lerp_angle(float(visual.get("rotation", 0.0)), float(target.get("rotation", 0.0)), blend)
+		visual["rotation"] = lerp_angle(
+			float(visual.get("rotation", 0.0)), float(target.get("rotation", 0.0)), blend
+		)
 		for key in ["playerName", "health", "maxHealth", "color", "alive", "kills", "bot"]:
 			visual[key] = target.get(key, visual.get(key))
 		visual_tanks[tank_id] = visual
@@ -195,7 +249,12 @@ func _interpolate_server_state(delta: float) -> void:
 			visual_tanks.erase(tank_id)
 	if visual_tanks.has(local_tank_id):
 		var local_tank: Dictionary = visual_tanks[local_tank_id]
-		player_position = MAP_ORIGIN + Vector2(float(local_tank.get("x", 0.0)) + 20.0, float(local_tank.get("y", 0.0)) + 20.0)
+		player_position = (
+			MAP_ORIGIN
+			+ Vector2(
+				float(local_tank.get("x", 0.0)) + 20.0, float(local_tank.get("y", 0.0)) + 20.0
+			)
+		)
 
 
 func _handle_server_message(message: String) -> void:
@@ -207,10 +266,12 @@ func _handle_server_message(message: String) -> void:
 			websocket_status = "Connected · Lobby ready"
 		"joined":
 			local_tank_id = str(payload.get("tankId", ""))
+			current_game_id = str(payload.get("gameId", ""))
 			lobby_visible = false
 			websocket_status = "Queued · Waiting for a pilot or AI opponent..."
 		"state":
 			var game: Dictionary = payload.get("game", {})
+			current_game_id = str(game.get("gameId", current_game_id))
 			server_tanks = game.get("tanks", {})
 			server_projectiles = game.get("projectiles", [])
 			server_walls = game.get("walls", [])
@@ -219,10 +280,17 @@ func _handle_server_message(message: String) -> void:
 				lobby_visible = true
 				queue_sent = false
 				local_tank_id = ""
+				current_game_id = ""
 				visual_tanks.clear()
-				websocket_status = "Battle finished · Winner: " + str(game.get("winnerName", "Unknown"))
+				websocket_status = (
+					"Battle finished · Winner: " + str(game.get("winnerName", "Unknown"))
+				)
 			else:
-				websocket_status = "Battle live · %d pilots" % server_tanks.size() if game_status == "PLAYING" else "Queued · Waiting for a pilot or AI opponent..."
+				websocket_status = (
+					"Battle live · %d pilots" % server_tanks.size()
+					if game_status == "PLAYING"
+					else "Queued · Waiting for a pilot or AI opponent..."
+				)
 			for tank_id in server_tanks:
 				if str(tank_id) == local_tank_id:
 					player_angle = float(server_tanks[tank_id].get("rotation", 0.0))
@@ -239,11 +307,37 @@ func _draw() -> void:
 		draw_line(Vector2(20, y), Vector2(940, y), Color("20304b"), 1.0)
 
 	var font := ThemeDB.fallback_font
-	draw_string(font, Vector2(28, 34), "IRONBOUND ONLINE · ACTIVE DEVELOPMENT", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("e8eef8"))
-	draw_string(font, Vector2(28, 62), "WASD / arrow keys to move · mouse or space to shoot", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("9fb2cf"))
-	draw_string(font, Vector2(680, 34), "Pilots: %d" % server_tanks.size() if server_connected else "Score: %d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("ffd166"))
+	draw_string(
+		font,
+		Vector2(28, 34),
+		"IRONBOUND ONLINE · ACTIVE DEVELOPMENT",
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		22,
+		Color("e8eef8")
+	)
+	draw_string(
+		font,
+		Vector2(28, 62),
+		"WASD / arrow keys to move · mouse or space to shoot",
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		16,
+		Color("9fb2cf")
+	)
+	draw_string(
+		font,
+		Vector2(680, 34),
+		"Pilots: %d" % server_tanks.size() if server_connected else "Score: %d" % score,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		20,
+		Color("ffd166")
+	)
 	draw_rect(Rect2(0, 510, ARENA_SIZE.x, 30), Color("101827"), true)
-	draw_string(font, Vector2(28, 530), websocket_status, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("8bd5ca"))
+	draw_string(
+		font, Vector2(28, 530), websocket_status, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("8bd5ca")
+	)
 	if server_connected:
 		_draw_server_state(font)
 	else:
@@ -255,12 +349,32 @@ func _draw() -> void:
 			draw_circle(bullet.position, 5.0, Color("ffd166"))
 	if game_over and not server_connected:
 		draw_rect(Rect2(260, 220, 440, 100), Color(0.05, 0.09, 0.15, 0.92), true)
-		draw_string(font, Vector2(352, 260), "ARENA CLEAR", HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color("95e1d3"))
-		draw_string(font, Vector2(315, 294), "Click or press R to play again", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("e8eef8"))
+		draw_string(
+			font,
+			Vector2(352, 260),
+			"ARENA CLEAR",
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			28,
+			Color("95e1d3")
+		)
+		draw_string(
+			font,
+			Vector2(315, 294),
+			"Click or press R to play again",
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			16,
+			Color("e8eef8")
+		)
 
 	if not server_connected and not lobby_visible:
 		draw_set_transform(player_position, player_angle)
-		draw_rect(Rect2(-TANK_SIZE.x / 2.0, -TANK_SIZE.y / 2.0, TANK_SIZE.x, TANK_SIZE.y), Color("4ecdc4"), true)
+		draw_rect(
+			Rect2(-TANK_SIZE.x / 2.0, -TANK_SIZE.y / 2.0, TANK_SIZE.x, TANK_SIZE.y),
+			Color("4ecdc4"),
+			true
+		)
 		draw_rect(Rect2(-6, -5, 32, 10), Color("95e1d3"), true)
 		draw_circle(Vector2.ZERO, 9.0, Color("264653"))
 		draw_set_transform(Vector2.ZERO, 0.0)
@@ -268,28 +382,113 @@ func _draw() -> void:
 	# Draw the lobby last so the restart dialog stays above walls and tanks.
 	if lobby_visible:
 		draw_rect(Rect2(250, 165, 460, 220), Color(0.05, 0.09, 0.15, 0.96), true)
-		draw_string(font, Vector2(250, 215), "IRONBOUND ONLINE", HORIZONTAL_ALIGNMENT_CENTER, 460, 28, Color("95e1d3"))
-		draw_string(font, Vector2(250, 250), "MULTIPLAYER TANK RPG", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("e8eef8"))
-		draw_string(font, Vector2(250, 295), "Click or press Enter", HORIZONTAL_ALIGNMENT_CENTER, 460, 20, Color("ffd166"))
-		draw_string(font, Vector2(250, 325), "to enter the battle lobby", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("9fb2cf"))
-		draw_string(font, Vector2(250, 355), "An AI opponent joins if no pilot is found", HORIZONTAL_ALIGNMENT_CENTER, 460, 13, Color("9fb2cf"))
+		draw_string(
+			font,
+			Vector2(250, 215),
+			"IRONBOUND ONLINE",
+			HORIZONTAL_ALIGNMENT_CENTER,
+			460,
+			28,
+			Color("95e1d3")
+		)
+		draw_string(
+			font,
+			Vector2(250, 250),
+			"MULTIPLAYER TANK RPG",
+			HORIZONTAL_ALIGNMENT_CENTER,
+			460,
+			16,
+			Color("e8eef8")
+		)
+		if server_connected:
+			draw_string(
+				font,
+				Vector2(250, 295),
+				"Click or press Enter",
+				HORIZONTAL_ALIGNMENT_CENTER,
+				460,
+				20,
+				Color("ffd166")
+			)
+			draw_string(
+				font,
+				Vector2(250, 325),
+				"to enter the battle lobby",
+				HORIZONTAL_ALIGNMENT_CENTER,
+				460,
+				16,
+				Color("9fb2cf")
+			)
+			draw_string(
+				font,
+				Vector2(250, 355),
+				"An AI opponent joins if no pilot is found",
+				HORIZONTAL_ALIGNMENT_CENTER,
+				460,
+				13,
+				Color("9fb2cf")
+			)
+		else:
+			draw_string(
+				font,
+				Vector2(250, 305),
+				"Connecting to battle server...",
+				HORIZONTAL_ALIGNMENT_CENTER,
+				460,
+				18,
+				Color("ffd166")
+			)
+			draw_string(
+				font,
+				Vector2(250, 340),
+				"Please wait",
+				HORIZONTAL_ALIGNMENT_CENTER,
+				460,
+				16,
+				Color("9fb2cf")
+			)
 
 
 func _draw_server_state(font: Font) -> void:
 	for wall in server_walls:
-		var wall_rect := Rect2(MAP_ORIGIN + Vector2(float(wall.get("x", 0.0)), float(wall.get("y", 0.0))), Vector2(float(wall.get("width", 0.0)), float(wall.get("height", 0.0))))
+		var wall_rect := Rect2(
+			MAP_ORIGIN + Vector2(float(wall.get("x", 0.0)), float(wall.get("y", 0.0))),
+			Vector2(float(wall.get("width", 0.0)), float(wall.get("height", 0.0)))
+		)
 		draw_rect(wall_rect, Color("52627a"), true)
 		draw_rect(wall_rect, Color("8b9bb5"), false, 2.0)
 	for projectile in server_projectiles:
-		draw_circle(MAP_ORIGIN + Vector2(float(projectile.get("x", 0.0)), float(projectile.get("y", 0.0))), 5.0, Color("ffd166"))
+		draw_circle(
+			MAP_ORIGIN + Vector2(float(projectile.get("x", 0.0)), float(projectile.get("y", 0.0))),
+			5.0,
+			Color("ffd166")
+		)
 	for tank_id in visual_tanks:
 		var tank: Dictionary = visual_tanks[tank_id]
-		var tank_position := MAP_ORIGIN + Vector2(float(tank.get("x", 0.0)) + 20.0, float(tank.get("y", 0.0)) + 20.0)
+		var tank_position := (
+			MAP_ORIGIN + Vector2(float(tank.get("x", 0.0)) + 20.0, float(tank.get("y", 0.0)) + 20.0)
+		)
 		var tank_color := Color(str(tank.get("color", "#4ecdc4")))
 		draw_set_transform(tank_position, float(tank.get("rotation", 0.0)))
 		draw_rect(Rect2(-20.0, -20.0, 40.0, 40.0), tank_color, true)
 		draw_rect(Rect2(-6.0, -5.0, 32.0, 10.0), tank_color.lightened(0.35), true)
 		draw_circle(Vector2.ZERO, 9.0, Color("264653"))
 		draw_set_transform(Vector2.ZERO, 0.0)
-		draw_string(font, tank_position + Vector2(-24.0, -28.0), str(tank.get("playerName", "Pilot")), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("e8eef8"))
-		draw_string(font, tank_position + Vector2(-20.0, 38.0), "%d HP" % int(tank.get("health", 0)), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("95e1d3"))
+		draw_string(
+			font,
+			tank_position + Vector2(-24.0, -28.0),
+			str(tank.get("playerName", "Pilot")),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			12,
+			Color("e8eef8")
+		)
+		draw_string(
+			font,
+			tank_position + Vector2(-20.0, 38.0),
+			"%d HP" % int(tank.get("health", 0)),
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			11,
+			Color("95e1d3")
+		)

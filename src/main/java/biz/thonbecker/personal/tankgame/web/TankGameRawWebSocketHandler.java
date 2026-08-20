@@ -27,6 +27,7 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
     private final Map<String, String> sessionTanks = new ConcurrentHashMap<>();
     private final Map<String, Object> sessionLocks = new ConcurrentHashMap<>();
     private final Map<String, Long> lastInputTimes = new ConcurrentHashMap<>();
+    private final Map<String, Long> lastInputSequences = new ConcurrentHashMap<>();
     private static final long MIN_INPUT_INTERVAL_MS = 20;
 
     TankGameRawWebSocketHandler(final TankGameService tankGameService, final ObjectMapper objectMapper) {
@@ -48,7 +49,7 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
 
         switch (action) {
             case "queue" -> joinQueue(session, request.path("playerName").asText("Player"));
-            case "input" -> updateInput(session, request.path("input"));
+            case "input" -> updateInput(session, request);
             case "leave" -> leave(session);
             default -> send(session, Map.of("type", "error", "message", "Unknown action: " + action));
         }
@@ -61,6 +62,7 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
         sessions.remove(session.getId());
         sessionLocks.remove(session.getId());
         lastInputTimes.remove(session.getId());
+        lastInputSequences.remove(session.getId());
     }
 
     private void joinQueue(final WebSocketSession session, final String playerName) throws Exception {
@@ -72,15 +74,22 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
         send(session, Map.of("type", "joined", "gameId", game.getGameId(), "tankId", tank.getId()));
     }
 
-    private void updateInput(final WebSocketSession session, final JsonNode inputNode) throws Exception {
+    private void updateInput(final WebSocketSession session, final JsonNode request) throws Exception {
         final String tankId = sessionTanks.get(session.getId());
+        final String gameId = sessionGames.get(session.getId());
         if (tankId == null) {
             return;
         }
+        if (!gameId.equals(request.path("gameId").asText())) return;
+        final long sequence = request.path("sequence").asLong(-1);
+        final long previousSequence = lastInputSequences.getOrDefault(session.getId(), -1L);
+        if (sequence <= previousSequence) return;
+        lastInputSequences.put(session.getId(), sequence);
         final long now = System.currentTimeMillis();
         final long previous = lastInputTimes.getOrDefault(session.getId(), 0L);
         if (now - previous < MIN_INPUT_INTERVAL_MS) return;
         lastInputTimes.put(session.getId(), now);
+        final var inputNode = request.path("input");
         final var input = new PlayerInput();
         input.setUp(inputNode.path("up").asBoolean());
         input.setDown(inputNode.path("down").asBoolean());
@@ -96,6 +105,7 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
         final String gameId = sessionGames.remove(session.getId());
         final String tankId = sessionTanks.remove(session.getId());
         lastInputTimes.remove(session.getId());
+        lastInputSequences.remove(session.getId());
         if (gameId != null && tankId != null) {
             tankGameService.leaveGame(gameId, tankId);
         }

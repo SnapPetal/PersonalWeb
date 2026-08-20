@@ -313,6 +313,7 @@ public class TankGameService {
         input.setMouseX(targetX);
         input.setMouseY(targetY);
         input.setShoot(distance < 650 && lineOfSight);
+        roomService.markInputUpdated(bot.getId());
     }
 
     private boolean hasLineOfSight(

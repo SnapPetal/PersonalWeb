@@ -49,6 +49,9 @@ jobs:
           mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable \
             ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
 
+      - name: Validate GDScript with Godot
+        run: scripts/validate-godot.sh
+
       - name: Export Godot web client
         run: |
           mkdir -p build/tankgame
