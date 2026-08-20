@@ -220,14 +220,6 @@ func _draw() -> void:
 	draw_string(font, Vector2(28, 62), "WASD / arrow keys to move · mouse or space to shoot", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("9fb2cf"))
 	draw_string(font, Vector2(680, 34), "Pilots: %d" % server_tanks.size() if server_connected else "Score: %d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("ffd166"))
 	draw_string(font, Vector2(28, 525), websocket_status, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("8bd5ca"))
-	if lobby_visible:
-		draw_rect(Rect2(250, 165, 460, 220), Color(0.05, 0.09, 0.15, 0.96), true)
-		draw_string(font, Vector2(250, 215), "IRONBOUND ONLINE", HORIZONTAL_ALIGNMENT_CENTER, 460, 28, Color("95e1d3"))
-		draw_string(font, Vector2(250, 250), "MULTIPLAYER TANK RPG", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("e8eef8"))
-		draw_string(font, Vector2(250, 295), "Click or press Enter", HORIZONTAL_ALIGNMENT_CENTER, 460, 20, Color("ffd166"))
-		draw_string(font, Vector2(250, 325), "to enter the battle lobby", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("9fb2cf"))
-		draw_string(font, Vector2(250, 355), "An AI opponent joins if no pilot is found", HORIZONTAL_ALIGNMENT_CENTER, 460, 13, Color("9fb2cf"))
-
 	if server_connected:
 		_draw_server_state(font)
 	else:
@@ -246,8 +238,17 @@ func _draw() -> void:
 		draw_set_transform(player_position, player_angle)
 		draw_rect(Rect2(-TANK_SIZE.x / 2.0, -TANK_SIZE.y / 2.0, TANK_SIZE.x, TANK_SIZE.y), Color("4ecdc4"), true)
 		draw_rect(Rect2(-6, -5, 32, 10), Color("95e1d3"), true)
-		draw_circle(Vector2.ZERO, 9.0, Color("264653"))
+		 draw_circle(Vector2.ZERO, 9.0, Color("264653"))
 		draw_set_transform(Vector2.ZERO, 0.0)
+
+	# Draw the lobby last so the restart dialog stays above walls and tanks.
+	if lobby_visible:
+		draw_rect(Rect2(250, 165, 460, 220), Color(0.05, 0.09, 0.15, 0.96), true)
+		draw_string(font, Vector2(250, 215), "IRONBOUND ONLINE", HORIZONTAL_ALIGNMENT_CENTER, 460, 28, Color("95e1d3"))
+		draw_string(font, Vector2(250, 250), "MULTIPLAYER TANK RPG", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("e8eef8"))
+		draw_string(font, Vector2(250, 295), "Click or press Enter", HORIZONTAL_ALIGNMENT_CENTER, 460, 20, Color("ffd166"))
+		draw_string(font, Vector2(250, 325), "to enter the battle lobby", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("9fb2cf"))
+		draw_string(font, Vector2(250, 355), "An AI opponent joins if no pilot is found", HORIZONTAL_ALIGNMENT_CENTER, 460, 13, Color("9fb2cf"))
 
 func _draw_server_state(font: Font) -> void:
 	for wall in server_walls:
