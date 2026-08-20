@@ -25,9 +25,11 @@ var server_walls: Array = []
 var fire_requested := false
 var lobby_visible := true
 
+
 func _ready() -> void:
 	_connect_to_server()
 	queue_redraw()
+
 
 func _process(delta: float) -> void:
 	_move_player(delta)
@@ -36,6 +38,7 @@ func _process(delta: float) -> void:
 	_interpolate_server_state(delta)
 	_send_input()
 	queue_redraw()
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if lobby_visible and event.is_pressed() and (event is InputEventMouseButton or (event is InputEventKey and (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER))):
@@ -53,6 +56,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
 		_restart()
 
+
 func _move_player(delta: float) -> void:
 	if server_connected:
 		return
@@ -60,6 +64,7 @@ func _move_player(delta: float) -> void:
 	player_position += direction * TANK_SPEED * delta
 	player_position.x = clamp(player_position.x, 32.0, ARENA_SIZE.x - 32.0)
 	player_position.y = clamp(player_position.y, 90.0, ARENA_SIZE.y - 32.0)
+
 
 func _shoot() -> void:
 	if game_over:
@@ -69,6 +74,7 @@ func _shoot() -> void:
 		return
 	var muzzle := player_position + Vector2.RIGHT.rotated(player_angle) * 30.0
 	bullets.append({"position": muzzle, "direction": Vector2.RIGHT.rotated(player_angle)})
+
 
 func _update_bullets(delta: float) -> void:
 	if server_connected:
@@ -89,6 +95,7 @@ func _update_bullets(delta: float) -> void:
 	if targets.is_empty():
 		game_over = true
 
+
 func _restart() -> void:
 	player_position = ARENA_SIZE / 2.0
 	player_angle = 0.0
@@ -96,6 +103,7 @@ func _restart() -> void:
 	targets = [Vector2(180, 150), Vector2(760, 145), Vector2(210, 410), Vector2(750, 390)]
 	score = 0
 	game_over = false
+
 
 func _connect_to_server() -> void:
 	var websocket_url := "ws://127.0.0.1:8080/tankgame-ws"
@@ -106,6 +114,7 @@ func _connect_to_server() -> void:
 	var error := websocket.connect_to_url(websocket_url)
 	if error != OK:
 		websocket_status = "WebSocket unavailable (offline prototype still works)"
+
 
 func _poll_websocket() -> void:
 	websocket.poll()
@@ -129,6 +138,7 @@ func _poll_websocket() -> void:
 			if websocket_status.begins_with("Connected") or websocket_status.begins_with("Finding"):
 				websocket_status = "Spring WebSocket disconnected"
 
+
 func _queue_for_battle() -> void:
 	if not server_connected or queue_sent:
 		return
@@ -136,6 +146,7 @@ func _queue_for_battle() -> void:
 	queue_sent = true
 	lobby_visible = false
 	websocket_status = "Queued · Waiting for a pilot or AI opponent..."
+
 
 func _send_input() -> void:
 	if not server_connected or local_tank_id.is_empty():
@@ -154,12 +165,14 @@ func _send_input() -> void:
 	websocket.send_text(JSON.stringify({"action": "input", "input": input}))
 	fire_requested = false
 
+
 func _movement_direction() -> Vector2:
 	var left := Input.is_action_pressed("move_left") or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT)
 	var right := Input.is_action_pressed("move_right") or Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)
 	var up := Input.is_action_pressed("move_up") or Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP)
 	var down := Input.is_action_pressed("move_down") or Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)
 	return Vector2(float(right) - float(left), float(down) - float(up)).normalized()
+
 
 func _interpolate_server_state(delta: float) -> void:
 	if not server_connected:
@@ -183,6 +196,7 @@ func _interpolate_server_state(delta: float) -> void:
 	if visual_tanks.has(local_tank_id):
 		var local_tank: Dictionary = visual_tanks[local_tank_id]
 		player_position = MAP_ORIGIN + Vector2(float(local_tank.get("x", 0.0)) + 20.0, float(local_tank.get("y", 0.0)) + 20.0)
+
 
 func _handle_server_message(message: String) -> void:
 	var payload = JSON.parse_string(message)
@@ -214,6 +228,7 @@ func _handle_server_message(message: String) -> void:
 					player_angle = float(server_tanks[tank_id].get("rotation", 0.0))
 		"error":
 			websocket_status = "Battle error: " + str(payload.get("message", "Unknown error"))
+
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, ARENA_SIZE), Color("101827"))
@@ -258,11 +273,10 @@ func _draw() -> void:
 		draw_string(font, Vector2(250, 325), "to enter the battle lobby", HORIZONTAL_ALIGNMENT_CENTER, 460, 16, Color("9fb2cf"))
 		draw_string(font, Vector2(250, 355), "An AI opponent joins if no pilot is found", HORIZONTAL_ALIGNMENT_CENTER, 460, 13, Color("9fb2cf"))
 
+
 func _draw_server_state(font: Font) -> void:
 	for wall in server_walls:
-		var wall_rect := Rect2(
-			MAP_ORIGIN + Vector2(float(wall.get("x", 0.0)), float(wall.get("y", 0.0))),
-			Vector2(float(wall.get("width", 0.0)), float(wall.get("height", 0.0))))
+		var wall_rect := Rect2(MAP_ORIGIN + Vector2(float(wall.get("x", 0.0)), float(wall.get("y", 0.0))), Vector2(float(wall.get("width", 0.0)), float(wall.get("height", 0.0))))
 		draw_rect(wall_rect, Color("52627a"), true)
 		draw_rect(wall_rect, Color("8b9bb5"), false, 2.0)
 	for projectile in server_projectiles:
