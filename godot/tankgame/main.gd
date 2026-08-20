@@ -2,7 +2,7 @@ extends Node2D
 
 const ARENA_SIZE := Vector2(960.0, 540.0)
 const SERVER_MAP_SIZE := Vector2(920.0, 440.0)
-const MAP_ORIGIN := Vector2(20.0, 82.0)
+const MAP_ORIGIN := Vector2(20.0, 70.0)
 const TANK_SIZE := Vector2(42.0, 30.0)
 const TANK_SPEED := 240.0
 const BULLET_SPEED := 520.0
@@ -232,17 +232,18 @@ func _handle_server_message(message: String) -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, ARENA_SIZE), Color("101827"))
-	draw_rect(Rect2(18, 82, ARENA_SIZE.x - 36, ARENA_SIZE.y - 100), Color("17243a"), true)
+	draw_rect(Rect2(18, 70, ARENA_SIZE.x - 36, 440), Color("17243a"), true)
 	for x in range(40, 960, 40):
 		draw_line(Vector2(x, 100), Vector2(x, 520), Color("20304b"), 1.0)
-	for y in range(100, 540, 40):
+	for y in range(90, 510, 40):
 		draw_line(Vector2(20, y), Vector2(940, y), Color("20304b"), 1.0)
 
 	var font := ThemeDB.fallback_font
 	draw_string(font, Vector2(28, 34), "IRONBOUND ONLINE · ACTIVE DEVELOPMENT", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color("e8eef8"))
 	draw_string(font, Vector2(28, 62), "WASD / arrow keys to move · mouse or space to shoot", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("9fb2cf"))
 	draw_string(font, Vector2(680, 34), "Pilots: %d" % server_tanks.size() if server_connected else "Score: %d" % score, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("ffd166"))
-	draw_string(font, Vector2(28, 525), websocket_status, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("8bd5ca"))
+	draw_rect(Rect2(0, 510, ARENA_SIZE.x, 30), Color("101827"), true)
+	draw_string(font, Vector2(28, 530), websocket_status, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color("8bd5ca"))
 	if server_connected:
 		_draw_server_state(font)
 	else:
