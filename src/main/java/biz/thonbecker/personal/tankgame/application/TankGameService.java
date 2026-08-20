@@ -71,6 +71,12 @@ public class TankGameService {
     }
 
     private void updateGame(GameState game, double deltaTime) {
+        synchronized (game) {
+            updateGameLocked(game, deltaTime);
+        }
+    }
+
+    private void updateGameLocked(GameState game, double deltaTime) {
         game.getTanks().values().stream()
                 .filter(Tank::isBot)
                 .filter(Tank::isAlive)
@@ -286,12 +292,44 @@ public class TankGameService {
         final double targetY = target.getY() + target.getHeight() / 2;
         final double botX = bot.getX() + bot.getWidth() / 2;
         final double botY = bot.getY() + bot.getHeight() / 2;
-        input.setUp(targetY < botY - 20);
-        input.setDown(targetY > botY + 20);
-        input.setLeft(targetX < botX - 20);
-        input.setRight(targetX > botX + 20);
+        final double distance = Math.hypot(targetX - botX, targetY - botY);
+        final boolean lineOfSight = hasLineOfSight(game, botX, botY, targetX, targetY);
+        // Keep a useful firing distance instead of blindly ramming the target.
+        if (!lineOfSight && distance > 260) {
+            // Strafe around an obstacle. The stable direction prevents the bot from
+            // changing its mind every tick and vibrating against a wall.
+            final boolean clockwise = Math.floorMod(bot.getId().hashCode(), 2) == 0;
+            final boolean horizontalApproach = Math.abs(targetX - botX) > Math.abs(targetY - botY);
+            input.setUp(horizontalApproach == clockwise);
+            input.setDown(horizontalApproach != clockwise);
+            input.setLeft(!horizontalApproach && clockwise);
+            input.setRight(!horizontalApproach && !clockwise);
+        } else {
+            input.setUp(distance > 260 && targetY < botY - 20);
+            input.setDown(distance > 260 && targetY > botY + 20);
+            input.setLeft(distance > 260 && targetX < botX - 20);
+            input.setRight(distance > 260 && targetX > botX + 20);
+        }
         input.setMouseX(targetX);
         input.setMouseY(targetY);
-        input.setShoot(true);
+        input.setShoot(distance < 650 && lineOfSight);
+    }
+
+    private boolean hasLineOfSight(
+            final GameState game, final double startX, final double startY, final double endX, final double endY) {
+        final int samples = Math.max(1, (int) (Math.hypot(endX - startX, endY - startY) / 8));
+        for (int i = 1; i < samples; i++) {
+            final double fraction = (double) i / samples;
+            final double x = startX + (endX - startX) * fraction;
+            final double y = startY + (endY - startY) * fraction;
+            if (game.getWalls().stream()
+                    .anyMatch(wall -> x >= wall.getX()
+                            && x <= wall.getX() + wall.getWidth()
+                            && y >= wall.getY()
+                            && y <= wall.getY() + wall.getHeight())) {
+                return false;
+            }
+        }
+        return true;
     }
 }

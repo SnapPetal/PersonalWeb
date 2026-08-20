@@ -14,8 +14,9 @@ public class GameState {
     private List<Projectile> projectiles = new ArrayList<>();
     private List<Wall> walls = new ArrayList<>();
     private GameStatus status = GameStatus.WAITING;
-    private int mapWidth = 800;
-    private int mapHeight = 600;
+    // Keep the authoritative map inside the Godot playfield (20,82)-(940,522).
+    private int mapWidth = 920;
+    private int mapHeight = 440;
     private long createdAt;
     private String winnerId;
     private String winnerName;
@@ -34,11 +35,11 @@ public class GameState {
         walls.add(new Wall(mapWidth - 10, 0, 10, mapHeight)); // Right
 
         // Interior obstacles
-        walls.add(new Wall(200, 150, 100, 20));
-        walls.add(new Wall(500, 150, 100, 20));
-        walls.add(new Wall(200, 430, 100, 20));
-        walls.add(new Wall(500, 430, 100, 20));
-        walls.add(new Wall(350, 250, 100, 100));
+        walls.add(new Wall(200, 100, 140, 20));
+        walls.add(new Wall(580, 100, 140, 20));
+        walls.add(new Wall(200, 320, 140, 20));
+        walls.add(new Wall(580, 320, 140, 20));
+        walls.add(new Wall(410, 170, 100, 100));
     }
 
     public void addTank(Tank tank) {

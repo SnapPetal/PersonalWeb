@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,14 +18,18 @@ public class TankGameRoomService {
     private static final String[] TANK_COLORS = {"#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A"};
     private static final int MAX_PLAYERS_PER_GAME = 4;
     private static final long AI_MATCHMAKING_DELAY_MS = 5_000;
+    private static final long WAITING_GAME_TIMEOUT_MS = 120_000;
+    private static final long FINISHED_GAME_TIMEOUT_MS = 30_000;
 
     private final Map<String, GameState> activeGames = new ConcurrentHashMap<>();
     private final Map<String, PlayerInput> playerInputs = new ConcurrentHashMap<>();
     private final Map<String, Long> gameStartTimes = new ConcurrentHashMap<>();
+    private final Map<String, Long> gameActivityTimes = new ConcurrentHashMap<>();
 
     public GameState createGame() {
         final var game = new GameState();
         activeGames.put(game.getGameId(), game);
+        gameActivityTimes.put(game.getGameId(), game.getCreatedAt());
         log.info("Created new tank game: {}", game.getGameId());
         return game;
     }
@@ -51,6 +56,7 @@ public class TankGameRoomService {
                 spawn[1],
                 TANK_COLORS[tankCount % TANK_COLORS.length]);
         game.addTank(tank);
+        gameActivityTimes.put(gameId, System.currentTimeMillis());
         playerInputs.put(tank.getId(), new PlayerInput());
         if (game.getStatus() == GameState.GameStatus.PLAYING && !gameStartTimes.containsKey(gameId)) {
             gameStartTimes.put(gameId, System.currentTimeMillis());
@@ -68,12 +74,19 @@ public class TankGameRoomService {
         if (game.getTanks().isEmpty()) {
             activeGames.remove(gameId);
             gameStartTimes.remove(gameId);
+            gameActivityTimes.remove(gameId);
             log.info("Game {} removed (no players)", gameId);
         }
     }
 
     public void updateInput(final String tankId, final PlayerInput input) {
-        playerInputs.put(tankId, input);
+        final var game = activeGames.values().stream()
+                .filter(candidate -> candidate.getTanks().containsKey(tankId))
+                .findFirst()
+                .orElse(null);
+        if (game == null) return;
+        playerInputs.put(tankId, input.sanitized(game.getMapWidth(), game.getMapHeight()));
+        gameActivityTimes.put(game.getGameId(), System.currentTimeMillis());
     }
 
     public PlayerInput getInput(final String tankId) {
@@ -113,6 +126,24 @@ public class TankGameRoomService {
 
     public void removeGameStartTime(final String gameId) {
         gameStartTimes.remove(gameId);
+    }
+
+    @Scheduled(fixedRate = 30_000)
+    void removeInactiveGames() {
+        final long now = System.currentTimeMillis();
+        activeGames.entrySet().removeIf(entry -> {
+            final var game = entry.getValue();
+            final long lastActivity = gameActivityTimes.getOrDefault(entry.getKey(), game.getCreatedAt());
+            final long timeout = game.getStatus() == GameState.GameStatus.FINISHED
+                    ? FINISHED_GAME_TIMEOUT_MS
+                    : WAITING_GAME_TIMEOUT_MS;
+            if (now - lastActivity <= timeout) return false;
+            game.getTanks().keySet().forEach(playerInputs::remove);
+            gameStartTimes.remove(entry.getKey());
+            gameActivityTimes.remove(entry.getKey());
+            log.info("Removed inactive tank game {}", entry.getKey());
+            return true;
+        });
     }
 
     private double[] findSpawnPosition(final GameState game, final int tankCount) {

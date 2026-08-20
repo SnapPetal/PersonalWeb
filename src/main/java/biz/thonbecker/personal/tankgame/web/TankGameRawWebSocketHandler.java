@@ -2,6 +2,7 @@ package biz.thonbecker.personal.tankgame.web;
 
 import biz.thonbecker.personal.tankgame.application.TankGameService;
 import biz.thonbecker.personal.tankgame.domain.GameState;
+import biz.thonbecker.personal.tankgame.domain.GameStateSnapshot;
 import biz.thonbecker.personal.tankgame.domain.PlayerInput;
 import biz.thonbecker.personal.tankgame.domain.Tank;
 import java.util.Map;
@@ -24,6 +25,9 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final Map<String, String> sessionGames = new ConcurrentHashMap<>();
     private final Map<String, String> sessionTanks = new ConcurrentHashMap<>();
+    private final Map<String, Object> sessionLocks = new ConcurrentHashMap<>();
+    private final Map<String, Long> lastInputTimes = new ConcurrentHashMap<>();
+    private static final long MIN_INPUT_INTERVAL_MS = 20;
 
     TankGameRawWebSocketHandler(final TankGameService tankGameService, final ObjectMapper objectMapper) {
         this.tankGameService = tankGameService;
@@ -33,6 +37,7 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
         sessions.put(session.getId(), session);
+        sessionLocks.put(session.getId(), new Object());
         send(session, Map.of("type", "connected", "message", "Ironbound Online connected"));
     }
 
@@ -54,6 +59,8 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
             final WebSocketSession session, final org.springframework.web.socket.CloseStatus status) {
         leave(session);
         sessions.remove(session.getId());
+        sessionLocks.remove(session.getId());
+        lastInputTimes.remove(session.getId());
     }
 
     private void joinQueue(final WebSocketSession session, final String playerName) throws Exception {
@@ -70,6 +77,10 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
         if (tankId == null) {
             return;
         }
+        final long now = System.currentTimeMillis();
+        final long previous = lastInputTimes.getOrDefault(session.getId(), 0L);
+        if (now - previous < MIN_INPUT_INTERVAL_MS) return;
+        lastInputTimes.put(session.getId(), now);
         final var input = new PlayerInput();
         input.setUp(inputNode.path("up").asBoolean());
         input.setDown(inputNode.path("down").asBoolean());
@@ -84,6 +95,7 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
     private void leave(final WebSocketSession session) {
         final String gameId = sessionGames.remove(session.getId());
         final String tankId = sessionTanks.remove(session.getId());
+        lastInputTimes.remove(session.getId());
         if (gameId != null && tankId != null) {
             tankGameService.leaveGame(gameId, tankId);
         }
@@ -101,7 +113,9 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
             try {
-                send(session, Map.of("type", "state", "game", game));
+                synchronized (game) {
+                    send(session, Map.of("type", "state", "game", GameStateSnapshot.from(game)));
+                }
             } catch (Exception e) {
                 log.debug("Could not send tank game state to {}: {}", session.getId(), e.getMessage());
             }
@@ -109,6 +123,9 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void send(final WebSocketSession session, final Object payload) throws Exception {
-        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(payload)));
+        final var lock = sessionLocks.computeIfAbsent(session.getId(), ignored -> new Object());
+        synchronized (lock) {
+            if (session.isOpen()) session.sendMessage(new TextMessage(objectMapper.writeValueAsString(payload)));
+        }
     }
 }

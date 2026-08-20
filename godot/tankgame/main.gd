@@ -1,6 +1,8 @@
 extends Node2D
 
 const ARENA_SIZE := Vector2(960.0, 540.0)
+const SERVER_MAP_SIZE := Vector2(920.0, 440.0)
+const MAP_ORIGIN := Vector2(20.0, 82.0)
 const TANK_SIZE := Vector2(42.0, 30.0)
 const TANK_SPEED := 240.0
 const BULLET_SPEED := 520.0
@@ -17,7 +19,9 @@ var server_connected := false
 var queue_sent := false
 var local_tank_id := ""
 var server_tanks: Dictionary = {}
+var visual_tanks: Dictionary = {}
 var server_projectiles: Array = []
+var server_walls: Array = []
 var fire_requested := false
 var lobby_visible := true
 
@@ -29,6 +33,7 @@ func _process(delta: float) -> void:
 	_move_player(delta)
 	_update_bullets(delta)
 	_poll_websocket()
+	_interpolate_server_state(delta)
 	_send_input()
 	queue_redraw()
 
@@ -120,6 +125,7 @@ func _poll_websocket() -> void:
 			queue_sent = false
 			lobby_visible = true
 			local_tank_id = ""
+			visual_tanks.clear()
 			if websocket_status.begins_with("Connected") or websocket_status.begins_with("Finding"):
 				websocket_status = "Spring WebSocket disconnected"
 
@@ -141,11 +147,34 @@ func _send_input() -> void:
 		"left": Input.is_action_pressed("move_left"),
 		"right": Input.is_action_pressed("move_right"),
 		"shoot": fire_requested or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_action_pressed("fire"),
-		"mouseX": mouse_position.x,
-		"mouseY": mouse_position.y
+		"mouseX": clamp(mouse_position.x - MAP_ORIGIN.x, 0.0, SERVER_MAP_SIZE.x),
+		"mouseY": clamp(mouse_position.y - MAP_ORIGIN.y, 0.0, SERVER_MAP_SIZE.y)
 	}
 	websocket.send_text(JSON.stringify({"action": "input", "input": input}))
 	fire_requested = false
+
+func _interpolate_server_state(delta: float) -> void:
+	if not server_connected:
+		return
+	var blend := 1.0 - exp(-delta * 18.0)
+	for tank_id in server_tanks:
+		var target: Dictionary = server_tanks[tank_id]
+		if not visual_tanks.has(tank_id):
+			visual_tanks[tank_id] = target.duplicate()
+			continue
+		var visual: Dictionary = visual_tanks[tank_id]
+		visual["x"] = lerp(float(visual.get("x", 0.0)), float(target.get("x", 0.0)), blend)
+		visual["y"] = lerp(float(visual.get("y", 0.0)), float(target.get("y", 0.0)), blend)
+		visual["rotation"] = lerp_angle(float(visual.get("rotation", 0.0)), float(target.get("rotation", 0.0)), blend)
+		for key in ["playerName", "health", "maxHealth", "color", "alive", "kills", "bot"]:
+			visual[key] = target.get(key, visual.get(key))
+		visual_tanks[tank_id] = visual
+	for tank_id in visual_tanks.keys():
+		if not server_tanks.has(tank_id):
+			visual_tanks.erase(tank_id)
+	if visual_tanks.has(local_tank_id):
+		var local_tank: Dictionary = visual_tanks[local_tank_id]
+		player_position = MAP_ORIGIN + Vector2(float(local_tank.get("x", 0.0)) + 20.0, float(local_tank.get("y", 0.0)) + 20.0)
 
 func _handle_server_message(message: String) -> void:
 	var payload = JSON.parse_string(message)
@@ -162,19 +191,19 @@ func _handle_server_message(message: String) -> void:
 			var game: Dictionary = payload.get("game", {})
 			server_tanks = game.get("tanks", {})
 			server_projectiles = game.get("projectiles", [])
+			server_walls = game.get("walls", [])
 			var game_status: String = str(game.get("status", "WAITING"))
 			if game_status == "FINISHED":
 				lobby_visible = true
 				queue_sent = false
 				local_tank_id = ""
+				visual_tanks.clear()
 				websocket_status = "Battle finished · Winner: " + str(game.get("winnerName", "Unknown"))
 			else:
 				websocket_status = "Battle live · %d pilots" % server_tanks.size() if game_status == "PLAYING" else "Queued · Waiting for a pilot or AI opponent..."
 			for tank_id in server_tanks:
 				if str(tank_id) == local_tank_id:
-					var tank: Dictionary = server_tanks[tank_id]
-					player_position = Vector2(float(tank.get("x", 0.0)) + 20.0, float(tank.get("y", 0.0)) + 20.0)
-					player_angle = float(tank.get("rotation", 0.0))
+					player_angle = float(server_tanks[tank_id].get("rotation", 0.0))
 		"error":
 			websocket_status = "Battle error: " + str(payload.get("message", "Unknown error"))
 
@@ -221,11 +250,17 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0)
 
 func _draw_server_state(font: Font) -> void:
+	for wall in server_walls:
+		var wall_rect := Rect2(
+			MAP_ORIGIN + Vector2(float(wall.get("x", 0.0)), float(wall.get("y", 0.0))),
+			Vector2(float(wall.get("width", 0.0)), float(wall.get("height", 0.0))))
+		draw_rect(wall_rect, Color("52627a"), true)
+		draw_rect(wall_rect, Color("8b9bb5"), false, 2.0)
 	for projectile in server_projectiles:
-		draw_circle(Vector2(float(projectile.get("x", 0.0)), float(projectile.get("y", 0.0))), 5.0, Color("ffd166"))
-	for tank_id in server_tanks:
-		var tank: Dictionary = server_tanks[tank_id]
-		var tank_position := Vector2(float(tank.get("x", 0.0)) + 20.0, float(tank.get("y", 0.0)) + 20.0)
+		draw_circle(MAP_ORIGIN + Vector2(float(projectile.get("x", 0.0)), float(projectile.get("y", 0.0))), 5.0, Color("ffd166"))
+	for tank_id in visual_tanks:
+		var tank: Dictionary = visual_tanks[tank_id]
+		var tank_position := MAP_ORIGIN + Vector2(float(tank.get("x", 0.0)) + 20.0, float(tank.get("y", 0.0)) + 20.0)
 		var tank_color := Color(str(tank.get("color", "#4ecdc4")))
 		draw_set_transform(tank_position, float(tank.get("rotation", 0.0)))
 		draw_rect(Rect2(-20.0, -20.0, 40.0, 40.0), tank_color, true)
