@@ -320,32 +320,19 @@ func _tank_screen_position(tank: Dictionary) -> Vector2:
 
 
 func _spawn_tank_explosion(position: Vector2) -> void:
-	debris.append(
-		{
-			"position": position,
-			"velocity": Vector2.ZERO,
-			"life": 0.9,
-			"max_life": 0.9,
-			"size": 34.0,
-			"color": Color("f4a261"),
-			"rotation": 0.0,
-			"spin": 0.0,
-			"debris": false
-		}
-	)
-	for index in range(14):
-		var angle := TAU * float(index) / 14.0 + randf_range(-0.18, 0.18)
-		var speed := randf_range(80.0, 220.0)
+	# Leave a small pile of tank parts at the wreck site. The pieces are
+	# deliberately grounded: they do not burst outward, fade immediately, or spin.
+	for index in range(9):
 		debris.append(
 			{
-				"position": position + Vector2.from_angle(angle) * randf_range(2.0, 14.0),
-				"velocity": Vector2.from_angle(angle) * speed,
-				"life": DEBRIS_LIFETIME * randf_range(0.7, 1.0),
+				"position": position + Vector2(randf_range(-22.0, 22.0), randf_range(-16.0, 16.0)),
+				"velocity": Vector2.ZERO,
+				"life": DEBRIS_LIFETIME,
 				"max_life": DEBRIS_LIFETIME,
-				"size": randf_range(3.0, 8.0),
-				"color": Color("6f7f8f").lerp(Color("e76f51"), randf_range(0.0, 0.45)),
+				"size": randf_range(5.0, 12.0),
+				"color": Color("4d5968").lerp(Color("a86545"), randf_range(0.0, 0.35)),
 				"rotation": randf_range(0.0, TAU),
-				"spin": randf_range(-5.0, 5.0),
+				"spin": 0.0,
 				"debris": true
 			}
 		)
@@ -353,9 +340,6 @@ func _spawn_tank_explosion(position: Vector2) -> void:
 
 func _update_debris(delta: float) -> void:
 	for piece in debris:
-		piece.position += piece.velocity * delta
-		piece.velocity = piece.velocity.move_toward(Vector2.ZERO, 34.0 * delta)
-		piece.rotation += float(piece.get("spin", 0.0)) * delta
 		piece.life = float(piece.get("life", 0.0)) - delta
 	for index in range(debris.size() - 1, -1, -1):
 		if float(debris[index].get("life", 0.0)) <= 0.0:
@@ -527,20 +511,6 @@ func _draw_server_state(font: Font) -> void:
 			5.0,
 			Color("ffd166")
 		)
-	for piece in debris:
-		var opacity: float = clampf(
-			float(piece.get("life", 0.0)) / float(piece.get("max_life", 1.0)), 0.0, 1.0
-		)
-		var piece_color: Color = piece.get("color", Color.WHITE)
-		piece_color.a = opacity
-		draw_set_transform(piece.position, float(piece.get("rotation", 0.0)))
-		if bool(piece.get("debris", false)):
-			draw_rect(
-				Rect2(-piece.size / 2.0, Vector2(piece.size, piece.size * 0.65)), piece_color, true
-			)
-		else:
-			draw_circle(Vector2.ZERO, float(piece.get("size", 0.0)) * opacity, piece_color)
-		draw_set_transform(Vector2.ZERO, 0.0)
 	for tank_id in visual_tanks:
 		var tank: Dictionary = visual_tanks[tank_id]
 		var tank_position := (
@@ -572,3 +542,14 @@ func _draw_server_state(font: Font) -> void:
 			11,
 			Color("95e1d3")
 		)
+	for piece in debris:
+		var opacity: float = clampf(
+			float(piece.get("life", 0.0)) / float(piece.get("max_life", 1.0)), 0.0, 1.0
+		)
+		var piece_color: Color = piece.get("color", Color.WHITE)
+		piece_color.a = opacity
+		draw_set_transform(piece.position, float(piece.get("rotation", 0.0)))
+		draw_rect(
+			Rect2(-piece.size / 2.0, Vector2(piece.size, piece.size * 0.65)), piece_color, true
+		)
+		draw_set_transform(Vector2.ZERO, 0.0)
