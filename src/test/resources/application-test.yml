@@ -31,5 +31,7 @@ calendar:
 
 personal:
   admin:
-    username: test-admin
-    password: test-password
+    access:
+      issuer: https://test.cloudflareaccess.com
+      audience: test-audience
+      email: test-admin@example.com

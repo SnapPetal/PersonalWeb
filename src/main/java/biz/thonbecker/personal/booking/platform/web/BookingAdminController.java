@@ -1,177 +1,66 @@
 package biz.thonbecker.personal.booking.platform.web;
 
-import biz.thonbecker.personal.booking.api.BookingType;
 import biz.thonbecker.personal.booking.platform.BookingService;
+import biz.thonbecker.personal.booking.platform.web.model.BookingAdminSnapshot;
 import biz.thonbecker.personal.booking.platform.web.model.CreateAvailabilitySlotRequest;
-import biz.thonbecker.personal.booking.platform.web.model.CreateBookingTypeRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Admin controller for managing bookings, types, and availability.
- *
- * <p>All endpoints require authentication.
- */
-@Controller
-@RequestMapping("/booking/admin")
+/** API used by the private Cloudflare OS booking administration surface. */
+@RestController
+@RequestMapping("/booking/admin/api")
 @RequiredArgsConstructor
 @Slf4j
 public class BookingAdminController {
 
     private final BookingService bookingService;
 
-    /**
-     * Admin dashboard page.
-     *
-     * @param model Spring MVC model
-     * @return Thymeleaf template name
-     */
-    @GetMapping
-    public String adminDashboard(final Model model) {
-        final var bookingTypes = bookingService.getAllBookingTypes();
-        final var bookings = bookingService.getAllBookings();
-        final var availabilitySlots = bookingService.getAllAvailabilitySlots();
-
-        model.addAttribute("bookingTypes", bookingTypes);
-        model.addAttribute("bookings", bookings);
-        model.addAttribute("availabilitySlots", availabilitySlots);
-
-        return "booking/admin";
+    @GetMapping("/snapshot")
+    public BookingAdminSnapshot snapshot() {
+        return new BookingAdminSnapshot(
+                bookingService.getAllBookingTypes(),
+                bookingService.getAllBookings(),
+                bookingService.getAllAvailabilitySlots());
     }
 
-    /**
-     * Creates a new booking type.
-     *
-     * @param request Booking type details
-     * @return Created booking type
-     */
-    @PostMapping("/types")
-    @ResponseBody
-    public ResponseEntity<BookingType> createBookingType(@Valid @RequestBody final CreateBookingTypeRequest request) {
+    @PostMapping("/availability")
+    public ResponseEntity<Void> createAvailability(@Valid @RequestBody final CreateAvailabilitySlotRequest request) {
         try {
-            log.info("Creating booking type: {}", request.name());
-
-            final var bookingType = bookingService.createBookingType(
-                    request.name(),
-                    request.description(),
-                    request.durationMinutes(),
-                    request.bufferMinutes(),
-                    request.color());
-
-            log.info("Successfully created booking type: {}", bookingType.id());
-            return ResponseEntity.ok(bookingType);
-
-        } catch (final Exception e) {
-            log.error("Failed to create booking type: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Creates an availability slot.
-     *
-     * @param request Slot details
-     * @return Success response
-     */
-    @PostMapping(value = "/availability", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public ResponseEntity<Void> createAvailabilitySlot(
-            @Valid @RequestBody final CreateAvailabilitySlotRequest request) {
-        try {
-            log.info("Creating availability slot: {} - {}", request.startTime(), request.endTime());
-
             bookingService.createAvailabilitySlot(request.startTime(), request.endTime());
-
-            log.info("Successfully created availability slot");
             return ResponseEntity.ok().build();
-
         } catch (final Exception e) {
-            log.error("Failed to create availability slot: {}", e.getMessage(), e);
+            log.error("Failed to create availability slot from Cloudflare OS: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @PostMapping(value = "/availability", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    @ResponseBody
-    public ResponseEntity<Void> createAvailabilitySlotFromForm(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime startTime,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime endTime,
-            final HttpServletResponse response) {
-        try {
-            bookingService.createAvailabilitySlot(startTime, endTime);
-            response.setHeader("HX-Trigger", "availabilityUpdated");
-            return ResponseEntity.ok().build();
-        } catch (final Exception e) {
-            log.error("Failed to create availability slot: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Deletes an availability slot.
-     *
-     * @param slotId Slot identifier
-     * @return Success response
-     */
     @DeleteMapping("/availability/{slotId}")
-    @ResponseBody
-    public ResponseEntity<Void> deleteAvailabilitySlot(
-            @PathVariable final Long slotId, final HttpServletResponse response) {
+    public ResponseEntity<Void> deleteAvailability(@PathVariable final Long slotId) {
         try {
-            log.info("Deleting availability slot: {}", slotId);
             bookingService.deleteAvailabilitySlot(slotId);
-            response.setHeader("HX-Trigger", "availabilityUpdated");
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
-            log.error("Failed to delete availability slot: {}", e.getMessage(), e);
+            log.error("Failed to delete availability slot from Cloudflare OS: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @GetMapping("/availability")
-    public String listAvailability(final Model model) {
-        model.addAttribute("availabilitySlots", bookingService.getAllAvailabilitySlots());
-        return "booking/admin-fragments :: availability-list";
-    }
-
-    /**
-     * Lists all bookings (HTMX endpoint).
-     *
-     * @param model Spring MVC model
-     * @return Thymeleaf fragment with bookings
-     */
-    @GetMapping("/bookings")
-    public String listBookings(final Model model) {
-        final var bookings = bookingService.getAllBookings();
-        model.addAttribute("bookings", bookings);
-        return "booking/admin-fragments :: bookings-list";
-    }
-
-    /**
-     * Cancels a booking (admin action).
-     *
-     * @param bookingId Booking identifier
-     * @return Success response
-     */
     @PostMapping("/bookings/{bookingId}/cancel")
-    @ResponseBody
-    public ResponseEntity<Void> cancelBooking(@PathVariable final Long bookingId, final HttpServletResponse response) {
+    public ResponseEntity<Void> cancelBooking(@PathVariable final Long bookingId) {
         try {
-            log.info("Admin cancelling booking: {}", bookingId);
             bookingService.cancelBooking(bookingId);
-            response.setHeader("HX-Trigger", "bookingUpdated");
             return ResponseEntity.ok().build();
         } catch (final Exception e) {
-            log.error("Failed to cancel booking: {}", e.getMessage(), e);
+            log.error("Failed to cancel booking from Cloudflare OS: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }

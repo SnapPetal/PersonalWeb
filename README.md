@@ -84,7 +84,7 @@ Authentication data is stored in the `identity` database schema:
 - `identity.user_login_tokens` stores hashed, expiring one-time login tokens.
 - `identity.user_sessions` stores hashed session tokens, expiration, and revocation state.
 
-An hourly ShedLock-protected cleanup job removes expired login tokens and expired or revoked sessions. Booking administration remains separate and uses HTTP Basic authentication with deployment-provided administrator credentials.
+An hourly ShedLock-protected cleanup job removes expired login tokens and expired or revoked sessions. Booking administration is protected by Cloudflare Access and managed from the private Cloudflare OS control plane.
 
 ## Architecture
 

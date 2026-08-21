@@ -92,8 +92,10 @@ posthog:
 
 personal:
   admin:
-    username: ${PERSONAL_ADMIN_USERNAME}
-    password: ${PERSONAL_ADMIN_PASSWORD}
+    access:
+      issuer: ${PERSONAL_CF_ACCESS_ISSUER:}
+      audience: ${PERSONAL_CF_ACCESS_AUDIENCE:}
+      email: ${PERSONAL_CF_ACCESS_ADMIN_EMAIL:thon.becker@gmail.com}
 
 # Bible Verse API Configuration
 bible:

@@ -48,7 +48,7 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 
 ### Authentication and access control
 
-Cognito/OAuth2 is no longer used. Public landscape projects are associated with an anonymous owner cookie and can be recovered through an email magic link. Booking administration uses HTTP Basic authentication with credentials supplied to the deployment environment.
+Cognito/OAuth2 is no longer used. Public landscape projects are associated with an anonymous owner cookie and can be recovered through an email magic link. Booking administration is restricted to the Cloudflare Access admin identity and is surfaced in the private Cloudflare OS control plane.
 
 **Protected Endpoints:**
 - `/landscape/plans/**` - Requires authentication (landscape plan CRUD operations)
@@ -61,8 +61,9 @@ Cognito/OAuth2 is no longer used. Public landscape projects are associated with 
 PERSONAL_OPENAI_API_KEY
 PERSONAL_NEXTCLOUD_USERNAME
 PERSONAL_NEXTCLOUD_APP_PASSWORD
-PERSONAL_ADMIN_USERNAME
-PERSONAL_ADMIN_PASSWORD
+PERSONAL_CF_ACCESS_ISSUER
+PERSONAL_CF_ACCESS_AUDIENCE
+PERSONAL_CF_ACCESS_ADMIN_EMAIL
 ```
 
 ## Architecture

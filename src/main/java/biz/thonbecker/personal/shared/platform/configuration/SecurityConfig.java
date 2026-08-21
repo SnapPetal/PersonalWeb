@@ -12,11 +12,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -59,7 +63,8 @@ public class SecurityConfig {
                         // Allow everything else (for now)
                         .anyRequest()
                         .permitAll())
-                .httpBasic(basic -> {})
+                .oauth2ResourceServer(
+                        oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .exceptionHandling(exceptionHandling -> exceptionHandling.defaultAuthenticationEntryPointFor(
                         (request, response, exception) -> {
                             final var redirect = request.getRequestURI().equals("/trivia") ? "/trivia" : "/landscape";
@@ -74,26 +79,45 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
-                        .ignoringRequestMatchers("/skatetricks-websocket/**", "/quiz-websocket/**"))
+                        .ignoringRequestMatchers(
+                                "/skatetricks-websocket/**", "/quiz-websocket/**", "/booking/admin/api/**"))
                 .addFilterAfter(new CsrfCookieFilter(), org.springframework.security.web.csrf.CsrfFilter.class);
         return http.build();
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public JwtDecoder jwtDecoder(
+            @Value("${personal.admin.access.issuer:https://invalid.cloudflareaccess.local}") final String issuer,
+            @Value("${personal.admin.access.audience:}") final String audience) {
+        final var decoder = NimbusJwtDecoder.withJwkSetUri(issuer.replaceAll("/$", "") + "/cdn-cgi/access/certs")
+                .build();
+        final OAuth2TokenValidator<Jwt> audienceValidator =
+                token -> token.getAudience().contains(audience)
+                        ? OAuth2TokenValidatorResult.success()
+                        : OAuth2TokenValidatorResult.failure(new org.springframework.security.oauth2.core.OAuth2Error(
+                                "invalid_token", "Invalid audience", null));
+        decoder.setJwtValidator(
+                new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefaultWithIssuer(issuer), audienceValidator));
+        return decoder;
     }
 
-    @Bean
-    public UserDetailsService userDetailsService(
-            @Value("${personal.admin.username}") final String username,
-            @Value("${personal.admin.password}") final String password,
-            final PasswordEncoder passwordEncoder) {
-        final var admin = User.withUsername(username)
-                .password(passwordEncoder.encode(password))
-                .roles("ADMIN")
-                .build();
-        return new InMemoryUserDetailsManager(admin);
+    private JwtAuthenticationConverter jwtAuthenticationConverter() {
+        final var converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            final var email = jwt.getClaimAsString("email");
+            final var adminEmail = environmentAdminEmail();
+            return email != null && email.equalsIgnoreCase(adminEmail)
+                    ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                    : List.of();
+        });
+        return converter;
+    }
+
+    @Value("${personal.admin.access.email:}")
+    private String adminEmail;
+
+    private String environmentAdminEmail() {
+        return adminEmail;
     }
 
     /**

@@ -69,7 +69,7 @@ Deploy the apex static files independently with:
 ./scripts/deploy-lightsail-static.sh
 ```
 
-Landscape projects use a secure, anonymous browser cookie as their owner. Set `PERSONAL_ADMIN_USERNAME` and `PERSONAL_ADMIN_PASSWORD` in the production compose environment for HTTP Basic protection of booking administration.
+Landscape projects use a secure, anonymous browser cookie as their owner. Booking administration is protected by Cloudflare Access and managed from the private Cloudflare OS control plane. Configure the Access issuer, audience, and administrator email in the production environment.
 
 ### Required inputs
 
