@@ -7,6 +7,7 @@ const TANK_SIZE := Vector2(42.0, 30.0)
 const TANK_SPEED := 240.0
 const BULLET_SPEED := 520.0
 const RECONNECT_DELAY := 2.0
+const DEBRIS_LIFETIME := 7.0
 
 var player_position := ARENA_SIZE / 2.0
 var player_angle := 0.0
@@ -24,6 +25,7 @@ var server_tanks: Dictionary = {}
 var visual_tanks: Dictionary = {}
 var server_projectiles: Array = []
 var server_walls: Array = []
+var debris: Array[Dictionary] = []
 var fire_requested := false
 var lobby_visible := true
 var reconnect_timer := 0.0
@@ -40,6 +42,7 @@ func _process(delta: float) -> void:
 	_update_bullets(delta)
 	_poll_websocket(delta)
 	_interpolate_server_state(delta)
+	_update_debris(delta)
 	_send_input()
 	queue_redraw()
 
@@ -114,6 +117,7 @@ func _restart() -> void:
 	player_position = ARENA_SIZE / 2.0
 	player_angle = 0.0
 	bullets.clear()
+	debris.clear()
 	targets = [Vector2(180, 150), Vector2(760, 145), Vector2(210, 410), Vector2(750, 390)]
 	score = 0
 	game_over = false
@@ -155,6 +159,7 @@ func _poll_websocket(delta: float) -> void:
 				local_tank_id = ""
 				current_game_id = ""
 				visual_tanks.clear()
+				debris.clear()
 				websocket_status = "Connection lost · reconnecting..."
 			if reconnect_timer >= RECONNECT_DELAY:
 				_connect_to_server()
@@ -272,7 +277,19 @@ func _handle_server_message(message: String) -> void:
 		"state":
 			var game: Dictionary = payload.get("game", {})
 			current_game_id = str(game.get("gameId", current_game_id))
-			server_tanks = game.get("tanks", {})
+			var next_tanks: Dictionary = game.get("tanks", {})
+			for tank_id in server_tanks:
+				var previous_tank: Dictionary = server_tanks[tank_id]
+				if not next_tanks.has(tank_id) and visual_tanks.has(tank_id):
+					_spawn_tank_explosion(_tank_screen_position(visual_tanks[tank_id]))
+				elif next_tanks.has(tank_id):
+					var next_tank: Dictionary = next_tanks[tank_id]
+					if (
+						bool(previous_tank.get("alive", true))
+						and not bool(next_tank.get("alive", true))
+					):
+						_spawn_tank_explosion(_tank_screen_position(next_tank))
+			server_tanks = next_tanks
 			server_projectiles = game.get("projectiles", [])
 			server_walls = game.get("walls", [])
 			var game_status: String = str(game.get("status", "WAITING"))
@@ -296,6 +313,53 @@ func _handle_server_message(message: String) -> void:
 					player_angle = float(server_tanks[tank_id].get("rotation", 0.0))
 		"error":
 			websocket_status = "Battle error: " + str(payload.get("message", "Unknown error"))
+
+
+func _tank_screen_position(tank: Dictionary) -> Vector2:
+	return MAP_ORIGIN + Vector2(float(tank.get("x", 0.0)) + 20.0, float(tank.get("y", 0.0)) + 20.0)
+
+
+func _spawn_tank_explosion(position: Vector2) -> void:
+	debris.append(
+		{
+			"position": position,
+			"velocity": Vector2.ZERO,
+			"life": 0.9,
+			"max_life": 0.9,
+			"size": 34.0,
+			"color": Color("f4a261"),
+			"rotation": 0.0,
+			"spin": 0.0,
+			"debris": false
+		}
+	)
+	for index in range(14):
+		var angle := TAU * float(index) / 14.0 + randf_range(-0.18, 0.18)
+		var speed := randf_range(80.0, 220.0)
+		debris.append(
+			{
+				"position": position + Vector2.from_angle(angle) * randf_range(2.0, 14.0),
+				"velocity": Vector2.from_angle(angle) * speed,
+				"life": DEBRIS_LIFETIME * randf_range(0.7, 1.0),
+				"max_life": DEBRIS_LIFETIME,
+				"size": randf_range(3.0, 8.0),
+				"color": Color("6f7f8f").lerp(Color("e76f51"), randf_range(0.0, 0.45)),
+				"rotation": randf_range(0.0, TAU),
+				"spin": randf_range(-5.0, 5.0),
+				"debris": true
+			}
+		)
+
+
+func _update_debris(delta: float) -> void:
+	for piece in debris:
+		piece.position += piece.velocity * delta
+		piece.velocity = piece.velocity.move_toward(Vector2.ZERO, 34.0 * delta)
+		piece.rotation += float(piece.get("spin", 0.0)) * delta
+		piece.life = float(piece.get("life", 0.0)) - delta
+	for index in range(debris.size() - 1, -1, -1):
+		if float(debris[index].get("life", 0.0)) <= 0.0:
+			debris.remove_at(index)
 
 
 func _draw() -> void:
@@ -463,12 +527,28 @@ func _draw_server_state(font: Font) -> void:
 			5.0,
 			Color("ffd166")
 		)
+	for piece in debris:
+		var opacity: float = clampf(
+			float(piece.get("life", 0.0)) / float(piece.get("max_life", 1.0)), 0.0, 1.0
+		)
+		var piece_color: Color = piece.get("color", Color.WHITE)
+		piece_color.a = opacity
+		draw_set_transform(piece.position, float(piece.get("rotation", 0.0)))
+		if bool(piece.get("debris", false)):
+			draw_rect(
+				Rect2(-piece.size / 2.0, Vector2(piece.size, piece.size * 0.65)), piece_color, true
+			)
+		else:
+			draw_circle(Vector2.ZERO, float(piece.get("size", 0.0)) * opacity, piece_color)
+		draw_set_transform(Vector2.ZERO, 0.0)
 	for tank_id in visual_tanks:
 		var tank: Dictionary = visual_tanks[tank_id]
 		var tank_position := (
 			MAP_ORIGIN + Vector2(float(tank.get("x", 0.0)) + 20.0, float(tank.get("y", 0.0)) + 20.0)
 		)
 		var tank_color := Color(str(tank.get("color", "#4ecdc4")))
+		if not bool(tank.get("alive", true)):
+			tank_color = Color("3b4654")
 		draw_set_transform(tank_position, float(tank.get("rotation", 0.0)))
 		draw_rect(Rect2(-20.0, -20.0, 40.0, 40.0), tank_color, true)
 		draw_rect(Rect2(-6.0, -5.0, 32.0, 10.0), tank_color.lightened(0.35), true)
