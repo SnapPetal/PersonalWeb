@@ -31,8 +31,3 @@ skatetricks:
 
 posthog:
   enabled: ${PERSONAL_POSTHOG_ENABLED:false}
-
-personal:
-  admin:
-    username: admin
-    password: local-development-only

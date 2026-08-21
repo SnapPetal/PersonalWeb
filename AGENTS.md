@@ -48,7 +48,7 @@ mvn spring-boot:build-image -Dspring-boot.build-image.imageName=personal
 
 ### Authentication and access control
 
-Cognito/OAuth2 is no longer used. Public landscape projects are associated with an anonymous owner cookie and can be recovered through an email magic link. Booking administration is restricted to the Cloudflare Access admin identity and is surfaced in the private Cloudflare OS control plane.
+Cognito is no longer used for application identity. Landscape plans are owned by the authenticated magic-link user's identity, and Trivia and Landscape both require the shared magic-link session flow. Booking administration does not use magic links or a password. It is restricted to the Cloudflare Access admin identity and surfaced in the private Cloudflare OS control plane, which forwards a Cloudflare Access JWT to Spring's resource server.
 
 **Protected Endpoints:**
 - `/landscape/plans/**` - Requires authentication (landscape plan CRUD operations)

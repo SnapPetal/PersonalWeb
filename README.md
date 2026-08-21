@@ -84,7 +84,17 @@ Authentication data is stored in the `identity` database schema:
 - `identity.user_login_tokens` stores hashed, expiring one-time login tokens.
 - `identity.user_sessions` stores hashed session tokens, expiration, and revocation state.
 
-An hourly ShedLock-protected cleanup job removes expired login tokens and expired or revoked sessions. Booking administration is protected by Cloudflare Access and managed from the private Cloudflare OS control plane.
+An hourly ShedLock-protected cleanup job removes expired login tokens and expired or revoked sessions. Those magic-link sessions are for Trivia and Landscape only; booking administration does not use magic links or a password. It is accessed from the private Cloudflare OS control plane, which forwards the administrator's Cloudflare Access JWT to Spring's resource server.
+
+The booking admin API is under `/booking/admin/api/**` and requires a valid Cloudflare Access JWT whose audience matches `PERSONAL_CF_ACCESS_AUDIENCE` and whose email matches `PERSONAL_CF_ACCESS_ADMIN_EMAIL`. The Cloudflare OS Worker uses `https://app.thonbecker.biz` as the Spring origin; `booking.thonbecker.biz` remains the public booking site.
+
+Production Spring configuration requires:
+
+```text
+PERSONAL_CF_ACCESS_ISSUER
+PERSONAL_CF_ACCESS_AUDIENCE
+PERSONAL_CF_ACCESS_ADMIN_EMAIL
+```
 
 ## Architecture
 
@@ -162,7 +172,7 @@ local development to match CI.
 
 Pushes to `main` trigger GitHub Actions, which builds a Docker image via Spring Boot Buildpacks (Paketo, Java 25) and publishes it for deployment.
 
-For Lightsail Linux instance rollouts over SSH, use [`docs/deploy.md`](docs/deploy.md) and [`scripts/deploy-lightsail-personalweb.sh`](scripts/deploy-lightsail-personalweb.sh).
+For Lightsail Linux instance rollouts over SSH, use [`docs/deploy.md`](docs/deploy.md) and [`scripts/deploy-lightsail-personalweb.sh`](scripts/deploy-lightsail-personalweb.sh). Deploy the Cloudflare OS control plane separately from the `cloudflare-os-personal` repository; its booking integration must be deployed after the Spring origin and Access settings are available.
 
 ## License
 

@@ -61,6 +61,8 @@ The production host already runs host-managed nginx in the `nextcloud-aws` repos
 - `booking.thonbecker.biz` proxies only booking and shared asset paths to `127.0.0.1:3003`.
 - `app.thonbecker.biz` proxies the complete Spring Boot application to `127.0.0.1:3003`.
 
+The private Cloudflare OS booking integration uses `https://app.thonbecker.biz` as its upstream. Do not point `BOOKING_ADMIN_BASE_URL` at `booking.thonbecker.biz`; that hostname is reserved for the public booking experience. The Worker forwards the Cloudflare Access JWT in `Authorization: Bearer` form to Spring.
+
 An nginx reference is available at [`deploy/lightsail/nginx-domains.conf.example`](../deploy/lightsail/nginx-domains.conf.example). The authoritative production virtual hosts must live in `nextcloud-aws/nginx` so its deployment workflow and Certbot manage them.
 
 Deploy the apex static files independently with:
@@ -69,7 +71,7 @@ Deploy the apex static files independently with:
 ./scripts/deploy-lightsail-static.sh
 ```
 
-Landscape projects use a secure, anonymous browser cookie as their owner. Booking administration is protected by Cloudflare Access and managed from the private Cloudflare OS control plane. Configure the Access issuer, audience, and administrator email in the production environment.
+Landscape plans are owned by the authenticated magic-link user and do not use Cloudflare Access. Booking administration is protected by Cloudflare Access and managed from the private Cloudflare OS control plane. Configure the same issuer, audience, and administrator email in both Cloudflare OS (`deployment.jsonc`) and the Spring deployment environment. The audience must match exactly.
 
 ### Required inputs
 
