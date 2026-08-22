@@ -40,6 +40,13 @@ public class TankGameService {
         return tank;
     }
 
+    public Tank joinGame(String gameId, String playerName, String loadoutId) {
+        final var tank = roomService.joinGame(gameId, playerName, loadoutId);
+        final var game = roomService.getGame(gameId);
+        if (game != null) broadcastGameState(game);
+        return tank;
+    }
+
     public void leaveGame(String gameId, String tankId) {
         roomService.leaveGame(gameId, tankId);
         final var game = roomService.getGame(gameId);

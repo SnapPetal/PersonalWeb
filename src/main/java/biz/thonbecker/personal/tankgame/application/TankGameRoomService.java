@@ -3,6 +3,7 @@ package biz.thonbecker.personal.tankgame.application;
 import biz.thonbecker.personal.tankgame.domain.GameState;
 import biz.thonbecker.personal.tankgame.domain.PlayerInput;
 import biz.thonbecker.personal.tankgame.domain.Tank;
+import biz.thonbecker.personal.tankgame.domain.TankLoadout;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -45,6 +46,10 @@ public class TankGameRoomService {
     }
 
     public synchronized Tank joinGame(final String gameId, final String playerName) {
+        return joinGame(gameId, playerName, TankLoadout.STRIKER.getId());
+    }
+
+    public synchronized Tank joinGame(final String gameId, final String playerName, final String loadoutId) {
         final var game = activeGames.get(gameId);
         if (game == null) throw new IllegalArgumentException("Game not found: " + gameId);
         if (game.getTanks().size() >= MAX_PLAYERS_PER_GAME) throw new IllegalStateException("Game is full");
@@ -56,7 +61,8 @@ public class TankGameRoomService {
                 playerName,
                 spawn[0],
                 spawn[1],
-                TANK_COLORS[tankCount % TANK_COLORS.length]);
+                TANK_COLORS[tankCount % TANK_COLORS.length],
+                TankLoadout.fromId(loadoutId));
         game.addTank(tank);
         gameActivityTimes.put(gameId, System.currentTimeMillis());
         playerInputs.put(tank.getId(), new PlayerInput());

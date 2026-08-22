@@ -11,7 +11,22 @@ const DEBRIS_LIFETIME := 7.0
 
 const ASSET_COLORS := ["A", "B", "C", "D"]
 const SHELL_NAMES := ["Light_Shell", "Medium_Shell", "Heavy_Shell", "Sniper_Shell"]
-const EXPLOSION_NAMES := ["Explosion_A", "Explosion_B", "Explosion_C", "Explosion_D", "Explosion_E", "Explosion_F", "Explosion_G", "Explosion_H"]
+const EXPLOSION_NAMES := [
+	"Explosion_A",
+	"Explosion_B",
+	"Explosion_C",
+	"Explosion_D",
+	"Explosion_E",
+	"Explosion_F",
+	"Explosion_G",
+	"Explosion_H"
+]
+const TANK_LOADOUT_IDS := [
+	"scout", "striker", "raider", "siege", "sentinel", "hunter", "juggernaut", "artillery"
+]
+const TANK_LOADOUT_NAMES := [
+	"SCOUT", "STRIKER", "RAIDER", "SIEGE", "SENTINEL", "HUNTER", "JUGGERNAUT", "ARTILLERY"
+]
 
 var asset_cache: Dictionary = {}
 
@@ -34,6 +49,7 @@ var server_walls: Array = []
 var debris: Array[Dictionary] = []
 var fire_requested := false
 var lobby_visible := true
+var selected_tank_index := 1
 var reconnect_timer := 0.0
 var input_sequence := 0
 
@@ -54,19 +70,19 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if (
-		lobby_visible
-		and event.is_pressed()
-		and (
+	if lobby_visible and event.is_pressed():
+		if event is InputEventKey and event.keycode in [KEY_LEFT, KEY_A]:
+			selected_tank_index = posmod(selected_tank_index - 1, TANK_LOADOUT_IDS.size())
+			return
+		if event is InputEventKey and event.keycode in [KEY_RIGHT, KEY_D]:
+			selected_tank_index = posmod(selected_tank_index + 1, TANK_LOADOUT_IDS.size())
+			return
+		if (
 			event is InputEventMouseButton
-			or (
-				event is InputEventKey
-				and (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER)
-			)
-		)
-	):
-		_queue_for_battle()
-		return
+			or (event is InputEventKey and event.keycode in [KEY_ENTER, KEY_KP_ENTER])
+		):
+			_queue_for_battle()
+			return
 	if event is InputEventMouseMotion:
 		player_angle = player_position.angle_to_point(event.position)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
@@ -174,7 +190,15 @@ func _poll_websocket(delta: float) -> void:
 func _queue_for_battle() -> void:
 	if not server_connected or queue_sent:
 		return
-	websocket.send_text(JSON.stringify({"action": "queue", "playerName": "Pilot"}))
+	websocket.send_text(
+		JSON.stringify(
+			{
+				"action": "queue",
+				"playerName": "Pilot",
+				"loadoutId": TANK_LOADOUT_IDS[selected_tank_index]
+			}
+		)
+	)
 	queue_sent = true
 	lobby_visible = false
 	websocket_status = "Queued · Waiting for a pilot or AI opponent..."
@@ -252,7 +276,9 @@ func _interpolate_server_state(delta: float) -> void:
 		visual["rotation"] = lerp_angle(
 			float(visual.get("rotation", 0.0)), float(target.get("rotation", 0.0)), blend
 		)
-		for key in ["playerName", "health", "maxHealth", "color", "alive", "kills", "bot"]:
+		for key in [
+			"playerName", "health", "maxHealth", "color", "loadoutId", "alive", "kills", "bot"
+		]:
 			visual[key] = target.get(key, visual.get(key))
 		visual_tanks[tank_id] = visual
 	for tank_id in visual_tanks.keys():
@@ -286,9 +312,7 @@ func _handle_server_message(message: String) -> void:
 			var next_tanks: Dictionary = game.get("tanks", {})
 			for tank_id in server_tanks:
 				var previous_tank: Dictionary = server_tanks[tank_id]
-				if not next_tanks.has(tank_id) and visual_tanks.has(tank_id):
-					_spawn_tank_explosion(_tank_screen_position(visual_tanks[tank_id]))
-				elif next_tanks.has(tank_id):
+				if next_tanks.has(tank_id):
 					var next_tank: Dictionary = next_tanks[tank_id]
 					if (
 						bool(previous_tank.get("alive", true))
@@ -364,11 +388,8 @@ func _update_debris(delta: float) -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, ARENA_SIZE), Color("101827"))
-	draw_rect(Rect2(18, 70, ARENA_SIZE.x - 36, 440), Color("17243a"), true)
-	for x in range(40, 960, 40):
-		draw_line(Vector2(x, 100), Vector2(x, 520), Color("20304b"), 1.0)
-	for y in range(90, 510, 40):
-		draw_line(Vector2(20, y), Vector2(940, y), Color("20304b"), 1.0)
+	_draw_foundry_arena()
+	_draw_arena_assets()
 
 	var font := ThemeDB.fallback_font
 	draw_string(
@@ -407,7 +428,12 @@ func _draw() -> void:
 	else:
 		for target_index in range(targets.size()):
 			var target: Vector2 = targets[target_index]
-			_draw_tank_sprite(target, target.angle_to_point(player_position), 1 + target_index % 3, 1 + target_index % 8)
+			_draw_tank_sprite(
+				target,
+				target.angle_to_point(player_position),
+				1 + target_index % 3,
+				1 + target_index % 8
+			)
 		for bullet_index in range(bullets.size()):
 			var bullet: Dictionary = bullets[bullet_index]
 			draw_texture_rect(
@@ -437,14 +463,14 @@ func _draw() -> void:
 		)
 
 	if not server_connected and not lobby_visible:
-		_draw_tank_sprite(player_position, player_angle, 0, 1)
+		_draw_tank_sprite(player_position, player_angle, 0, selected_tank_index + 1)
 
 	# Draw the lobby last so the restart dialog stays above walls and tanks.
 	if lobby_visible:
 		draw_rect(Rect2(250, 165, 460, 220), Color(0.05, 0.09, 0.15, 0.96), true)
 		draw_string(
 			font,
-			Vector2(250, 215),
+			Vector2(250, 195),
 			"IRONBOUND ONLINE",
 			HORIZONTAL_ALIGNMENT_CENTER,
 			460,
@@ -453,27 +479,37 @@ func _draw() -> void:
 		)
 		draw_string(
 			font,
-			Vector2(250, 250),
+			Vector2(250, 218),
 			"MULTIPLAYER TANK RPG",
 			HORIZONTAL_ALIGNMENT_CENTER,
 			460,
 			16,
 			Color("e8eef8")
 		)
+		_draw_tank_sprite(Vector2(480.0, 250.0), -PI / 2.0, 0, selected_tank_index + 1)
+		draw_string(
+			font,
+			Vector2(250, 285),
+			TANK_LOADOUT_NAMES[selected_tank_index],
+			HORIZONTAL_ALIGNMENT_CENTER,
+			460,
+			20,
+			Color("ffd166")
+		)
 		if server_connected:
 			draw_string(
 				font,
-				Vector2(250, 295),
-				"Click or press Enter",
+				Vector2(250, 310),
+				"A / D or arrows to choose · click or Enter to deploy",
 				HORIZONTAL_ALIGNMENT_CENTER,
 				460,
-				20,
+				14,
 				Color("ffd166")
 			)
 			draw_string(
 				font,
-				Vector2(250, 325),
-				"to enter the battle lobby",
+				Vector2(250, 335),
+				"Loadout %d of %d" % [selected_tank_index + 1, TANK_LOADOUT_IDS.size()],
 				HORIZONTAL_ALIGNMENT_CENTER,
 				460,
 				16,
@@ -481,7 +517,7 @@ func _draw() -> void:
 			)
 			draw_string(
 				font,
-				Vector2(250, 355),
+				Vector2(250, 360),
 				"An AI opponent joins if no pilot is found",
 				HORIZONTAL_ALIGNMENT_CENTER,
 				460,
@@ -519,8 +555,8 @@ func _draw_server_state(font: Font) -> void:
 		draw_rect(wall_rect, Color("8b9bb5"), false, 2.0)
 	for projectile_index in range(server_projectiles.size()):
 		var projectile: Dictionary = server_projectiles[projectile_index]
-		var projectile_position := MAP_ORIGIN + Vector2(
-			float(projectile.get("x", 0.0)), float(projectile.get("y", 0.0))
+		var projectile_position := (
+			MAP_ORIGIN + Vector2(float(projectile.get("x", 0.0)), float(projectile.get("y", 0.0)))
 		)
 		draw_texture_rect(
 			_get_shell_texture(projectile_index),
@@ -534,11 +570,12 @@ func _draw_server_state(font: Font) -> void:
 		)
 		var is_local_tank: bool = tank_id == local_tank_id
 		var tank_hash: int = abs(str(tank_id).hash())
+		var loadout_index: int = _loadout_index(str(tank.get("loadoutId", "striker")))
 		_draw_tank_sprite(
 			tank_position,
 			float(tank.get("rotation", 0.0)),
 			0 if is_local_tank else tank_hash % ASSET_COLORS.size(),
-			1 + tank_hash % 8,
+			loadout_index + 1,
 			Color("6b778a") if not bool(tank.get("alive", true)) else Color.WHITE
 		)
 		draw_string(
@@ -563,42 +600,124 @@ func _draw_server_state(font: Font) -> void:
 		var opacity: float = clampf(
 			float(piece.get("life", 0.0)) / float(piece.get("max_life", 1.0)), 0.0, 1.0
 		)
+		var piece_position: Vector2 = piece.get("position", Vector2.ZERO)
+		var piece_size: float = float(piece.get("size", 0.0))
 		if bool(piece.get("explosion", false)):
 			var elapsed: float = 1.0 - float(piece.get("life", 0.0))
-			var frame_index: int = mini(int(elapsed * float(EXPLOSION_NAMES.size())), EXPLOSION_NAMES.size() - 1)
-			var explosion_path := "res://assets/craftpix/PNG/Effects/%s.png" % EXPLOSION_NAMES[frame_index]
+			var frame_index: int = mini(
+				int(elapsed * float(EXPLOSION_NAMES.size())), EXPLOSION_NAMES.size() - 1
+			)
+			var explosion_path := (
+				"res://assets/craftpix/PNG/Effects/%s.png" % EXPLOSION_NAMES[frame_index]
+			)
 			draw_texture_rect(
 				_load_asset(explosion_path),
-				Rect2(piece.position - Vector2(piece.size / 2.0, piece.size / 2.0), Vector2(piece.size, piece.size)),
+				Rect2(
+					piece_position - Vector2(piece_size / 2.0, piece_size / 2.0),
+					Vector2(piece_size, piece_size)
+				),
 				false,
 				Color(1.0, 1.0, 1.0, opacity)
 			)
 			continue
 		var piece_color: Color = piece.get("color", Color.WHITE)
 		piece_color.a = opacity
-		draw_set_transform(piece.position, float(piece.get("rotation", 0.0)))
+		draw_set_transform(piece_position, float(piece.get("rotation", 0.0)))
 		draw_rect(
-			Rect2(-piece.size / 2.0, Vector2(piece.size, piece.size * 0.65)), piece_color, true
+			Rect2(
+				Vector2(-piece_size / 2.0, -piece_size * 0.325),
+				Vector2(piece_size, piece_size * 0.65)
+			),
+			piece_color,
+			true
 		)
 		draw_set_transform(Vector2.ZERO, 0.0)
 
 
+func _draw_foundry_arena() -> void:
+	var arena_rect := Rect2(18.0, 70.0, ARENA_SIZE.x - 36.0, 440.0)
+	draw_rect(arena_rect, Color("202832"), true)
+	# Large steel plates and recessed seams.
+	for row in range(5):
+		var y := 82.0 + row * 84.0
+		draw_line(Vector2(24.0, y), Vector2(936.0, y), Color("111820"), 3.0)
+		draw_line(Vector2(24.0, y + 3.0), Vector2(936.0, y + 3.0), Color("34414b"), 1.0)
+	for column in range(9):
+		var x := 70.0 + column * 108.0
+		draw_line(Vector2(x, 76.0), Vector2(x, 504.0), Color("151d24"), 2.0)
+	# Furnace channels provide a warm industrial contrast without obscuring play.
+	for x in [158.0, 802.0]:
+		draw_rect(Rect2(x, 92.0, 8.0, 396.0), Color(0.65, 0.20, 0.07, 0.24), true)
+		draw_line(
+			Vector2(x + 4.0, 96.0), Vector2(x + 4.0, 484.0), Color(0.95, 0.38, 0.10, 0.62), 2.0
+		)
+	# Hazard stripes around the lower service edge.
+	draw_rect(Rect2(24.0, 492.0, 912.0, 12.0), Color("d08024"), true)
+	for x in range(24, 936, 24):
+		draw_line(Vector2(x, 492.0), Vector2(x + 12.0, 504.0), Color("202832"), 6.0)
+	# Corner bolts sell the arena as a constructed steel platform.
+	for bolt in [
+		Vector2(32.0, 84.0), Vector2(924.0, 84.0), Vector2(32.0, 496.0), Vector2(924.0, 496.0)
+	]:
+		draw_circle(bolt, 5.0, Color("0d1318"))
+		draw_circle(bolt, 2.0, Color("8b9aa4"))
+
+
+func _draw_arena_assets() -> void:
+	# Decorative marks stay client-side so they enrich both offline and online
+	# play without changing the authoritative collision map.
+	var track_marks := [
+		Vector2(122.0, 126.0),
+		Vector2(412.0, 154.0),
+		Vector2(706.0, 126.0),
+		Vector2(324.0, 430.0),
+		Vector2(612.0, 398.0),
+		Vector2(850.0, 434.0)
+	]
+	for index in range(track_marks.size()):
+		var track_path := "res://assets/craftpix/PNG/Effects/Tire_Track_%02d.png" % (1 + index % 2)
+		draw_texture_rect(
+			_load_asset(track_path),
+			Rect2(track_marks[index] - Vector2(28.0, 28.0), Vector2(56.0, 56.0)),
+			false,
+			Color(0.15, 0.20, 0.28, 0.42)
+		)
+
+
 func _draw_tank_sprite(
-		position: Vector2,
-		angle: float,
-		color_index: int,
-		variant_index: int,
-		modulate: Color = Color.WHITE
+	position: Vector2,
+	angle: float,
+	color_index: int,
+	variant_index: int,
+	modulate: Color = Color.WHITE
 ) -> void:
 	# The source sprites point upward; rotating by +90 degrees aligns them with
 	# the game's zero-angle direction (right) and keeps the existing controls.
 	draw_set_transform(position, angle + PI / 2.0)
 	var color_code: String = ASSET_COLORS[clampi(color_index, 0, ASSET_COLORS.size() - 1)]
-	var hull_path := "res://assets/craftpix/PNG/Hulls_Color_%s/Hull_%02d.png" % [color_code, variant_index]
-	var gun_path := "res://assets/craftpix/PNG/Weapon_Color_%s_256X256/Gun_%02d.png" % [color_code, variant_index]
+	var hull_path := (
+		"res://assets/craftpix/PNG/Hulls_Color_%s/Hull_%02d.png" % [color_code, variant_index]
+	)
+	var gun_path := (
+		"res://assets/craftpix/PNG/Weapon_Color_%s_256X256/Gun_%02d.png"
+		% [color_code, variant_index]
+	)
+	var track_code: String = "A" if color_index % 2 == 0 else "B"
+	var track_variant: int = 1 + (variant_index - 1) % 4
+	var track_path := (
+		"res://assets/craftpix/PNG/Tracks/Track_%d_%s.png" % [track_variant, track_code]
+	)
+	var track_texture := _load_asset(track_path)
+	draw_texture_rect(track_texture, Rect2(-27.0, -27.0, 11.0, 54.0), false, modulate)
+	draw_texture_rect(track_texture, Rect2(16.0, -27.0, 11.0, 54.0), false, modulate)
 	draw_texture_rect(_load_asset(hull_path), Rect2(-28.0, -28.0, 56.0, 56.0), false, modulate)
 	draw_texture_rect(_load_asset(gun_path), Rect2(-28.0, -28.0, 56.0, 56.0), false, modulate)
 	draw_set_transform(Vector2.ZERO, 0.0)
+
+
+func _loadout_index(loadout_id: String) -> int:
+	var index := TANK_LOADOUT_IDS.find(loadout_id.to_lower())
+	return index if index >= 0 else 1
 
 
 func _get_shell_texture(index: int) -> Texture2D:

@@ -13,6 +13,7 @@ public class Tank {
     private int health = 100;
     private int maxHealth = 100;
     private String color;
+    private String loadoutId;
     private boolean bot;
     private double rotation = 0; // radians
     private boolean alive = true;
@@ -22,11 +23,16 @@ public class Tank {
     private static final long SHOT_COOLDOWN_MS = 500; // 0.5 seconds between shots
 
     public Tank(String id, String playerName, double x, double y, String color) {
+        this(id, playerName, x, y, color, TankLoadout.STRIKER);
+    }
+
+    public Tank(String id, String playerName, double x, double y, String color, TankLoadout loadout) {
         this.id = id;
         this.playerName = playerName;
         this.x = x;
         this.y = y;
         this.color = color;
+        this.loadoutId = loadout.getId();
     }
 
     public void move(PlayerInput input, double deltaTime) {

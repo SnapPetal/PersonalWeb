@@ -48,7 +48,11 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
         final String action = request.path("action").asText();
 
         switch (action) {
-            case "queue" -> joinQueue(session, request.path("playerName").asText("Player"));
+            case "queue" ->
+                joinQueue(
+                        session,
+                        request.path("playerName").asText("Player"),
+                        request.path("loadoutId").asText("striker"));
             case "input" -> updateInput(session, request);
             case "leave" -> leave(session);
             default -> send(session, Map.of("type", "error", "message", "Unknown action: " + action));
@@ -65,10 +69,11 @@ class TankGameRawWebSocketHandler extends TextWebSocketHandler {
         lastInputSequences.remove(session.getId());
     }
 
-    private void joinQueue(final WebSocketSession session, final String playerName) throws Exception {
+    private void joinQueue(final WebSocketSession session, final String playerName, final String loadoutId)
+            throws Exception {
         leave(session);
         final GameState game = tankGameService.findOrCreateWaitingGame();
-        final Tank tank = tankGameService.joinGame(game.getGameId(), playerName);
+        final Tank tank = tankGameService.joinGame(game.getGameId(), playerName, loadoutId);
         sessionGames.put(session.getId(), game.getGameId());
         sessionTanks.put(session.getId(), tank.getId());
         send(session, Map.of("type", "joined", "gameId", game.getGameId(), "tankId", tank.getId()));
