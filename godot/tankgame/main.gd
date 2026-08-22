@@ -9,6 +9,12 @@ const BULLET_SPEED := 520.0
 const RECONNECT_DELAY := 2.0
 const DEBRIS_LIFETIME := 7.0
 
+const ASSET_COLORS := ["A", "B", "C", "D"]
+const SHELL_NAMES := ["Light_Shell", "Medium_Shell", "Heavy_Shell", "Sniper_Shell"]
+const EXPLOSION_NAMES := ["Explosion_A", "Explosion_B", "Explosion_C", "Explosion_D", "Explosion_E", "Explosion_F", "Explosion_G", "Explosion_H"]
+
+var asset_cache: Dictionary = {}
+
 var player_position := ARENA_SIZE / 2.0
 var player_angle := 0.0
 var bullets: Array[Dictionary] = []
@@ -320,6 +326,16 @@ func _tank_screen_position(tank: Dictionary) -> Vector2:
 
 
 func _spawn_tank_explosion(position: Vector2) -> void:
+	debris.append(
+		{
+			"position": position,
+			"life": 1.0,
+			"max_life": 1.0,
+			"size": 96.0,
+			"rotation": 0.0,
+			"explosion": true
+		}
+	)
 	# Leave a small pile of tank parts at the wreck site. The pieces are
 	# deliberately grounded: they do not burst outward, fade immediately, or spin.
 	for index in range(9):
@@ -389,12 +405,16 @@ func _draw() -> void:
 	if server_connected:
 		_draw_server_state(font)
 	else:
-		for target in targets:
-			draw_circle(target, 22.0, Color("e76f51"))
-			draw_circle(target, 12.0, Color("f4a261"))
-			draw_circle(target, 4.0, Color("264653"))
-		for bullet in bullets:
-			draw_circle(bullet.position, 5.0, Color("ffd166"))
+		for target_index in range(targets.size()):
+			var target: Vector2 = targets[target_index]
+			_draw_tank_sprite(target, target.angle_to_point(player_position), 1 + target_index % 3, 1 + target_index % 8)
+		for bullet_index in range(bullets.size()):
+			var bullet: Dictionary = bullets[bullet_index]
+			draw_texture_rect(
+				_get_shell_texture(bullet_index),
+				Rect2(bullet.position - Vector2(8.0, 8.0), Vector2(16.0, 16.0)),
+				false
+			)
 	if game_over and not server_connected:
 		draw_rect(Rect2(260, 220, 440, 100), Color(0.05, 0.09, 0.15, 0.92), true)
 		draw_string(
@@ -417,15 +437,7 @@ func _draw() -> void:
 		)
 
 	if not server_connected and not lobby_visible:
-		draw_set_transform(player_position, player_angle)
-		draw_rect(
-			Rect2(-TANK_SIZE.x / 2.0, -TANK_SIZE.y / 2.0, TANK_SIZE.x, TANK_SIZE.y),
-			Color("4ecdc4"),
-			true
-		)
-		draw_rect(Rect2(-6, -5, 32, 10), Color("95e1d3"), true)
-		draw_circle(Vector2.ZERO, 9.0, Color("264653"))
-		draw_set_transform(Vector2.ZERO, 0.0)
+		_draw_tank_sprite(player_position, player_angle, 0, 1)
 
 	# Draw the lobby last so the restart dialog stays above walls and tanks.
 	if lobby_visible:
@@ -505,25 +517,30 @@ func _draw_server_state(font: Font) -> void:
 		)
 		draw_rect(wall_rect, Color("52627a"), true)
 		draw_rect(wall_rect, Color("8b9bb5"), false, 2.0)
-	for projectile in server_projectiles:
-		draw_circle(
-			MAP_ORIGIN + Vector2(float(projectile.get("x", 0.0)), float(projectile.get("y", 0.0))),
-			5.0,
-			Color("ffd166")
+	for projectile_index in range(server_projectiles.size()):
+		var projectile: Dictionary = server_projectiles[projectile_index]
+		var projectile_position := MAP_ORIGIN + Vector2(
+			float(projectile.get("x", 0.0)), float(projectile.get("y", 0.0))
+		)
+		draw_texture_rect(
+			_get_shell_texture(projectile_index),
+			Rect2(projectile_position - Vector2(8.0, 8.0), Vector2(16.0, 16.0)),
+			false
 		)
 	for tank_id in visual_tanks:
 		var tank: Dictionary = visual_tanks[tank_id]
 		var tank_position := (
 			MAP_ORIGIN + Vector2(float(tank.get("x", 0.0)) + 20.0, float(tank.get("y", 0.0)) + 20.0)
 		)
-		var tank_color := Color(str(tank.get("color", "#4ecdc4")))
-		if not bool(tank.get("alive", true)):
-			tank_color = Color("3b4654")
-		draw_set_transform(tank_position, float(tank.get("rotation", 0.0)))
-		draw_rect(Rect2(-20.0, -20.0, 40.0, 40.0), tank_color, true)
-		draw_rect(Rect2(-6.0, -5.0, 32.0, 10.0), tank_color.lightened(0.35), true)
-		draw_circle(Vector2.ZERO, 9.0, Color("264653"))
-		draw_set_transform(Vector2.ZERO, 0.0)
+		var is_local_tank: bool = tank_id == local_tank_id
+		var tank_hash: int = abs(str(tank_id).hash())
+		_draw_tank_sprite(
+			tank_position,
+			float(tank.get("rotation", 0.0)),
+			0 if is_local_tank else tank_hash % ASSET_COLORS.size(),
+			1 + tank_hash % 8,
+			Color("6b778a") if not bool(tank.get("alive", true)) else Color.WHITE
+		)
 		draw_string(
 			font,
 			tank_position + Vector2(-24.0, -28.0),
@@ -546,6 +563,17 @@ func _draw_server_state(font: Font) -> void:
 		var opacity: float = clampf(
 			float(piece.get("life", 0.0)) / float(piece.get("max_life", 1.0)), 0.0, 1.0
 		)
+		if bool(piece.get("explosion", false)):
+			var elapsed: float = 1.0 - float(piece.get("life", 0.0))
+			var frame_index: int = mini(int(elapsed * float(EXPLOSION_NAMES.size())), EXPLOSION_NAMES.size() - 1)
+			var explosion_path := "res://assets/craftpix/PNG/Effects/%s.png" % EXPLOSION_NAMES[frame_index]
+			draw_texture_rect(
+				_load_asset(explosion_path),
+				Rect2(piece.position - Vector2(piece.size / 2.0, piece.size / 2.0), Vector2(piece.size, piece.size)),
+				false,
+				Color(1.0, 1.0, 1.0, opacity)
+			)
+			continue
 		var piece_color: Color = piece.get("color", Color.WHITE)
 		piece_color.a = opacity
 		draw_set_transform(piece.position, float(piece.get("rotation", 0.0)))
@@ -553,3 +581,32 @@ func _draw_server_state(font: Font) -> void:
 			Rect2(-piece.size / 2.0, Vector2(piece.size, piece.size * 0.65)), piece_color, true
 		)
 		draw_set_transform(Vector2.ZERO, 0.0)
+
+
+func _draw_tank_sprite(
+		position: Vector2,
+		angle: float,
+		color_index: int,
+		variant_index: int,
+		modulate: Color = Color.WHITE
+) -> void:
+	# The source sprites point upward; rotating by +90 degrees aligns them with
+	# the game's zero-angle direction (right) and keeps the existing controls.
+	draw_set_transform(position, angle + PI / 2.0)
+	var color_code: String = ASSET_COLORS[clampi(color_index, 0, ASSET_COLORS.size() - 1)]
+	var hull_path := "res://assets/craftpix/PNG/Hulls_Color_%s/Hull_%02d.png" % [color_code, variant_index]
+	var gun_path := "res://assets/craftpix/PNG/Weapon_Color_%s_256X256/Gun_%02d.png" % [color_code, variant_index]
+	draw_texture_rect(_load_asset(hull_path), Rect2(-28.0, -28.0, 56.0, 56.0), false, modulate)
+	draw_texture_rect(_load_asset(gun_path), Rect2(-28.0, -28.0, 56.0, 56.0), false, modulate)
+	draw_set_transform(Vector2.ZERO, 0.0)
+
+
+func _get_shell_texture(index: int) -> Texture2D:
+	var shell_name: String = SHELL_NAMES[index % SHELL_NAMES.size()]
+	return _load_asset("res://assets/craftpix/PNG/Effects/%s.png" % shell_name)
+
+
+func _load_asset(path: String) -> Texture2D:
+	if not asset_cache.has(path):
+		asset_cache[path] = load(path)
+	return asset_cache[path] as Texture2D

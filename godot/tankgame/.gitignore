@@ -1,5 +1,6 @@
 .godot/
 *.uid
+*.import
 export_templates/
 feature_profiles/
 script_templates/
